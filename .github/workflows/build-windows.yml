@@ -1,4 +1,4 @@
-```yaml
+
 name: Build amarPlayer Windows x64
 
 on:
@@ -903,5 +903,5 @@ jobs:
             installer/amarPlayer.iss
           if-no-files-found: error
           include-hidden-files: true
-```
+
 
