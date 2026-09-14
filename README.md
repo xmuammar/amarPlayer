@@ -2,193 +2,334 @@
 
 **amarPlayer** adalah pemutar musik desktop modern yang dikembangkan oleh **Muammar, SST, M.Kom** menggunakan Python, PySide6, GStreamer, dan Mutagen.
 
-Aplikasi ini dirancang untuk menjadi pemutar musik desktop yang ringan, modern, sederhana, dan dapat digunakan pada beberapa platform.
+Aplikasi ini dirancang untuk menjadi pemutar musik desktop yang ringan, modern, sederhana, portable, dan dapat digunakan pada beberapa platform.
 
 ---
 
-## 🖥️ Platform
+# 🖥️ Platform
 
-| Platform         | Arsitektur            | Format                 | Status            |
-| ---------------- | --------------------- | ---------------------- | ----------------- |
-| 🐧 Fedora Linux  | ARM64 / AArch64       | AppImage               | ✅ Aktif           |
-| 🍎 macOS         | Apple Silicon / ARM64 | App Bundle / AppImage* | 🚧 Pengembangan   |
-| 🪟 Windows 11    | x64 / AMD64           | `.exe` Installer       | 🚧 GitHub Actions |
-| 🐧 Linux lainnya | ARM64 / x64           | AppImage               | 🚧 Pengembangan   |
-| 🍎 macOS Intel   | x64                   | App Bundle             | 🚧 Pengembangan   |
-| 🪟 Windows ARM64 | ARM64                 | `.exe`                 | 🔮 Rencana        |
-
-> * Format distribusi macOS dapat berubah mengikuti metode packaging yang digunakan.
+| Platform         | Arsitektur            | Format           | Status          |
+| ---------------- | --------------------- | ---------------- | --------------- |
+| 🐧 Fedora Linux  | ARM64 / AArch64       | AppImage         | ✅ Aktif         |
+| 🐧 Linux x64     | x86-64 / AMD64        | AppImage         | 🚧 Pengembangan |
+| 🍎 macOS         | Apple Silicon / ARM64 | `.app`           | 🚧 Pengembangan |
+| 🍎 macOS Intel   | x64                   | `.app`           | 🚧 Pengembangan |
+| 🪟 Windows 11    | x64 / AMD64           | `.exe` Installer | 🚧 Pengembangan |
+| 🪟 Windows ARM64 | ARM64                 | `.exe`           | 🔮 Rencana      |
 
 ---
 
-## 🏗️ Arsitektur Build
+# ✨ Fitur
 
-### Linux ARM64
+* 🎵 Play / Pause / Stop
+* ⏮ Previous / Next
+* 🔊 Volume control
+* 🔀 Shuffle
+* 🔁 Repeat
+* 📋 Playlist
+* 🔎 Search
+* 🎨 Album artwork
+* 🏷️ Audio metadata
+* 🎚️ 10-band equalizer
+* 🖱️ Drag & Drop
+* 📂 Scan folder
+* 💾 Playlist persistence
+* ⌨️ Command-line file opening
+* 🎧 MP3, FLAC, WAV, OGG, OPUS, M4A, AAC, dan format lainnya
+* 📦 Portable AppImage pada Linux
+* 🪟 Windows installer
+* 🤖 Automated Windows build melalui GitHub Actions
 
-Target utama saat ini adalah:
+---
 
-```text
-Fedora Linux
-      │
-      ├── Python 3.14
-      ├── PySide6
-      ├── PyGObject
-      ├── GStreamer
-      ├── Mutagen
-      └── Nuitka
-             │
-             ▼
-       Standalone Binary
-             │
-             ▼
-      Portable GStreamer
-             │
-             ▼
-          AppDir
-             │
-             ▼
-          AppImage
-```
+# 📦 Instalasi
 
-Hasil:
+## 🐧 Linux — AppImage
+
+Untuk Linux, amarPlayer didistribusikan dalam bentuk **AppImage**.
+
+Contoh file:
 
 ```text
 amarPlayer-Linux-aarch64.AppImage
 ```
 
-AppImage membawa runtime GStreamer dan plugin yang diperlukan sehingga aplikasi dapat dijalankan sebagai paket portable.
+### 1. Download AppImage
+
+Download file AppImage dari halaman **Releases** repository GitHub.
+
+Setelah selesai, masuk ke folder tempat file berada:
+
+```bash
+cd ~/Downloads
+```
+
+### 2. Berikan permission executable
+
+```bash
+chmod +x amarPlayer-Linux-aarch64.AppImage
+```
+
+### 3. Jalankan
+
+```bash
+./amarPlayer-Linux-aarch64.AppImage
+```
+
+amarPlayer kemudian dapat digunakan tanpa instalasi package tambahan.
 
 ---
 
-# 🪟 Windows x64
+## 🐧 Fedora Linux
 
-Build Windows menggunakan **GitHub Actions** sehingga developer tidak membutuhkan komputer Windows untuk melakukan proses build.
+Pada Fedora ARM64, AppImage dapat dijalankan langsung:
 
-Target:
-
-```text
-Windows 11
-    │
-    ├── Python 3.12 x64
-    ├── PySide6
-    ├── PyGObject
-    ├── GStreamer 1.28.x
-    ├── Mutagen
-    └── Nuitka
-           │
-           ▼
-      amarPlayer.exe
-           │
-           ▼
-       Inno Setup
-           │
-           ▼
-amarPlayer-Setup-Windows-x64.exe
-```
-
-Build dilakukan pada:
-
-```text
-GitHub Actions
-        ↓
-windows-2022
-        ↓
-x86-64 / AMD64
-```
-
-Pengguna akhir cukup menjalankan:
-
-```text
-amarPlayer-Setup-Windows-x64.exe
+```bash
+chmod +x amarPlayer-Linux-aarch64.AppImage
+./amarPlayer-Linux-aarch64.AppImage
 ```
 
 Tidak diperlukan:
 
-* Python
-* Nuitka
-* Git
-* GStreamer development tools
-* Source code
-* IDE
+```text
+Python
+Nuitka
+Git
+Compiler
+GStreamer development package
+```
+
+karena dependency aplikasi dibundel ke dalam paket distribusi.
+
+---
+
+# 🪟 Windows 11
+
+Untuk pengguna Windows, gunakan installer:
+
+```text
+amarPlayer-Setup-Windows-x64.exe
+```
+
+### 1. Download installer
+
+Download:
+
+```text
+amarPlayer-Setup-Windows-x64.exe
+```
+
+dari halaman **Releases** atau artifact build yang tersedia.
+
+### 2. Jalankan installer
+
+Klik dua kali:
+
+```text
+amarPlayer-Setup-Windows-x64.exe
+```
+
+Jika Windows menampilkan peringatan keamanan karena aplikasi belum memiliki tanda tangan digital, pilih opsi untuk melanjutkan hanya jika file diperoleh dari sumber resmi project.
+
+### 3. Ikuti proses instalasi
+
+Installer akan memasang amarPlayer ke komputer.
+
+Secara umum:
+
+```text
+Installer
+   ↓
+amarPlayer
+   ↓
+Start Menu
+   ↓
+Desktop Shortcut
+```
+
+### 4. Jalankan
+
+Setelah instalasi selesai, amarPlayer dapat dijalankan melalui:
+
+```text
+Start Menu → amarPlayer
+```
+
+atau shortcut Desktop.
 
 ---
 
 # 🍎 macOS
 
-Target macOS difokuskan terutama pada Apple Silicon:
+Dukungan macOS masih dalam tahap pengembangan.
+
+Target utama:
 
 ```text
-Mac
- │
- ├── Apple Silicon
- │      ├── M1
- │      ├── M2
- │      ├── M3
- │      └── M4
- │
- └── ARM64
+Apple Silicon
+M1
+M2
+M3
+M4
 ```
 
-Target aplikasi:
+Distribusi nantinya ditargetkan dalam bentuk:
 
 ```text
 amarPlayer.app
 ```
 
-Packaging macOS akan dikembangkan setelah build Linux ARM64 dan Windows x64 stabil.
+Panduan instalasi macOS akan ditambahkan setelah build macOS stabil.
 
 ---
 
-# 🐧 Linux
+# ▶️ Menjalankan amarPlayer
 
-Platform Linux merupakan salah satu target utama amarPlayer.
+## Linux
 
-Target arsitektur:
+Jika menggunakan AppImage:
 
-```text
-ARM64 / AArch64
-x86-64 / AMD64
+```bash
+./amarPlayer-Linux-aarch64.AppImage
 ```
 
-Distribusi utama:
+Jika executable hasil build tersedia:
 
-```text
-AppImage
+```bash
+./amarPlayer
 ```
-
-Keuntungan AppImage:
-
-* Portable
-* Tidak membutuhkan instalasi package manager
-* Mudah dipindahkan
-* Dapat dijalankan dari file
-* Cocok untuk distribusi aplikasi desktop Linux
 
 ---
 
-# ⚙️ Teknologi
+## Windows
 
-amarPlayer menggunakan:
+Jalankan:
 
-| Teknologi      | Fungsi                           |
-| -------------- | -------------------------------- |
-| Python         | Bahasa pemrograman utama         |
-| PySide6        | GUI desktop                      |
-| Qt             | Framework antarmuka              |
-| GStreamer      | Audio playback                   |
-| PyGObject      | Binding GStreamer/GObject        |
-| Mutagen        | Membaca metadata audio           |
-| Pillow         | Pengolahan album art/icon        |
-| Nuitka         | Kompilasi dan packaging aplikasi |
-| AppImage       | Distribusi Linux                 |
-| Inno Setup     | Installer Windows                |
-| GitHub Actions | Automated build                  |
+```text
+amarPlayer.exe
+```
+
+atau gunakan shortcut:
+
+```text
+Start Menu → amarPlayer
+```
+
+---
+
+# 🎵 Menambahkan Musik
+
+Ada beberapa cara untuk menambahkan musik.
+
+## Cara 1 — Drag & Drop
+
+Buka amarPlayer kemudian tarik file musik ke jendela aplikasi.
+
+Contoh:
+
+```text
+File Manager
+     │
+     ├── lagu1.mp3
+     ├── lagu2.flac
+     └── lagu3.wav
+            │
+            ▼
+       amarPlayer
+```
+
+File akan masuk ke playlist.
+
+---
+
+## Cara 2 — Scan Folder
+
+Gunakan fungsi scan/library yang tersedia pada interface amarPlayer untuk mencari file audio dalam folder.
+
+Contoh struktur:
+
+```text
+Music/
+├── Album 1/
+│   ├── lagu1.mp3
+│   └── lagu2.mp3
+│
+├── Album 2/
+│   ├── lagu3.flac
+│   └── lagu4.mp3
+│
+└── Album 3/
+    └── lagu5.ogg
+```
+
+---
+
+## Cara 3 — Command Line
+
+amarPlayer dapat menerima file audio dari command line.
+
+Contoh:
+
+```bash
+./amarPlayer lagu.mp3
+```
+
+Beberapa file:
+
+```bash
+./amarPlayer lagu1.mp3 lagu2.mp3 lagu3.mp3
+```
+
+Dengan AppImage:
+
+```bash
+./amarPlayer-Linux-aarch64.AppImage lagu.mp3
+```
+
+Beberapa file:
+
+```bash
+./amarPlayer-Linux-aarch64.AppImage \
+    lagu1.mp3 \
+    lagu2.mp3 \
+    lagu3.mp3
+```
+
+File akan ditambahkan ke playlist dan file yang sesuai akan diputar.
+
+---
+
+# 📂 Membuka Musik dari File Manager
+
+Pada Linux, amarPlayer dapat didaftarkan sebagai aplikasi pembuka file audio.
+
+Contohnya:
+
+```text
+Klik kanan lagu.mp3
+        ↓
+Open With
+        ↓
+amarPlayer
+```
+
+Jika amarPlayer telah ditetapkan sebagai aplikasi default, cukup klik dua kali file audio:
+
+```text
+lagu.mp3
+     ↓
+amarPlayer
+     ↓
+Play
+```
 
 ---
 
 # 🎧 Format Audio
 
-amarPlayer mendukung berbagai format audio melalui GStreamer:
+amarPlayer menggunakan GStreamer sebagai engine audio.
+
+Format yang ditargetkan:
 
 ```text
 MP3
@@ -202,62 +343,87 @@ AAC
 MP4
 ```
 
-Dukungan format sebenarnya bergantung pada plugin GStreamer yang tersedia pada build masing-masing platform.
-
----
-
-# ✨ Fitur
-
-### 🎵 Music Player
-
-* Play
-* Pause
-* Stop
-* Previous
-* Next
-* Seek
-* Volume control
-* Playlist
-* Shuffle
-* Repeat
-* Drag & Drop audio
-* Command-line file opening
-
-### 🔎 Library & Playlist
-
-* Scan file audio
-* Playlist persistence
-* Search
-* Multiple audio formats
-* Metadata audio
-* Album artwork
-* Persistent playlist
-
-Playlist disimpan secara lokal.
-
-Linux:
-
-```text
-~/.local/share/amarPlayer/amarPlayer_playlist.json
-```
+Dukungan aktual bergantung pada plugin GStreamer yang tersedia pada build masing-masing platform.
 
 ---
 
 # 🎚️ Equalizer
 
-amarPlayer menyediakan equalizer 10-band berbasis GStreamer:
+amarPlayer menyediakan equalizer 10-band.
+
+Engine:
 
 ```text
+GStreamer
+    ↓
 equalizer-10bands
 ```
 
-Equalizer memungkinkan pengguna mengatur karakter suara secara manual.
+Equalizer dapat digunakan untuk menyesuaikan karakter suara sesuai preferensi pengguna.
 
 ---
 
-# 🖼️ Album Art
+# 🔀 Shuffle
 
-Metadata dan artwork audio dapat dibaca menggunakan:
+Mode Shuffle dapat digunakan untuk memutar playlist secara acak.
+
+Contoh:
+
+```text
+Playlist:
+
+01. Lagu A
+02. Lagu B
+03. Lagu C
+04. Lagu D
+
+Shuffle:
+
+03 → 01 → 04 → 02
+```
+
+---
+
+# 🔁 Repeat
+
+Mode Repeat digunakan untuk mengatur pengulangan pemutaran.
+
+Tergantung mode yang tersedia pada aplikasi:
+
+```text
+Repeat Off
+Repeat Playlist
+Repeat Track
+```
+
+---
+
+# 🔊 Volume
+
+Volume dapat dikontrol langsung dari interface amarPlayer.
+
+Pengguna dapat menyesuaikan volume tanpa mengubah volume sistem.
+
+---
+
+# 🔎 Search
+
+Gunakan fitur pencarian untuk menemukan lagu dalam playlist/library.
+
+Contoh:
+
+```text
+Search:
+"India"
+```
+
+akan membantu menemukan lagu yang metadata atau judulnya mengandung kata tersebut.
+
+---
+
+# 🖼️ Album Artwork
+
+amarPlayer membaca metadata dan artwork menggunakan:
 
 ```text
 Mutagen
@@ -265,55 +431,69 @@ Mutagen
 Pillow
 ```
 
-Album artwork ditampilkan langsung pada interface amarPlayer.
+Jika file audio mempunyai cover album yang tertanam dalam metadata, artwork dapat ditampilkan pada interface.
 
----
-
-# 📂 Command Line
-
-amarPlayer dapat menerima file audio melalui command line.
-
-Contoh Linux:
-
-```bash
-./amarPlayer lagu.mp3
-```
-
-Beberapa file:
-
-```bash
-./amarPlayer lagu1.mp3 lagu2.mp3 lagu3.mp3
-```
-
-File audio akan dimasukkan ke playlist dan file yang sesuai akan diputar.
-
----
-
-# 🖱️ Drag & Drop
-
-File audio dapat ditambahkan ke amarPlayer dengan:
+Contoh:
 
 ```text
-Drag file
-   ↓
-Drop ke amarPlayer
-   ↓
-File masuk playlist
+song.mp3
+   │
+   ├── Title
+   ├── Artist
+   ├── Album
+   └── Album Artwork
 ```
 
 ---
 
-# 📦 Distribusi
+# 💾 Playlist Persistence
 
-## Linux
+Playlist amarPlayer disimpan secara lokal sehingga playlist dapat dipertahankan ketika aplikasi ditutup.
 
-Output:
+Pada Linux:
 
 ```text
-amarPlayer-Linux-aarch64.AppImage
+~/.local/share/amarPlayer/amarPlayer_playlist.json
+```
+
+File ini tidak berada di dalam AppImage.
+
+Artinya:
+
+```text
+AppImage
+   ≠
+Playlist
+```
+
+Mengganti atau memperbarui AppImage tidak secara otomatis menghapus playlist pengguna.
+
+---
+
+# 🗂️ Lokasi Data Pengguna
+
+Linux:
+
+```text
+~/.local/share/amarPlayer/
 ```
 
 Contoh:
+
+```text
+~/.local/share/amarPlayer/
+└── amarPlayer_playlist.json
+```
+
+Pada Windows dan macOS, lokasi data pengguna akan mengikuti mekanisme penyimpanan data platform masing-masing pada build final.
+
+---
+
+# 🛠️ Troubleshooting
+
+## AppImage tidak bisa dijalankan
+
+Pastikan executable permission sudah diberikan:
 
 ```bash
 chmod +x amarPlayer-Linux-aarch64.AppImage
@@ -327,75 +507,116 @@ Kemudian:
 
 ---
 
-## Windows
+## Tidak ada suara
+
+Periksa terlebih dahulu output audio sistem.
+
+Pada Linux, amarPlayer menggunakan GStreamer dan audio system seperti:
+
+```text
+PipeWire
+PulseAudio
+ALSA
+```
+
+Pastikan perangkat audio sistem berfungsi normal.
+
+---
+
+## File MP3 tidak bisa diputar
+
+Pastikan file tidak rusak.
+
+Tes file menggunakan GStreamer:
+
+```bash
+gst-launch-1.0 playbin uri="file:///path/ke/lagu.mp3"
+```
+
+Jika menggunakan AppImage portable, gunakan build resmi amarPlayer yang menyediakan GStreamer runtime.
+
+---
+
+## Playlist hilang
+
+Periksa:
+
+```bash
+ls ~/.local/share/amarPlayer/
+```
+
+Kemudian:
+
+```bash
+cat ~/.local/share/amarPlayer/amarPlayer_playlist.json
+```
+
+---
+
+# 🧑‍💻 Untuk Developer
+
+Clone repository:
+
+```bash
+git clone https://github.com/xmuammar/amarPlayer.git
+```
+
+Masuk ke directory:
+
+```bash
+cd amarPlayer
+```
+
+---
+
+# 🐍 Menjalankan dari Source
+
+Install dependency:
+
+```bash
+python3 -m pip install PySide6 mutagen Pillow
+```
+
+Kemudian jalankan:
+
+```bash
+python3 amarPlayer.py
+```
+
+Untuk development Linux, GStreamer dan PyGObject juga harus tersedia pada sistem.
+
+---
+
+# 🔨 Build Linux
+
+Build standalone menggunakan Nuitka:
+
+```bash
+python3 -m nuitka \
+    --mode=standalone \
+    --enable-plugin=pyside6 \
+    --follow-imports \
+    --output-dir=dist \
+    --output-filename=amarPlayer \
+    --product-name="amarPlayer" \
+    --file-description="Modern Music Player" \
+    --company-name="Muammar" \
+    amarPlayer.py
+```
 
 Output:
 
 ```text
-amarPlayer-Setup-Windows-x64.exe
-```
-
-Installer menangani:
-
-```text
-Install amarPlayer
-       ↓
-Start Menu shortcut
-       ↓
-Desktop shortcut
-       ↓
-Application registration
+dist/
+└── amarPlayer.dist/
+    └── amarPlayer
 ```
 
 ---
 
-# 🔨 Build System
+# 🪟 Build Windows
 
-Source code dikembangkan menggunakan Python.
-
-Build production menggunakan **Nuitka**.
-
-Linux:
-
-```text
-Python
- ↓
-Nuitka
- ↓
-Standalone
- ↓
-GStreamer runtime
- ↓
-AppDir
- ↓
-AppImage
-```
-
-Windows:
-
-```text
-Python
- ↓
-Nuitka
- ↓
-Standalone
- ↓
-GStreamer runtime
- ↓
-Inno Setup
- ↓
-Windows Installer
-```
-
----
-
-# 🤖 Automated Windows Build
-
-Windows build dilakukan menggunakan:
-
-```text
-GitHub Actions
-```
+Windows build dilakukan melalui GitHub Actions.
 
 Workflow:
 
@@ -403,53 +624,61 @@ Workflow:
 .github/workflows/build-windows.yml
 ```
 
-Proses:
+Workflow melakukan:
 
 ```text
-Checkout source
-       ↓
-Setup Python x64
-       ↓
-Install dependencies
-       ↓
-Install GStreamer
-       ↓
-Test PyGObject
-       ↓
-Test GStreamer
-       ↓
-Build dengan Nuitka
-       ↓
-Bundle GStreamer
-       ↓
-Build Inno Setup
-       ↓
-Upload artifact
+Checkout
+   ↓
+Python 3.12 x64
+   ↓
+PySide6
+   ↓
+PyGObject
+   ↓
+GStreamer
+   ↓
+Mutagen
+   ↓
+Pillow
+   ↓
+Nuitka
+   ↓
+Standalone application
+   ↓
+GStreamer bundle
+   ↓
+Inno Setup
+   ↓
+Windows Installer
 ```
 
-Artifact:
+Output:
 
 ```text
-amarPlayer-Windows-x64
+amarPlayer-Setup-Windows-x64.exe
 ```
 
 ---
 
-# 💻 Development Environment
+# 📦 Release
 
-Contoh lingkungan pengembangan Linux:
+Release production akan menyediakan paket sesuai platform:
 
 ```text
-OS       : Fedora Linux
-CPU      : Apple M1
-Architecture : AArch64
-Python   : 3.14
-GUI      : PySide6
-Audio    : GStreamer
-Compiler : Nuitka
+Linux ARM64
+amarPlayer-Linux-aarch64.AppImage
+
+Linux x64
+amarPlayer-Linux-x86_64.AppImage
+
+Windows x64
+amarPlayer-Setup-Windows-x64.exe
+
+macOS Apple Silicon
+amarPlayer-macOS-arm64.app
 ```
 
-Windows build tidak memerlukan komputer Windows karena proses build dilakukan oleh GitHub Actions.
+Nama file dapat berubah mengikuti versi release.
 
 ---
 
@@ -460,16 +689,15 @@ amarPlayer/
 │
 ├── amarPlayer.py
 ├── amarPlayer.png
+├── README.md
 ├── .gitignore
 │
-├── .github/
-│   └── workflows/
-│       └── build-windows.yml
-│
-└── README.md
+└── .github/
+    └── workflows/
+        └── build-windows.yml
 ```
 
-File audio pribadi seperti:
+File musik pribadi seperti:
 
 ```text
 musik.mp3
@@ -479,82 +707,88 @@ tidak dimasukkan ke repository.
 
 ---
 
-# 🔐 Repository
+# 🤖 CI/CD
 
-Source code:
-
-**GitHub — xmuammar/amarPlayer**
+Windows build menggunakan:
 
 ```text
-https://github.com/xmuammar/amarPlayer
+GitHub Actions
 ```
 
-Repository digunakan untuk:
+Runner:
 
-* Source code
-* Version control
-* Issue tracking
-* Windows build
-* Release
-* Pengembangan lintas platform
+```text
+windows-2022
+```
+
+Arsitektur:
+
+```text
+x86-64 / AMD64
+```
+
+Build dilakukan secara otomatis berdasarkan workflow yang berada di:
+
+```text
+.github/workflows/build-windows.yml
+```
+
+---
+
+# 🏗️ Teknologi
+
+| Teknologi      | Fungsi                    |
+| -------------- | ------------------------- |
+| Python         | Bahasa pemrograman        |
+| PySide6        | GUI                       |
+| Qt             | Desktop UI                |
+| PyGObject      | GObject/GStreamer binding |
+| GStreamer      | Audio engine              |
+| Mutagen        | Metadata audio            |
+| Pillow         | Image processing          |
+| Nuitka         | Application compilation   |
+| AppImage       | Linux distribution        |
+| Inno Setup     | Windows installer         |
+| Git            | Version control           |
+| GitHub Actions | CI/CD                     |
+
+---
+
+# 🖥️ Arsitektur
+
+```text
+Linux
+├── ARM64 / AArch64
+└── x86-64 / AMD64
+
+Windows
+├── x64 / AMD64
+└── ARM64 (planned)
+
+macOS
+├── Apple Silicon / ARM64
+└── Intel / x86-64
+```
 
 ---
 
 # 🚧 Status Pengembangan
 
-### Linux ARM64
-
-**Status: 🟢 Stabil / digunakan**
-
-Target utama saat ini:
-
-```text
-Fedora Asahi Linux
-+
-Apple Silicon M1
-+
-ARM64
-+
-AppImage
-```
-
-### Windows x64
-
-**Status: 🟡 Pengembangan**
-
-Build otomatis menggunakan:
-
-```text
-GitHub Actions
-+
-Windows 2022
-+
-Python 3.12
-+
-Nuitka
-+
-GStreamer
-+
-Inno Setup
-```
-
-### macOS Apple Silicon
-
-**Status: 🟡 Direncanakan**
-
-### Linux x64
-
-**Status: 🟡 Direncanakan**
-
-### Windows ARM64
-
-**Status: 🔵 Rencana jangka panjang**
+| Platform            | Status          |
+| ------------------- | --------------- |
+| Fedora ARM64        | 🟢 Aktif        |
+| Linux ARM64         | 🟢 Aktif        |
+| Linux x64           | 🟡 Pengembangan |
+| Windows x64         | 🟡 Pengembangan |
+| macOS Apple Silicon | 🟡 Pengembangan |
+| macOS Intel         | 🔵 Rencana      |
+| Windows ARM64       | 🔵 Rencana      |
 
 ---
 
 # 🎯 Tujuan Project
 
-amarPlayer dibuat dengan tujuan sederhana:
+amarPlayer dibuat dengan tujuan:
 
 > **Membuat pemutar musik sendiri yang modern, ringan, portable, dan dapat digunakan di berbagai sistem operasi.**
 
@@ -603,7 +837,7 @@ Lisensi project akan ditentukan pada tahap release publik.
 
 ---
 
-## ⭐ amarPlayer
+# ⭐ amarPlayer
 
 **Build it. Play it. Own it.**
 
