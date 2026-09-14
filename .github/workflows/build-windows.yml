@@ -16,14 +16,29 @@ jobs:
     timeout-minutes: 30
 
     steps:
+
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+
+      # ============================================================
+      # PYTHON
+      # ============================================================
 
       - name: Setup Python 3.12 x64
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           architecture: "x64"
+
+
+      # ============================================================
+      # DEPENDENCIES
+      # ============================================================
 
       - name: Install dependencies
         shell: powershell
@@ -37,16 +52,45 @@ jobs:
             Pillow `
             gstreamer-bundle==1.28.7
 
+
+      # ============================================================
+      # VERIFY PYTHON / GSTREAMER / APPLICATION
+      # ============================================================
+
       - name: Verify Python GStreamer and amarPlayer
         shell: powershell
         run: |
+          Write-Host "=========================================="
+          Write-Host "Python"
+          Write-Host "=========================================="
+
           python --version
+
+          Write-Host ""
+          Write-Host "=========================================="
+          Write-Host "PyGObject"
+          Write-Host "=========================================="
 
           python -c "import gi; print('PyGObject OK')"
 
+          Write-Host ""
+          Write-Host "=========================================="
+          Write-Host "GStreamer"
+          Write-Host "=========================================="
+
           python -c "import gi; gi.require_version('Gst','1.0'); from gi.repository import Gst; Gst.init(None); print(Gst.version_string())"
 
+          Write-Host ""
+          Write-Host "=========================================="
+          Write-Host "amarPlayer"
+          Write-Host "=========================================="
+
           python -c "import amarPlayer; print('amarPlayer import OK')"
+
+
+      # ============================================================
+      # LOCATE PYTHON SITE-PACKAGES
+      # ============================================================
 
       - name: Locate Python site-packages
         shell: powershell
@@ -65,6 +109,11 @@ jobs:
             -FilePath $env:GITHUB_ENV `
             -Encoding utf8 `
             -Append
+
+
+      # ============================================================
+      # LOCATE GSTREAMER
+      # ============================================================
 
       - name: Locate GStreamer bundle
         shell: powershell
@@ -94,13 +143,18 @@ jobs:
             exit 1
           }
 
-          Write-Host "GStreamer:"
+          Write-Host "GStreamer ditemukan:"
           Write-Host $gst
 
           "GSTREAMER_ROOT=$gst" | Out-File `
             -FilePath $env:GITHUB_ENV `
             -Encoding utf8 `
             -Append
+
+
+      # ============================================================
+      # NUITKA BUILD
+      # ============================================================
 
       - name: Build with Nuitka
         shell: powershell
@@ -130,6 +184,11 @@ jobs:
             exit $LASTEXITCODE
           }
 
+
+      # ============================================================
+      # VERIFY NUITKA OUTPUT
+      # ============================================================
+
       - name: Verify Nuitka output
         shell: powershell
         run: |
@@ -146,8 +205,13 @@ jobs:
             exit 1
           }
 
-          Write-Host "Build berhasil:"
+          Write-Host "Nuitka build berhasil:"
           Write-Host $exe
+
+
+      # ============================================================
+      # BUNDLE GSTREAMER
+      # ============================================================
 
       - name: Bundle GStreamer
         shell: powershell
@@ -171,6 +235,11 @@ jobs:
 
           Write-Host "GStreamer berhasil dibundle."
 
+
+      # ============================================================
+      # COPY ICON
+      # ============================================================
+
       - name: Copy application icon
         shell: powershell
         run: |
@@ -183,11 +252,16 @@ jobs:
               -Destination (Join-Path $app "amarPlayer.png") `
               -Force
 
-            Write-Host "Icon berhasil disalin."
+            Write-Host "amarPlayer.png berhasil disalin."
           }
           else {
             Write-Warning "amarPlayer.png tidak ditemukan."
           }
+
+
+      # ============================================================
+      # WINDOWS LAUNCHER
+      # ============================================================
 
       - name: Create launcher
         shell: powershell
@@ -197,6 +271,7 @@ jobs:
 
           $content = @'
 @echo off
+
 set "HERE=%~dp0"
 
 set "PYGI_DLL_DIRS=%HERE%gstreamer;%HERE%"
@@ -220,6 +295,11 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
           Write-Host "Launcher dibuat:"
           Write-Host $launcher
 
+
+      # ============================================================
+      # RUNTIME ENVIRONMENT
+      # ============================================================
+
       - name: Configure runtime environment
         shell: powershell
         run: |
@@ -227,8 +307,14 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
           $gst = Join-Path $app "gstreamer"
 
           $pygi = "$gst;$app"
-          $gstPlugins = Join-Path $gst "lib\gstreamer-1.0"
-          $typelib = Join-Path $gst "lib\girepository-1.0"
+
+          $gstPlugins = Join-Path `
+            $gst `
+            "lib\gstreamer-1.0"
+
+          $typelib = Join-Path `
+            $gst `
+            "lib\girepository-1.0"
 
           "PYGI_DLL_DIRS=$pygi" | Out-File `
             -FilePath $env:GITHUB_ENV `
@@ -260,6 +346,11 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
             -Encoding utf8 `
             -Append
 
+
+      # ============================================================
+      # VERIFY GSTREAMER BUNDLE
+      # ============================================================
+
       - name: Verify bundled GStreamer
         shell: powershell
         run: |
@@ -271,7 +362,10 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
             exit 1
           }
 
-          Write-Host "GStreamer DLL:"
+          Write-Host "=========================================="
+          Write-Host "GStreamer DLL"
+          Write-Host "=========================================="
+
           Get-ChildItem `
             $gst `
             -Recurse `
@@ -280,14 +374,23 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
             Select-Object -First 30 FullName
 
           Write-Host ""
-          Write-Host "GStreamer plugins:"
+          Write-Host "=========================================="
+          Write-Host "GStreamer plugins"
+          Write-Host "=========================================="
 
-          $plugins = Join-Path $gst "lib\gstreamer-1.0"
+          $plugins = Join-Path `
+            $gst `
+            "lib\gstreamer-1.0"
 
           if (Test-Path $plugins) {
             Get-ChildItem $plugins |
               Select-Object Name
           }
+
+
+      # ============================================================
+      # GUI RUNTIME TEST
+      # ============================================================
 
       - name: Test amarPlayer GUI runtime
         shell: powershell
@@ -298,11 +401,39 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
 
           $env:PYGI_DLL_DIRS = "$gst;$app"
           $env:PYGI_DLL_PATH = "$gst;$app"
-          $env:PATH = "$gst\bin;$gst;$app;$env:PATH"
-          $env:GST_PLUGIN_PATH = "$gst\lib\gstreamer-1.0"
-          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = ""
-          $env:GI_TYPELIB_PATH = "$gst\lib\girepository-1.0"
 
+          $env:PATH = `
+            "$gst\bin;$gst;$app;$env:PATH"
+
+          $env:GST_PLUGIN_PATH = `
+            "$gst\lib\gstreamer-1.0"
+
+          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = ""
+
+          $env:GI_TYPELIB_PATH = `
+            "$gst\lib\girepository-1.0"
+
+          Write-Host "=========================================="
+          Write-Host "Testing amarPlayer GUI runtime"
+          Write-Host "=========================================="
+
+          Write-Host ""
+          Write-Host "PYGI_DLL_DIRS:"
+          Write-Host $env:PYGI_DLL_DIRS
+
+          Write-Host ""
+          Write-Host "PYGI_DLL_PATH:"
+          Write-Host $env:PYGI_DLL_PATH
+
+          Write-Host ""
+          Write-Host "GST_PLUGIN_PATH:"
+          Write-Host $env:GST_PLUGIN_PATH
+
+          Write-Host ""
+          Write-Host "GI_TYPELIB_PATH:"
+          Write-Host $env:GI_TYPELIB_PATH
+
+          Write-Host ""
           Write-Host "Starting amarPlayer.exe..."
 
           $process = Start-Process `
@@ -313,15 +444,22 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
           $finished = $process.WaitForExit(10000)
 
           if (-not $finished) {
+
+            Write-Host ""
             Write-Host "amarPlayer.exe masih berjalan setelah 10 detik."
-            Write-Host "GUI runtime TEST PASSED."
+            Write-Host "GUI application terdeteksi berjalan normal."
 
             Stop-Process `
               -Id $process.Id `
               -Force `
               -ErrorAction SilentlyContinue
+
+            Write-Host "GUI runtime TEST PASSED."
+
           }
           else {
+
+            Write-Host ""
             Write-Host "amarPlayer.exe berhenti."
             Write-Host "Exit code: $($process.ExitCode)"
 
@@ -330,6 +468,11 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
               exit 1
             }
           }
+
+
+      # ============================================================
+      # FIND INNO SETUP
+      # ============================================================
 
       - name: Find Inno Setup
         shell: powershell
@@ -349,24 +492,13 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
           }
 
           if (-not $iscc) {
-            $found = Get-ChildItem `
-              "C:\Program Files*" `
-              -Filter "ISCC.exe" `
-              -Recurse `
-              -ErrorAction SilentlyContinue |
-              Select-Object -First 1
-
-            if ($found) {
-              $iscc = $found.FullName
-            }
-          }
-
-          if (-not $iscc) {
-            Write-Error "ISCC.exe tidak ditemukan."
+            Write-Error "Inno Setup ISCC.exe tidak ditemukan."
             exit 1
           }
 
-          Write-Host "Inno Setup:"
+          Write-Host "=========================================="
+          Write-Host "Inno Setup ditemukan"
+          Write-Host "=========================================="
           Write-Host $iscc
 
           "ISCC_PATH=$iscc" | Out-File `
@@ -374,71 +506,111 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
             -Encoding utf8 `
             -Append
 
+
+      # ============================================================
+      # PREPARE DIRECTORIES
+      # ============================================================
+
       - name: Prepare installer directories
         shell: powershell
         run: |
+          $installerDir = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "installer"
+
+          $releaseDir = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "release"
+
           [System.IO.Directory]::CreateDirectory(
-            (Join-Path $env:GITHUB_WORKSPACE "installer")
+            $installerDir
           ) | Out-Null
 
           [System.IO.Directory]::CreateDirectory(
-            (Join-Path $env:GITHUB_WORKSPACE "release")
+            $releaseDir
           ) | Out-Null
 
-          Write-Host "Installer dan release directory siap."
+          Write-Host "Installer directory:"
+          Write-Host $installerDir
+
+          Write-Host ""
+          Write-Host "Release directory:"
+          Write-Host $releaseDir
+
+
+      # ============================================================
+      # CREATE INNO SETUP SCRIPT
+      # ============================================================
 
       - name: Create Inno Setup script
         shell: powershell
         run: |
-          $installerDir = Join-Path $env:GITHUB_WORKSPACE "installer"
-          $issPath = Join-Path $installerDir "amarPlayer.iss"
+          $installerDir = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "installer"
 
-          $lines = @(
-            '#define MyAppName "amarPlayer"',
-            '#define MyAppVersion "1.0.0"',
-            '#define MyAppPublisher "Muammar"',
-            '#define MyAppExeName "amarPlayer.exe"',
-            '',
-            '[Setup]',
-            'AppId={{B7E7D0B7-0F57-4C0B-A8D1-8F3B8B5B6A01}',
-            'AppName={#MyAppName}',
-            'AppVersion={#MyAppVersion}',
-            'AppPublisher={#MyAppPublisher}',
-            'DefaultDirName={localappdata}\Programs\amarPlayer',
-            'DefaultGroupName=amarPlayer',
-            'PrivilegesRequired=lowest',
-            'OutputDir=..\release',
-            'OutputBaseFilename=amarPlayer-Setup-Windows-x64',
-            'Compression=lzma',
-            'SolidCompression=yes',
-            'WizardStyle=modern',
-            'UninstallDisplayIcon={app}\amarPlayer.exe',
-            'ArchitecturesAllowed=x64compatible',
-            'ArchitecturesInstallIn64BitMode=x64compatible',
-            'DisableProgramGroupPage=yes',
-            '',
-            '[Files]',
-            'Source: "..\build\amarPlayer.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs',
-            '',
-            '[Tasks]',
-            'Name: "desktopicon"; Description: "Buat shortcut di Desktop"; GroupDescription: "Shortcut tambahan:"',
-            '',
-            '[Icons]',
-            'Name: "{autoprograms}\amarPlayer"; Filename: "{app}\amarPlayer.exe"',
-            'Name: "{autodesktop}\amarPlayer"; Filename: "{app}\amarPlayer.exe"; Tasks: desktopicon',
-            '',
-            '[Registry]',
-            'Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "amarPlayer"; Flags: uninsdeletekey',
-            'Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\amarPlayer.exe"" ""%1"""; Flags: uninsdeletevalue'
-          )
+          $issPath = Join-Path `
+            $installerDir `
+            "amarPlayer.iss"
+
+          $content = @"
+#define MyAppName "amarPlayer"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "Muammar"
+#define MyAppExeName "amarPlayer.exe"
+
+[Setup]
+AppId={{B7E7D0B7-0F57-4C0B-A8D1-8F3B8B5B6A01}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={localappdata}\Programs\amarPlayer
+DefaultGroupName=amarPlayer
+PrivilegesRequired=lowest
+OutputDir=..\release
+OutputBaseFilename=amarPlayer-Setup-Windows-x64
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+UninstallDisplayIcon={app}\amarPlayer.exe
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+DisableProgramGroupPage=yes
+
+[Files]
+Source: "..\build\amarPlayer.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Tasks]
+Name: "desktopicon"; Description: "Buat shortcut di Desktop"; GroupDescription: "Shortcut tambahan:"
+
+[Icons]
+Name: "{autoprograms}\amarPlayer"; Filename: "{app}\amarPlayer.exe"
+Name: "{autodesktop}\amarPlayer"; Filename: "{app}\amarPlayer.exe"; Tasks: desktopicon
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "amarPlayer"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\amarPlayer.exe"" ""%1"""; Flags: uninsdeletevalue
+"@
 
           Set-Content `
             -Path $issPath `
-            -Value $lines `
+            -Value $content `
             -Encoding UTF8
 
-          Write-Host "Inno Setup script dibuat:"
+          if (-not (Test-Path $issPath)) {
+            Write-Error "Gagal membuat amarPlayer.iss."
+            exit 1
+          }
+
+          Write-Host "=========================================="
+          Write-Host "Inno Setup script berhasil dibuat"
+          Write-Host "=========================================="
           Write-Host $issPath
+
+
+      # ============================================================
+      # BUILD INSTALLER
+      # ============================================================
 
       - name: Build installer
         shell: powershell
@@ -452,12 +624,21 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
             exit 1
           }
 
+          Write-Host "=========================================="
+          Write-Host "Building Windows installer"
+          Write-Host "=========================================="
+
           & $env:ISCC_PATH "/Qp" $iss
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Inno Setup gagal."
             exit $LASTEXITCODE
           }
+
+
+      # ============================================================
+      # VERIFY INSTALLER
+      # ============================================================
 
       - name: Verify installer
         shell: powershell
@@ -473,15 +654,23 @@ set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
 
           $file = Get-Item $installer
 
+          Write-Host ""
           Write-Host "=========================================="
           Write-Host "BUILD WINDOWS x64 BERHASIL"
           Write-Host "=========================================="
           Write-Host ""
+
           Write-Host "File:"
           Write-Host $file.FullName
+
           Write-Host ""
           Write-Host "Size:"
-          Write-Host $file.Length
+          Write-Host "$($file.Length) bytes"
+
+
+      # ============================================================
+      # UPLOAD ARTIFACT
+      # ============================================================
 
       - name: Upload Windows x64 installer
         uses: actions/upload-artifact@v4
