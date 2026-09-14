@@ -1,7 +1,3 @@
-Tentu. Untuk README GitHub, sebaiknya dibuat sebagai **ringkasan lintas platform** yang menjelaskan platform, arsitektur, teknologi, status build, fitur, dan kebutuhan sistem tanpa terlalu panjang.
-
-Berikut versi yang siap ditempel ke `README.md`:
-
 # amarPlayer 🎵
 
 **amarPlayer** adalah pemutar musik desktop modern yang dikembangkan oleh **Muammar, SST, M.Kom** menggunakan Python, PySide6, GStreamer, dan Mutagen.
