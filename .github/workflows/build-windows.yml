@@ -1,18 +1,19 @@
 name: Build amarPlayer Windows x64
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-
   build-windows:
-
-    name: Build amarPlayer Windows x64
-
-    runs-on: windows-2022
+    name: Build Windows x64
+    runs-on: windows-latest
 
     timeout-minutes: 30
 
@@ -22,7 +23,7 @@ jobs:
       # CHECKOUT
       # ============================================================
 
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v4
 
 
@@ -30,35 +31,26 @@ jobs:
       # PYTHON
       # ============================================================
 
-      - name: Setup Python
+      - name: Setup Python 3.12 x64
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          architecture: x64
-
-
-      - name: Verify Python
-        shell: powershell
-        run: |
-          Write-Host "=========================================="
-          Write-Host "Python"
-          Write-Host "=========================================="
-
-          python --version
-          python -c "import sys; print(sys.executable)"
-          python -c "import platform; print(platform.platform())"
-          python -c "import struct; print('Python bits:', struct.calcsize('P') * 8)"
+          architecture: "x64"
 
 
       # ============================================================
-      # DEPENDENCIES
+      # PYTHON ENVIRONMENT
       # ============================================================
 
-      - name: Install dependencies
+      - name: Upgrade pip
         shell: powershell
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
 
+
+      - name: Install build dependencies
+        shell: powershell
+        run: |
           python -m pip install `
             nuitka `
             PySide6 `
@@ -68,45 +60,103 @@ jobs:
 
 
       # ============================================================
-      # VERIFY PYGI
+      # VERIFY PYTHON / GI / GSTREAMER
       # ============================================================
 
-      - name: Verify PyGObject
+      - name: Verify Python environment
         shell: powershell
         run: |
+          Write-Host "=========================================="
+          Write-Host "Python"
+          Write-Host "=========================================="
+
+          python --version
+          python -c "import sys; print(sys.executable)"
+
+          Write-Host ""
           Write-Host "=========================================="
           Write-Host "PyGObject"
           Write-Host "=========================================="
 
-          python -c "import gi; print('PyGObject OK:', gi.__file__)"
+          python -c "import gi; print('PyGObject OK')"
 
-
-      # ============================================================
-      # VERIFY GSTREAMER
-      # ============================================================
-
-      - name: Verify GStreamer
-        shell: powershell
-        run: |
+          Write-Host ""
           Write-Host "=========================================="
           Write-Host "GStreamer"
           Write-Host "=========================================="
 
-          python -c "import gi; gi.require_version('Gst','1.0'); from gi.repository import Gst; Gst.init(None); print('GStreamer OK:', Gst.version_string())"
+          python -c "import gi; gi.require_version('Gst', '1.0'); from gi.repository import Gst; Gst.init(None); print('GStreamer:', Gst.version_string())"
 
-
-      # ============================================================
-      # VERIFY APPLICATION IMPORT
-      # ============================================================
-
-      - name: Test amarPlayer import
-        shell: powershell
-        run: |
+          Write-Host ""
           Write-Host "=========================================="
-          Write-Host "amarPlayer Python import"
+          Write-Host "amarPlayer import"
           Write-Host "=========================================="
 
           python -c "import amarPlayer; print('amarPlayer import OK')"
+
+
+      # ============================================================
+      # LOCATE PYTHON SITE-PACKAGES
+      # ============================================================
+
+      - name: Locate Python site-packages
+        shell: powershell
+        run: |
+          $site = python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+
+          if (-not (Test-Path $site)) {
+              Write-Error "Python site-packages tidak ditemukan: $site"
+              exit 1
+          }
+
+          Write-Host "Python site-packages:"
+          Write-Host $site
+
+          "PYTHON_SITE=$site" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+
+      # ============================================================
+      # GSTREAMER BUNDLE LOCATION
+      # ============================================================
+
+      - name: Locate GStreamer bundle
+        shell: powershell
+        run: |
+          $site = $env:PYTHON_SITE
+
+          $candidates = @(
+              (Join-Path $site "gstreamer"),
+              (Join-Path $site "gstreamer_bundle"),
+              (Join-Path $site "gst")
+          )
+
+          $gstreamer = $null
+
+          foreach ($candidate in $candidates) {
+              if (Test-Path $candidate) {
+                  $gstreamer = $candidate
+                  break
+              }
+          }
+
+          if (-not $gstreamer) {
+              Write-Host "Isi site-packages:"
+              Get-ChildItem $site | Select-Object Name, FullName
+
+              Write-Error "GStreamer bundle tidak ditemukan."
+              exit 1
+          }
+
+          Write-Host "GStreamer bundle:"
+          Write-Host $gstreamer
+
+          "GSTREAMER_ROOT=$gstreamer" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
 
 
       # ============================================================
@@ -116,25 +166,37 @@ jobs:
       - name: Build amarPlayer with Nuitka
         shell: powershell
         run: |
+          Write-Host "=========================================="
+          Write-Host "Nuitka build"
+          Write-Host "=========================================="
 
-          Remove-Item `
-            -Recurse `
-            -Force `
-            build `
-            -ErrorAction SilentlyContinue
+          if (Test-Path "build") {
+              Remove-Item "build" -Recurse -Force
+          }
 
-          python -m nuitka `
-            --mode=standalone `
-            --enable-plugin=pyside6 `
-            --enable-plugin=gi `
-            --follow-imports `
-            --include-package=gi `
-            --include-package-data=gi `
-            --include-package=mutagen `
-            --assume-yes-for-downloads `
-            --output-dir=build `
-            --output-filename=amarPlayer.exe `
-            amarPlayer.py
+          [System.IO.Directory]::CreateDirectory("build") | Out-Null
+
+          $nuitkaArgs = @(
+              "--mode=standalone"
+              "--enable-plugin=pyside6"
+              "--enable-plugin=gi"
+              "--follow-imports"
+              "--include-package=gi"
+              "--include-package-data=gi"
+              "--include-package=mutagen"
+              "--include-package=PIL"
+              "--assume-yes-for-downloads"
+              "--output-dir=build"
+              "--output-filename=amarPlayer.exe"
+              "amarPlayer.py"
+          )
+
+          & python -m nuitka @nuitkaArgs
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Nuitka build gagal."
+              exit $LASTEXITCODE
+          }
 
 
       # ============================================================
@@ -144,504 +206,298 @@ jobs:
       - name: Verify Nuitka output
         shell: powershell
         run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          Write-Host "=========================================="
-          Write-Host "Nuitka output"
-          Write-Host "=========================================="
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
 
           if (-not (Test-Path $app)) {
-              Write-Error "Folder amarPlayer.dist tidak ditemukan."
-              Get-ChildItem "$env:GITHUB_WORKSPACE\build" -Recurse -ErrorAction SilentlyContinue
+              Write-Error "amarPlayer.dist tidak ditemukan."
               exit 1
           }
 
-          if (-not (Test-Path "$app\amarPlayer.exe")) {
+          $exe = Join-Path $app "amarPlayer.exe"
+
+          if (-not (Test-Path $exe)) {
               Write-Error "amarPlayer.exe tidak ditemukan."
               exit 1
           }
 
-          Write-Host ""
-          Write-Host "Nuitka build berhasil."
-
-          Get-Item "$app\amarPlayer.exe" |
-            Select-Object FullName, Length
-
-
-      # ============================================================
-      # LOCATE PYTHON SITE-PACKAGES
-      # ============================================================
-
-      - name: Locate Python site packages
-        shell: powershell
-        run: |
-
-          $site = python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
-
-          if (-not (Test-Path $site)) {
-              Write-Error "Python site-packages tidak ditemukan."
-              exit 1
-          }
-
-          "PYTHON_SITE=$site" >> $env:GITHUB_ENV
+          Write-Host "Application directory:"
+          Write-Host $app
 
           Write-Host ""
-          Write-Host "Python site-packages:"
-          Write-Host $site
-
-
-      # ============================================================
-      # INSPECT GSTREAMER
-      # ============================================================
-
-      - name: Inspect GStreamer installation
-        shell: powershell
-        run: |
-
-          Write-Host "=========================================="
-          Write-Host "GStreamer installation"
-          Write-Host "=========================================="
-
-          Get-ChildItem "$env:PYTHON_SITE" `
-            -Recurse `
-            -File `
-            -ErrorAction SilentlyContinue |
-            Where-Object {
-              $_.FullName -match "gstreamer" -or
-              $_.FullName -match "girepository" -or
-              $_.FullName -match "typelib"
-            } |
-            Select-Object FullName
-
-
-      # ============================================================
-      # CREATE RUNTIME DIRECTORIES
-      # ============================================================
-
-      - name: Prepare runtime directories
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Path "$app\gstreamer" |
-            Out-Null
-
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Path "$app\gstreamer\lib\gstreamer-1.0" |
-            Out-Null
-
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Path "$app\gstreamer\lib\girepository-1.0" |
-            Out-Null
-
-          Write-Host "Runtime directories created."
-
-
-      # ============================================================
-      # COPY DLL
-      # ============================================================
-
-      - name: Bundle GStreamer and PyGObject DLLs
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-          $dllTarget = "$app\gstreamer"
-
-          $dlls = Get-ChildItem `
-            "$env:PYTHON_SITE" `
-            -Recurse `
-            -File `
-            -Filter "*.dll" `
-            -ErrorAction SilentlyContinue
-
-          if (-not $dlls) {
-              Write-Error "Tidak ada DLL ditemukan."
-              exit 1
-          }
-
-          $copied = 0
-
-          foreach ($dll in $dlls) {
-
-              $path = $dll.FullName.ToLower()
-
-              if (
-                  $path -match "gstreamer" -or
-                  $path -match "\\gst" -or
-                  $path -match "glib" -or
-                  $path -match "gobject" -or
-                  $path -match "gio" -or
-                  $path -match "gmodule" -or
-                  $path -match "ffi" -or
-                  $path -match "pcre" -or
-                  $path -match "intl" -or
-                  $path -match "iconv" -or
-                  $path -match "orc"
-              ) {
-
-                  Write-Host "DLL:"
-                  Write-Host $dll.FullName
-
-                  Copy-Item `
-                    $dll.FullName `
-                    $dllTarget `
-                    -Force
-
-                  $copied++
-              }
-          }
+          Write-Host "Executable:"
+          Write-Host $exe
 
           Write-Host ""
-          Write-Host "DLL copied:"
-          Write-Host $copied
-
-          if ($copied -eq 0) {
-              Write-Error "Tidak ada DLL GStreamer/PyGObject yang berhasil disalin."
-              exit 1
-          }
+          Write-Host "Ukuran executable:"
+          (Get-Item $exe).Length
 
 
       # ============================================================
-      # COPY GSTREAMER PLUGINS
+      # PREPARE GSTREAMER
       # ============================================================
 
-      - name: Bundle GStreamer plugins
+      - name: Bundle GStreamer runtime
         shell: powershell
         run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $gstSource = $env:GSTREAMER_ROOT
+          $gstTarget = Join-Path $app "gstreamer"
 
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          $pluginTarget =
-            "$app\gstreamer\lib\gstreamer-1.0"
-
-          $plugins = Get-ChildItem `
-            "$env:PYTHON_SITE" `
-            -Recurse `
-            -File `
-            -Filter "*.dll" `
-            -ErrorAction SilentlyContinue |
-            Where-Object {
-              $_.FullName -match "gstreamer-1\.0"
-            }
-
-          if (-not $plugins) {
-
-              Write-Error `
-                "Tidak ditemukan GStreamer plugin DLL."
-
-              exit 1
-          }
-
-          $copied = 0
-
-          foreach ($plugin in $plugins) {
-
-              Write-Host "GStreamer plugin:"
-              Write-Host $plugin.FullName
-
-              Copy-Item `
-                $plugin.FullName `
-                $pluginTarget `
-                -Force
-
-              $copied++
-          }
+          Write-Host "GStreamer source:"
+          Write-Host $gstSource
 
           Write-Host ""
-          Write-Host "Plugins copied:"
-          Write-Host $copied
+          Write-Host "GStreamer target:"
+          Write-Host $gstTarget
 
-
-      # ============================================================
-      # COPY TYPELIBS
-      # ============================================================
-
-      - name: Bundle GObject typelibs
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          $typeTarget =
-            "$app\gstreamer\lib\girepository-1.0"
-
-          $typelibs = Get-ChildItem `
-            "$env:PYTHON_SITE" `
-            -Recurse `
-            -File `
-            -Filter "*.typelib" `
-            -ErrorAction SilentlyContinue
-
-          if (-not $typelibs) {
-
-              Write-Error `
-                "Tidak ditemukan GObject typelibs."
-
+          if (-not (Test-Path $gstSource)) {
+              Write-Error "GStreamer source tidak ditemukan."
               exit 1
           }
 
-          $copied = 0
-
-          foreach ($type in $typelibs) {
-
-              Write-Host "Typelib:"
-              Write-Host $type.FullName
-
-              Copy-Item `
-                $type.FullName `
-                $typeTarget `
-                -Force
-
-              $copied++
-          }
-
-          Write-Host ""
-          Write-Host "Typelibs copied:"
-          Write-Host $copied
-
-
-      # ============================================================
-      # COPY ICON
-      # ============================================================
-
-      - name: Copy amarPlayer icon
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          if (-not (Test-Path "amarPlayer.png")) {
-
-              Write-Error `
-                "amarPlayer.png tidak ditemukan."
-
-              exit 1
-          }
+          [System.IO.Directory]::CreateDirectory($gstTarget) | Out-Null
 
           Copy-Item `
-            "amarPlayer.png" `
-            "$app\amarPlayer.png" `
+            -Path (Join-Path $gstSource "*") `
+            -Destination $gstTarget `
+            -Recurse `
             -Force
 
-
-      # ============================================================
-      # CREATE WINDOWS LAUNCHER
-      # ============================================================
-
-      - name: Create amarPlayer launcher
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          @"
-          @echo off
-
-          set "HERE=%~dp0"
-
-          set "PATH=%HERE%gstreamer;%HERE%;%PATH%"
-
-          set "PYGI_DLL_DIRS=%HERE%gstreamer;%HERE%"
-          set "PYGI_DLL_PATH=%HERE%gstreamer;%HERE%"
-
-          set "GST_PLUGIN_PATH=%HERE%gstreamer\lib\gstreamer-1.0"
-          set "GST_PLUGIN_SYSTEM_PATH_1_0="
-
-          set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
-
-          "%HERE%amarPlayer.exe" %*
-          "@ |
-          Set-Content `
-            "$app\amarPlayer.cmd" `
-            -Encoding ascii
-
-
-      # ============================================================
-      # CREATE TEST LAUNCHER
-      # ============================================================
-
-      - name: Create test launcher
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          @"
-          @echo off
-
-          set "HERE=%~dp0"
-
-          set "PATH=%HERE%gstreamer;%HERE%;%PATH%"
-
-          set "PYGI_DLL_DIRS=%HERE%gstreamer;%HERE%"
-          set "PYGI_DLL_PATH=%HERE%gstreamer;%HERE%"
-
-          set "GST_PLUGIN_PATH=%HERE%gstreamer\lib\gstreamer-1.0"
-          set "GST_PLUGIN_SYSTEM_PATH_1_0="
-
-          set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
-
-          "%HERE%amarPlayer.exe"
-          "@ |
-          Set-Content `
-            "$app\test-amarPlayer.cmd" `
-            -Encoding ascii
-
-
-      # ============================================================
-      # VERIFY RUNTIME FILES
-      # ============================================================
-
-      - name: Verify bundled runtime
-        shell: powershell
-        run: |
-
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
-
-          $gst =
-            "$app\gstreamer"
-
-          $plugins =
-            "$gst\lib\gstreamer-1.0"
-
-          $typelibs =
-            "$gst\lib\girepository-1.0"
-
           Write-Host ""
-          Write-Host "=========================================="
-          Write-Host "Bundled runtime validation"
-          Write-Host "=========================================="
+          Write-Host "GStreamer berhasil dibundle."
 
-          if (-not (Test-Path "$app\amarPlayer.exe")) {
-              Write-Error "amarPlayer.exe tidak ditemukan."
-              exit 1
-          }
+
+      # ============================================================
+      # VERIFY GSTREAMER FILES
+      # ============================================================
+
+      - name: Verify GStreamer bundle
+        shell: powershell
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $gst = Join-Path $app "gstreamer"
 
           if (-not (Test-Path $gst)) {
               Write-Error "Folder GStreamer tidak ditemukan."
               exit 1
           }
 
-          if (-not (Test-Path $plugins)) {
-              Write-Error "Folder GStreamer plugin tidak ditemukan."
-              exit 1
-          }
-
-          if (-not (Test-Path $typelibs)) {
-              Write-Error "Folder GObject typelib tidak ditemukan."
-              exit 1
-          }
-
-          $dlls =
-            Get-ChildItem `
-              $gst `
-              -Filter "*.dll" `
-              -File `
-              -ErrorAction SilentlyContinue
-
-          if (-not $dlls) {
-              Write-Error "Tidak ada DLL GStreamer ditemukan."
-              exit 1
-          }
-
-          $pluginFiles =
-            Get-ChildItem `
-              $plugins `
-              -Filter "*.dll" `
-              -File `
-              -ErrorAction SilentlyContinue
-
-          if (-not $pluginFiles) {
-              Write-Error "Tidak ada GStreamer plugin ditemukan."
-              exit 1
-          }
-
-          $typeFiles =
-            Get-ChildItem `
-              $typelibs `
-              -Filter "*.typelib" `
-              -File `
-              -ErrorAction SilentlyContinue
-
-          if (-not $typeFiles) {
-              Write-Error "Tidak ada GObject typelib ditemukan."
-              exit 1
-          }
-
-          Write-Host ""
-          Write-Host "Executable:"
-          Get-Item "$app\amarPlayer.exe" |
-            Select-Object FullName, Length
+          Write-Host "GStreamer directory:"
+          Write-Host $gst
 
           Write-Host ""
           Write-Host "GStreamer DLL:"
-          $dlls |
-            Select-Object Name, Length
+          Get-ChildItem `
+            $gst `
+            -Recurse `
+            -Filter "*.dll" `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 30 FullName
 
           Write-Host ""
           Write-Host "GStreamer plugins:"
-          $pluginFiles |
-            Select-Object Name, Length
+          $pluginDir = Join-Path $gst "lib\gstreamer-1.0"
 
-          Write-Host ""
-          Write-Host "GObject typelibs:"
-          $typeFiles |
-            Select-Object Name, Length
-
-          Write-Host ""
-          Write-Host "Runtime files OK."
+          if (Test-Path $pluginDir) {
+              Get-ChildItem $pluginDir -Filter "*.dll" |
+                Select-Object Name
+          }
+          else {
+              Write-Warning "Folder plugin GStreamer tidak ditemukan."
+          }
 
 
       # ============================================================
-      # TEST GUI APPLICATION
-      # MAXIMUM 10 SECONDS
+      # COPY APPLICATION ICON
       # ============================================================
 
-      - name: Test amarPlayer runtime
+      - name: Copy amarPlayer icon
         shell: powershell
         run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $icon = Join-Path $env:GITHUB_WORKSPACE "amarPlayer.png"
 
-          $app =
-            "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
+          if (Test-Path $icon) {
+              Copy-Item `
+                $icon `
+                (Join-Path $app "amarPlayer.png") `
+                -Force
 
-          $gst =
-            "$app\gstreamer"
+              Write-Host "amarPlayer.png berhasil disalin."
+          }
+          else {
+              Write-Warning "amarPlayer.png tidak ditemukan."
+          }
 
-          $plugins =
-            "$gst\lib\gstreamer-1.0"
 
-          $typelibs =
-            "$gst\lib\girepository-1.0"
+      # ============================================================
+      # RUNTIME LAUNCHER
+      # ============================================================
 
-          $env:PATH =
-            "$gst;$app;$env:PATH"
+      - name: Create runtime launcher
+        shell: powershell
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
 
-          $env:PYGI_DLL_DIRS =
-            "$gst;$app"
+          $launcher = @'
+@echo off
 
-          $env:PYGI_DLL_PATH =
-            "$gst;$app"
+set "HERE=%~dp0"
 
-          $env:GST_PLUGIN_PATH =
-            $plugins
+set "PYGI_DLL_DIRS=%HERE%gstreamer;%HERE%"
+set "PYGI_DLL_PATH=%HERE%gstreamer;%HERE%"
 
-          $env:GST_PLUGIN_SYSTEM_PATH_1_0 =
-            ""
+set "PATH=%HERE%gstreamer\bin;%HERE%;%PATH%"
 
-          $env:GI_TYPELIB_PATH =
-            $typelibs
+set "GST_PLUGIN_PATH=%HERE%gstreamer\lib\gstreamer-1.0"
+set "GST_PLUGIN_SYSTEM_PATH_1_0="
+
+set "GI_TYPELIB_PATH=%HERE%gstreamer\lib\girepository-1.0"
+
+"%HERE%amarPlayer.exe" %*
+'@
+
+          $launcherPath = Join-Path $app "amarPlayer.cmd"
+
+          Set-Content `
+            -Path $launcherPath `
+            -Value $launcher `
+            -Encoding ASCII
+
+          Write-Host "Launcher:"
+          Write-Host $launcherPath
+
+
+      # ============================================================
+      # RUNTIME ENVIRONMENT
+      # ============================================================
+
+      - name: Configure runtime environment
+        shell: powershell
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $gst = Join-Path $app "gstreamer"
+
+          $env:PYGI_DLL_DIRS = "$gst;$app"
+          $env:PYGI_DLL_PATH = "$gst;$app"
+
+          $env:PATH = "$gst\bin;$gst;$app;$env:PATH"
+
+          $env:GST_PLUGIN_PATH = "$gst\lib\gstreamer-1.0"
+          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = ""
+
+          $env:GI_TYPELIB_PATH = "$gst\lib\girepository-1.0"
+
+          Write-Host "=========================================="
+          Write-Host "Runtime environment"
+          Write-Host "=========================================="
+
+          Write-Host "PYGI_DLL_DIRS:"
+          Write-Host $env:PYGI_DLL_DIRS
 
           Write-Host ""
+          Write-Host "PYGI_DLL_PATH:"
+          Write-Host $env:PYGI_DLL_PATH
+
+          Write-Host ""
+          Write-Host "GST_PLUGIN_PATH:"
+          Write-Host $env:GST_PLUGIN_PATH
+
+          Write-Host ""
+          Write-Host "GI_TYPELIB_PATH:"
+          Write-Host $env:GI_TYPELIB_PATH
+
+          "PYGI_DLL_DIRS=$env:PYGI_DLL_DIRS" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "PYGI_DLL_PATH=$env:PYGI_DLL_PATH" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "GST_PLUGIN_PATH=$env:GST_PLUGIN_PATH" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "GST_PLUGIN_SYSTEM_PATH_1_0=" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "GI_TYPELIB_PATH=$env:GI_TYPELIB_PATH" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+          "PATH=$gst\bin;$gst;$app;$env:PATH" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+
+      # ============================================================
+      # VERIFY BUNDLED RUNTIME
+      # ============================================================
+
+      - name: Verify bundled runtime
+        shell: powershell
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $exe = Join-Path $app "amarPlayer.exe"
+
+          Write-Host "Executable:"
+          Write-Host $exe
+
+          if (-not (Test-Path $exe)) {
+              Write-Error "Executable tidak ditemukan."
+              exit 1
+          }
+
+          Write-Host ""
+          Write-Host "GStreamer DLL:"
+          Get-ChildItem `
+            (Join-Path $app "gstreamer") `
+            -Recurse `
+            -Filter "*.dll" `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 20 FullName
+
+          Write-Host ""
+          Write-Host "GI typelibs:"
+          $typelib = Join-Path `
+            $app `
+            "gstreamer\lib\girepository-1.0"
+
+          if (Test-Path $typelib) {
+              Get-ChildItem $typelib |
+                Select-Object Name
+          }
+
+
+      # ============================================================
+      # GUI RUNTIME TEST
+      # ============================================================
+
+      - name: Test amarPlayer GUI runtime
+        shell: powershell
+        run: |
+          $app = Join-Path $env:GITHUB_WORKSPACE "build\amarPlayer.dist"
+          $exe = Join-Path $app "amarPlayer.exe"
+          $gst = Join-Path $app "gstreamer"
+
+          $env:PYGI_DLL_DIRS = "$gst;$app"
+          $env:PYGI_DLL_PATH = "$gst;$app"
+
+          $env:PATH = "$gst\bin;$gst;$app;$env:PATH"
+
+          $env:GST_PLUGIN_PATH = "$gst\lib\gstreamer-1.0"
+          $env:GST_PLUGIN_SYSTEM_PATH_1_0 = ""
+
+          $env:GI_TYPELIB_PATH = "$gst\lib\girepository-1.0"
+
           Write-Host "=========================================="
           Write-Host "Testing amarPlayer GUI runtime"
           Write-Host "=========================================="
@@ -665,21 +521,17 @@ jobs:
           Write-Host ""
           Write-Host "Starting amarPlayer.exe..."
 
-          $process =
-            Start-Process `
-              -FilePath "$app\amarPlayer.exe" `
-              -WorkingDirectory $app `
-              -PassThru
+          $process = Start-Process `
+            -FilePath $exe `
+            -WorkingDirectory $app `
+            -PassThru
 
-          $finished =
-            $process.WaitForExit(10000)
+          $finished = $process.WaitForExit(10000)
 
           if (-not $finished) {
-
               Write-Host ""
               Write-Host "amarPlayer.exe masih berjalan setelah 10 detik."
               Write-Host "GUI application terdeteksi berjalan normal."
-              Write-Host "Menghentikan proses agar CI/CD dapat dilanjutkan."
 
               Stop-Process `
                 -Id $process.Id `
@@ -688,56 +540,255 @@ jobs:
 
               Write-Host ""
               Write-Host "GUI runtime TEST PASSED."
-
-          } else {
-
+          }
+          else {
               Write-Host ""
               Write-Host "amarPlayer.exe berhenti sendiri."
-
-              Write-Host "Exit code:"
-              Write-Host $process.ExitCode
+              Write-Host "Exit code: $($process.ExitCode)"
 
               if ($process.ExitCode -ne 0) {
-
-                  Write-Error `
-                    "amarPlayer.exe berhenti dengan exit code $($process.ExitCode)."
-
-                  exit $process.ExitCode
+                  Write-Error "GUI runtime gagal."
+                  exit 1
               }
-
-              Write-Host ""
-              Write-Host "Runtime TEST PASSED."
           }
 
 
       # ============================================================
-      # INSTALL INNO SETUP
+      # VERIFY INNO SETUP
       # ============================================================
 
-      - name: Install Inno Setup
+      - name: Verify Inno Setup
         shell: powershell
         run: |
+          $candidates = @(
+              "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+              "C:\Program Files\Inno Setup 6\ISCC.exe"
+          )
 
-          choco install innosetup `
-            --yes `
-            --no-progress
+          $iscc = $null
+
+          foreach ($candidate in $candidates) {
+              if (Test-Path $candidate) {
+                  $iscc = $candidate
+                  break
+              }
+          }
+
+          if (-not $iscc) {
+              Write-Host "Mencari ISCC.exe..."
+
+              $found = Get-ChildItem `
+                "C:\Program Files*" `
+                -Filter "ISCC.exe" `
+                -Recurse `
+                -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+
+              if ($found) {
+                  $iscc = $found.FullName
+              }
+          }
+
+          if (-not $iscc) {
+              Write-Error "Inno Setup / ISCC.exe tidak ditemukan."
+              exit 1
+          }
+
+          Write-Host "Inno Setup ditemukan:"
+          Write-Host $iscc
+
+          "ISCC_PATH=$iscc" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
 
 
       # ============================================================
-      # PREPARE INSTALLER
+      # PREPARE INSTALLER DIRECTORIES
       # ============================================================
 
       - name: Prepare installer directories
         shell: powershell
         run: |
+          $installerDir = Join-Path $env:GITHUB_WORKSPACE "installer"
+          $releaseDir = Join-Path $env:GITHUB_WORKSPACE "release"
 
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Path installer |
-            Out-Null
+          [System.IO.Directory]::CreateDirectory($installerDir) | Out-Null
+          [System.IO.Directory]::CreateDirectory($releaseDir) | Out-Null
 
-          New-Item `
-            -ItemType Directory `
-            -Force `
-            -Pat
+          Write-Host "Installer directory:"
+          Write-Host $installerDir
+
+          Write-Host ""
+          Write-Host "Release directory:"
+          Write-Host $releaseDir
+
+
+      # ============================================================
+      # CREATE INNO SETUP SCRIPT
+      # ============================================================
+
+      - name: Create Inno Setup script
+        shell: powershell
+        run: |
+          $installerDir = Join-Path $env:GITHUB_WORKSPACE "installer"
+
+          $iss = @'
+#define MyAppName "amarPlayer"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "Muammar"
+#define MyAppExeName "amarPlayer.exe"
+
+[Setup]
+AppId={{B7E7D0B7-0F57-4C0B-A8D1-8F3B8B5B6A01}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+
+DefaultDirName={localappdata}\Programs\amarPlayer
+DefaultGroupName=amarPlayer
+
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=commandline
+
+OutputDir=..\release
+OutputBaseFilename=amarPlayer-Setup-Windows-x64
+
+Compression=lzma
+SolidCompression=yes
+
+WizardStyle=modern
+
+UninstallDisplayIcon={app}\amarPlayer.exe
+
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+
+DisableProgramGroupPage=yes
+
+[Files]
+Source: "..\build\amarPlayer.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\amarPlayer"; Filename: "{app}\amarPlayer.exe"
+Name: "{autodesktop}\amarPlayer"; Filename: "{app}\amarPlayer.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "Buat shortcut di Desktop"; GroupDescription: "Shortcut tambahan:"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "amarPlayer"; Flags: uninsdeletekey
+
+Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\amarPlayer.exe"" ""%1"""; Flags: uninsdeletevalue
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"
+
+[Code]
+function InitializeSetup(): Boolean;
+begin
+  Result := True;
+end;
+'@
+
+          $issPath = Join-Path $installerDir "amarPlayer.iss"
+
+          Set-Content `
+            -Path $issPath `
+            -Value $iss `
+            -Encoding UTF8
+
+          Write-Host "Inno Setup script:"
+          Write-Host $issPath
+
+          Write-Host ""
+          Get-Content $issPath
+
+
+      # ============================================================
+      # BUILD INSTALLER
+      # ============================================================
+
+      - name: Build Windows installer
+        shell: powershell
+        run: |
+          $iss = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "installer\amarPlayer.iss"
+
+          if (-not (Test-Path $iss)) {
+              Write-Error "amarPlayer.iss tidak ditemukan."
+              exit 1
+          }
+
+          Write-Host "Building installer..."
+
+          & $env:ISCC_PATH `
+            "/Qp" `
+            $iss
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Inno Setup gagal."
+              exit $LASTEXITCODE
+          }
+
+
+      # ============================================================
+      # VERIFY INSTALLER
+      # ============================================================
+
+      - name: Verify Windows installer
+        shell: powershell
+        run: |
+          $installer = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "release\amarPlayer-Setup-Windows-x64.exe"
+
+          if (-not (Test-Path $installer)) {
+              Write-Error "Installer Windows tidak berhasil dibuat."
+              exit 1
+          }
+
+          $size = (Get-Item $installer).Length
+
+          Write-Host "=========================================="
+          Write-Host "Windows installer berhasil"
+          Write-Host "=========================================="
+
+          Write-Host ""
+          Write-Host "File:"
+          Write-Host $installer
+
+          Write-Host ""
+          Write-Host "Size:"
+          Write-Host "$size bytes"
+
+
+      # ============================================================
+      # LIST RELEASE
+      # ============================================================
+
+      - name: Show release files
+        shell: powershell
+        run: |
+          $release = Join-Path `
+            $env:GITHUB_WORKSPACE `
+            "release"
+
+          Write-Host "Release:"
+          Get-ChildItem $release -Recurse |
+            Select-Object FullName, Length
+
+
+      # ============================================================
+      # UPLOAD ARTIFACT
+      # ============================================================
+
+      - name: Upload Windows x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amarPlayer-Windows-x64
+          path: |
+            release/amarPlayer-Setup-Windows-x64.exe
+          if-no-files-found: error
+          retention-days: 30
