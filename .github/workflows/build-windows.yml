@@ -1,11 +1,7 @@
-````yaml
 name: Build amarPlayer Windows x64
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*"
 
 permissions:
   contents: write
@@ -15,24 +11,15 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      # ============================================================
-      # 1. Ambil source amarPlayer
-      # ============================================================
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ============================================================
-      # 2. Python x64
-      # ============================================================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          architecture: "x64"
+          architecture: x64
 
-      # ============================================================
-      # 3. Install dependency Python
-      # ============================================================
       - name: Install Python dependencies
         shell: powershell
         run: |
@@ -42,68 +29,19 @@ jobs:
           python -m pip install mutagen
           python -m pip install Pillow
 
-      # ============================================================
-      # 4. Download GStreamer Windows x64
-      # ============================================================
-      - name: Download GStreamer runtime
+      - name: Download GStreamer
         shell: powershell
         run: |
           $url = "https://gstreamer.freedesktop.org/data/pkg/windows/1.28.7/msvc/gstreamer-1.0-msvc-x86_64-1.28.7.msi"
-          Invoke-WebRequest `
-            -Uri $url `
-            -OutFile "$env:RUNNER_TEMP\gstreamer-runtime.msi"
+          Invoke-WebRequest -Uri $url -OutFile "$env:RUNNER_TEMP\gstreamer.msi"
 
-      # ============================================================
-      # 5. Download GStreamer development package
-      # ============================================================
-      - name: Download GStreamer development package
-        shell: powershell
-        run: |
-          $url = "https://gstreamer.freedesktop.org/data/pkg/windows/1.28.7/msvc/gstreamer-1.0-devel-msvc-x86_64-1.28.7.msi"
-          Invoke-WebRequest `
-            -Uri $url `
-            -OutFile "$env:RUNNER_TEMP\gstreamer-devel.msi"
-
-      # ============================================================
-      # 6. Install GStreamer
-      # ============================================================
       - name: Install GStreamer
         shell: powershell
         run: |
           Start-Process msiexec.exe `
-            -ArgumentList "/i `"$env:RUNNER_TEMP\gstreamer-runtime.msi`" /qn /norestart" `
-            -Wait `
-            -NoNewWindow
+            -ArgumentList "/i `"$env:RUNNER_TEMP\gstreamer.msi`" /qn /norestart" `
+            -Wait
 
-          Start-Process msiexec.exe `
-            -ArgumentList "/i `"$env:RUNNER_TEMP\gstreamer-devel.msi`" /qn /norestart" `
-            -Wait `
-            -NoNewWindow
-
-      # ============================================================
-      # 7. Cari instalasi GStreamer
-      # ============================================================
-      - name: Locate GStreamer
-        shell: powershell
-        run: |
-          $gst = "C:\gstreamer\1.0\msvc_x86_64"
-
-          if (!(Test-Path $gst)) {
-            Write-Error "GStreamer tidak ditemukan di $gst"
-            exit 1
-          }
-
-          Write-Host "GStreamer ditemukan:"
-          Get-ChildItem $gst
-
-          "GST_ROOT=$gst" | Out-File `
-            -FilePath $env:GITHUB_ENV `
-            -Encoding utf8 `
-            -Append
-
-      # ============================================================
-      # 8. Build amarPlayer menggunakan Nuitka
-      # ============================================================
       - name: Build amarPlayer
         shell: powershell
         run: |
@@ -119,255 +57,122 @@ jobs:
             --company-name="Muammar" `
             amarPlayer.py
 
-      # ============================================================
-      # 9. Copy GStreamer ke hasil build
-      # ============================================================
+      - name: Locate GStreamer
+        shell: powershell
+        run: |
+          $paths = @(
+            "C:\gstreamer\1.0\msvc_x86_64",
+            "C:\Program Files\gstreamer\1.0\msvc_x86_64"
+          )
+
+          $found = $false
+
+          foreach ($path in $paths) {
+            if (Test-Path $path) {
+              Write-Host "GStreamer found: $path"
+              "GST_ROOT=$path" >> $env:GITHUB_ENV
+              $found = $true
+              break
+            }
+          }
+
+          if (-not $found) {
+            Write-Error "GStreamer tidak ditemukan."
+            exit 1
+          }
+
       - name: Bundle GStreamer
         shell: powershell
         run: |
           $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
 
-          New-Item -ItemType Directory `
-            -Force `
-            -Path "$app\gstreamer\bin" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$app\gstreamer\bin"
+          New-Item -ItemType Directory -Force -Path "$app\gstreamer\lib\gstreamer-1.0"
 
-          New-Item -ItemType Directory `
-            -Force `
-            -Path "$app\gstreamer\lib\gstreamer-1.0" | Out-Null
-
-          Copy-Item `
-            "$env:GST_ROOT\bin\*.dll" `
+          Copy-Item "$env:GST_ROOT\bin\*.dll" `
             "$app\gstreamer\bin\" `
             -Force
 
-          Copy-Item `
-            "$env:GST_ROOT\lib\gstreamer-1.0\*.dll" `
+          Copy-Item "$env:GST_ROOT\lib\gstreamer-1.0\*.dll" `
             "$app\gstreamer\lib\gstreamer-1.0\" `
             -Force
 
-          Write-Host "GStreamer runtime:"
-          Get-ChildItem "$app\gstreamer\bin"
-
-          Write-Host "GStreamer plugins:"
-          Get-ChildItem "$app\gstreamer\lib\gstreamer-1.0"
-
-      # ============================================================
-      # 10. Copy ikon amarPlayer
-      # ============================================================
-      - name: Copy application icon
+      - name: Copy icon
         shell: powershell
         run: |
-          $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
+          Copy-Item `
+            "amarPlayer.png" `
+            "build\amarPlayer.dist\amarPlayer.png" `
+            -Force
 
-          if (Test-Path "amarPlayer.png") {
-            Copy-Item `
-              "amarPlayer.png" `
-              "$app\amarPlayer.png" `
-              -Force
-          }
-
-      # ============================================================
-      # 11. Buat launcher amarPlayer.cmd
-      # ============================================================
       - name: Create launcher
         shell: powershell
         run: |
           $app = "$env:GITHUB_WORKSPACE\build\amarPlayer.dist"
 
-          @'
+          @"
           @echo off
-          setlocal
-
           set "HERE=%~dp0"
-
+          set "PATH=%HERE%gstreamer\bin;%PATH%"
           set "GST_PLUGIN_PATH=%HERE%gstreamer\lib\gstreamer-1.0"
           set "GST_PLUGIN_SYSTEM_PATH_1_0="
-          set "PATH=%HERE%gstreamer\bin;%PATH%"
-
           "%HERE%amarPlayer.exe" %*
-          '@ | Set-Content `
-            "$app\amarPlayer.cmd" `
-            -Encoding ascii
+          "@ | Set-Content "$app\amarPlayer.cmd"
 
-      # ============================================================
-      # 12. Buat installer menggunakan Inno Setup
-      # ============================================================
       - name: Install Inno Setup
         shell: powershell
         run: |
           choco install innosetup -y --no-progress
 
-      # ============================================================
-      # 13. Buat file installer.iss
-      # ============================================================
-      - name: Create installer configuration
+      - name: Create installer script
         shell: powershell
         run: |
-          New-Item -ItemType Directory `
-            -Force `
-            -Path "$env:GITHUB_WORKSPACE\installer" | Out-Null
+          New-Item -ItemType Directory -Force -Path installer
 
-          @'
+          @"
           #define MyAppName "amarPlayer"
           #define MyAppVersion "1.0.0"
           #define MyAppPublisher "Muammar"
-          #define MyAppExeName "amarPlayer.exe"
 
           [Setup]
           AppId={{8C4A7B9E-6B6E-4E4B-9D31-AMARPLAYER}}
           AppName={#MyAppName}
           AppVersion={#MyAppVersion}
           AppPublisher={#MyAppPublisher}
-
           DefaultDirName={autopf}\amarPlayer
           DefaultGroupName=amarPlayer
-
           OutputDir=release
           OutputBaseFilename=amarPlayer-Setup-Windows-x64
-
           ArchitecturesInstallIn64BitMode=x64
           ArchitecturesAllowed=x64
-
           Compression=lzma
           SolidCompression=yes
-
-          UninstallDisplayName=amarPlayer
           Uninstallable=yes
 
           [Files]
-          Source: "..\build\amarPlayer.dist\*"; \
-            DestDir: "{app}"; \
-            Flags: recursesubdirs ignoreversion
+          Source: "..\build\amarPlayer.dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
           [Icons]
-          Name: "{autoprograms}\amarPlayer"; \
-            Filename: "{app}\amarPlayer.exe"
-
-          Name: "{autodesktop}\amarPlayer"; \
-            Filename: "{app}\amarPlayer.exe"
+          Name: "{autoprograms}\amarPlayer"; Filename: "{app}\amarPlayer.exe"
+          Name: "{autodesktop}\amarPlayer"; Filename: "{app}\amarPlayer.exe"
 
           [Registry]
-          Root: HKCU; \
-            Subkey: "Software\Classes\Applications\amarPlayer.exe"; \
-            ValueType: string; \
-            ValueName: "FriendlyAppName"; \
-            ValueData: "amarPlayer"; \
-            Flags: uninsdeletekey
-
-          Root: HKCU; \
-            Subkey: "Software\Classes\Applications\amarPlayer.exe\shell\open\command"; \
-            ValueType: string; \
-            ValueData: """{app}\amarPlayer.exe"" ""%1"""; \
-            Flags: uninsdeletekey
-
-          Root: HKCU; \
-            Subkey: "Software\Classes\.mp3\OpenWithProgids"; \
-            ValueType: string; \
-            ValueName: "amarPlayer.mp3"; \
-            ValueData: ""; \
-            Flags: uninsdeletevalue
-
-          Root: HKCU; \
-            Subkey: "Software\Classes\amarPlayer.mp3"; \
-            ValueType: string; \
-            ValueName: ""; \
-            ValueData: "MP3 Audio File"; \
-            Flags: uninsdeletekey
-
-          Root: HKCU; \
-            Subkey: "Software\Classes\amarPlayer.mp3\shell\open\command"; \
-            ValueType: string; \
-            ValueName: ""; \
-            ValueData: """{app}\amarPlayer.exe"" ""%1"""; \
-            Flags: uninsdeletekey
+          Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "amarPlayer"; Flags: uninsdeletekey
+          Root: HKCU; Subkey: "Software\Classes\Applications\amarPlayer.exe\shell\open\command"; ValueType: string; ValueData: """{app}\amarPlayer.exe"" ""%1"""; Flags: uninsdeletekey
 
           [Run]
-          Filename: "{app}\amarPlayer.exe"; \
-            Description: "Jalankan amarPlayer"; \
-            Flags: nowait postinstall skipifsilent
-          '@ | Set-Content `
-            "$env:GITHUB_WORKSPACE\installer\amarPlayer.iss" `
-            -Encoding utf8
+          Filename: "{app}\amarPlayer.exe"; Description: "Jalankan amarPlayer"; Flags: nowait postinstall skipifsilent
+          "@ | Set-Content installer\amarPlayer.iss -Encoding utf8
 
-      # ============================================================
-      # 14. Build installer
-      # ============================================================
-      - name: Build Windows installer
+      - name: Build installer
         shell: powershell
         run: |
-          New-Item -ItemType Directory `
-            -Force `
-            -Path "$env:GITHUB_WORKSPACE\installer\release" | Out-Null
-
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "$env:GITHUB_WORKSPACE\installer\amarPlayer.iss"
 
-      # ============================================================
-      # 15. Test hasil build
-      # ============================================================
-      - name: Verify build
-        shell: powershell
-        run: |
-          Write-Host "=== amarPlayer executable ==="
-          Get-Item "build\amarPlayer.dist\amarPlayer.exe"
-
-          Write-Host "=== Windows installer ==="
-          Get-Item "installer\release\amarPlayer-Setup-Windows-x64.exe"
-
-      # ============================================================
-      # 16. Upload installer sebagai GitHub Artifact
-      # ============================================================
-      - name: Upload Windows installer
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: amarPlayer-Windows-x64
           path: installer/release/amarPlayer-Setup-Windows-x64.exe
           if-no-files-found: error
-
-      # ============================================================
-      # 17. Jika build berasal dari tag v*, buat GitHub Release
-      # ============================================================
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            installer/release/amarPlayer-Setup-Windows-x64.exe
-          generate_release_notes: true
-
-### Struktur repository
-
-Di repository GitHub kamu, buat seperti ini:
-
-```text
-amarPlayer/
-├── amarPlayer.py
-├── amarPlayer.png
-└── .github/
-    └── workflows/
-        └── build-windows.yml
-````
-
-Lalu commit:
-
-```bash
-cd ~/aplikasiMp3
-
-git add amarPlayer.py amarPlayer.png .github/workflows/build-windows.yml
-git commit -m "Add Windows x64 build"
-git push
-```
-
-Setelah itu buka repository GitHub → **Actions** → **Build amarPlayer Windows x64** → **Run workflow**.
-
-Hasil akhirnya akan muncul sebagai artifact:
-
-```text
-amarPlayer-Windows-x64
-└── amarPlayer-Setup-Windows-x64.exe
-```
-
-**Catatan penting:** saya sengaja membuat workflow ini `workflow_dispatch` dulu, jadi **tidak otomatis build setiap kali kamu mengubah source**. Kamu sendiri yang menekan **Run workflow** saat ingin membuat versi Windows.
-
-Satu bagian yang kemungkinan perlu kita sesuaikan setelah **first run** adalah bundling GStreamer. Windows GStreamer mempunyai struktur DLL/plugin yang berbeda dari Linux, jadi lebih baik kita biarkan GitHub Actions memberi error konkret kalau ada DLL/plugin yang kurang, lalu kita perbaiki berdasarkan log tersebut daripada menebak-nebak.
-
