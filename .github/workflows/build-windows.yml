@@ -1,3 +1,4 @@
+```yaml
 name: Build amarPlayer Windows x64
 
 on:
@@ -14,15 +15,17 @@ jobs:
     steps:
 
       # ============================================================
-      # 1. CHECKOUT
+      # CHECKOUT
       # ============================================================
+
       - name: Checkout source
         uses: actions/checkout@v4
 
 
       # ============================================================
-      # 2. PYTHON
+      # PYTHON
       # ============================================================
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -31,8 +34,9 @@ jobs:
 
 
       # ============================================================
-      # 3. INSTALL PYTHON DEPENDENCIES
+      # DEPENDENCIES
       # ============================================================
+
       - name: Install Python dependencies
         shell: powershell
         run: |
@@ -47,18 +51,21 @@ jobs:
 
 
       # ============================================================
-      # 4. VERIFY PYTHON + GSTREAMER
+      # VERIFY GSTREAMER PYTHON
       # ============================================================
+
       - name: Verify GStreamer Python bindings
         shell: powershell
         run: |
           python -c "import gi; print('PyGObject OK:', gi.__file__)"
+
           python -c "import gi; gi.require_version('Gst','1.0'); from gi.repository import Gst; Gst.init(None); print('GStreamer OK:', Gst.version_string())"
 
 
       # ============================================================
-      # 5. TEST amarPlayer IMPORT
+      # TEST APPLICATION IMPORT
       # ============================================================
+
       - name: Test amarPlayer imports
         shell: powershell
         run: |
@@ -66,8 +73,9 @@ jobs:
 
 
       # ============================================================
-      # 6. BUILD WITH NUITKA
+      # BUILD WITH NUITKA
       # ============================================================
+
       - name: Build amarPlayer with Nuitka
         shell: powershell
         run: |
@@ -88,14 +96,13 @@ jobs:
             --product-name="amarPlayer" `
             --file-description="Modern Music Player" `
             --company-name="Muammar" `
-            --file-version="1.0.0.0" `
-            --product-version="1.0.0" `
             amarPlayer.py
 
 
       # ============================================================
-      # 7. LOCATE PYTHON SITE-PACKAGES
+      # LOCATE PYTHON PACKAGES
       # ============================================================
+
       - name: Locate Python packages
         shell: powershell
         run: |
@@ -114,8 +121,9 @@ jobs:
 
 
       # ============================================================
-      # 8. INSPECT GSTREAMER
+      # INSPECT GSTREAMER
       # ============================================================
+
       - name: Inspect GStreamer installation
         shell: powershell
         run: |
@@ -136,8 +144,9 @@ jobs:
 
 
       # ============================================================
-      # 9. PREPARE APPLICATION DIRECTORY
+      # PREPARE APPLICATION DIRECTORY
       # ============================================================
+
       - name: Prepare application directory
         shell: powershell
         run: |
@@ -157,8 +166,9 @@ jobs:
 
 
       # ============================================================
-      # 10. BUNDLE GSTREAMER DLL
+      # BUNDLE GSTREAMER DLL
       # ============================================================
+
       - name: Bundle GStreamer runtime
         shell: powershell
         run: |
@@ -204,8 +214,9 @@ jobs:
 
 
       # ============================================================
-      # 11. BUNDLE GSTREAMER PLUGINS
+      # BUNDLE GSTREAMER PLUGINS
       # ============================================================
+
       - name: Bundle GStreamer plugins
         shell: powershell
         run: |
@@ -244,8 +255,9 @@ jobs:
 
 
       # ============================================================
-      # 12. BUNDLE GOBJECT INTROSPECTION
+      # GOBJECT INTROSPECTION
       # ============================================================
+
       - name: Bundle GObject Introspection data
         shell: powershell
         run: |
@@ -284,8 +296,9 @@ jobs:
 
 
       # ============================================================
-      # 13. COPY ICON
+      # COPY ICON
       # ============================================================
+
       - name: Copy amarPlayer icon
         shell: powershell
         run: |
@@ -297,8 +310,9 @@ jobs:
 
 
       # ============================================================
-      # 14. CREATE WINDOWS LAUNCHER
+      # CREATE LAUNCHER
       # ============================================================
+
       - name: Create amarPlayer launcher
         shell: powershell
         run: |
@@ -326,8 +340,9 @@ jobs:
 
 
       # ============================================================
-      # 15. TEST SCRIPT
+      # GSTREAMER TEST LAUNCHER
       # ============================================================
+
       - name: Create GStreamer test launcher
         shell: powershell
         run: |
@@ -355,8 +370,9 @@ jobs:
 
 
       # ============================================================
-      # 16. TEST COMPILED APPLICATION
+      # TEST COMPILED APPLICATION
       # ============================================================
+
       - name: Test compiled amarPlayer
         shell: powershell
         run: |
@@ -383,8 +399,9 @@ jobs:
 
 
       # ============================================================
-      # 17. INSTALL INNO SETUP
+      # INSTALL INNO SETUP
       # ============================================================
+
       - name: Install Inno Setup
         shell: powershell
         run: |
@@ -395,9 +412,10 @@ jobs:
 
 
       # ============================================================
-      # 18. CREATE INNO SETUP SCRIPT
+      # CREATE INSTALLER DIRECTORY
       # ============================================================
-      - name: Create Inno Setup script
+
+      - name: Create installer directories
         shell: powershell
         run: |
 
@@ -413,6 +431,15 @@ jobs:
             -Path release |
             Out-Null
 
+
+      # ============================================================
+      # CREATE INNO SETUP SCRIPT
+      # ============================================================
+
+      - name: Create Inno Setup script
+        shell: powershell
+        run: |
+
           @"
           #define MyAppName "amarPlayer"
           #define MyAppVersion "1.0.0"
@@ -420,7 +447,9 @@ jobs:
           #define MyAppExeName "amarPlayer.exe"
 
           [Setup]
+
           AppId={{8C4A7B9E-6B6E-4E4B-9D31-7A6F91C4E812}}
+
           AppName={#MyAppName}
           AppVersion={#MyAppVersion}
           AppPublisher={#MyAppPublisher}
@@ -428,7 +457,7 @@ jobs:
           DefaultDirName={autopf}\amarPlayer
           DefaultGroupName=amarPlayer
 
-          OutputDir=release
+          OutputDir=..\release
           OutputBaseFilename=amarPlayer-Setup-Windows-x64
 
           ArchitecturesInstallIn64BitMode=x64
@@ -484,8 +513,9 @@ jobs:
 
 
       # ============================================================
-      # 19. BUILD INSTALLER
+      # BUILD WINDOWS INSTALLER
       # ============================================================
+
       - name: Build Windows installer
         shell: powershell
         run: |
@@ -510,8 +540,9 @@ jobs:
 
 
       # ============================================================
-      # 20. SHOW RESULT
+      # SHOW BUILD RESULT
       # ============================================================
+
       - name: Show build result
         shell: powershell
         run: |
@@ -530,11 +561,15 @@ jobs:
 
 
       # ============================================================
-      # 21. UPLOAD INSTALLER
+      # UPLOAD INSTALLER ARTIFACT
       # ============================================================
+
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: amarPlayer-Windows-x64
           path: release/amarPlayer-Setup-Windows-x64.exe
           if-no-files-found: error
+          include-hidden-files: true
+```
+
