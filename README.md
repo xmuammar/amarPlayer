@@ -2,7 +2,7 @@
 
 **amarPlayer** adalah pemutar musik desktop modern yang dikembangkan oleh **Muammar, SST, M.Kom** menggunakan **Python, PySide6, GStreamer, Mutagen, dan Pillow**.
 
-Aplikasi ini dirancang sebagai pemutar musik desktop yang ringan, modern, sederhana, dan dapat dikembangkan menjadi aplikasi portable untuk Linux maupun Windows.
+Aplikasi ini dirancang sebagai pemutar musik desktop yang ringan, modern, sederhana, dan dapat dikembangkan menjadi aplikasi portable untuk Mac, Linux maupun Windows.
 
 
 ---
