@@ -1,0 +1,14 @@
+musik.mp3
+amarPlayer-debug.log
+
+__pycache__/
+*.pyc
+
+dist/
+build/
+release/
+installer/
+
+*.AppImage
+*.msi
+*.exe
