@@ -57,7 +57,7 @@ jobs:
 
 
       # ============================================================
-      # 5. TEST amarPlayer.py BEFORE NUITKA
+      # 5. TEST amarPlayer IMPORT
       # ============================================================
       - name: Test amarPlayer imports
         shell: powershell
@@ -88,24 +88,17 @@ jobs:
             --product-name="amarPlayer" `
             --file-description="Modern Music Player" `
             --company-name="Muammar" `
+            --file-version="1.0.0.0" `
+            --product-version="1.0.0" `
             amarPlayer.py
 
 
       # ============================================================
-      # 7. LOCATE GSTREAMER PYTHON PACKAGE
+      # 7. LOCATE PYTHON SITE-PACKAGES
       # ============================================================
-      - name: Locate GStreamer
+      - name: Locate Python packages
         shell: powershell
         run: |
-
-          $python = (Get-Command python).Source
-
-          Write-Host "Python:"
-          Write-Host $python
-
-          python -c "import gi, os; print('gi:', os.path.dirname(gi.__file__))"
-
-          python -c "import sysconfig; print('site-packages:', sysconfig.get_paths()['purelib'])"
 
           $site = python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
 
@@ -121,13 +114,15 @@ jobs:
 
 
       # ============================================================
-      # 8. INSPECT GSTREAMER FILES
+      # 8. INSPECT GSTREAMER
       # ============================================================
       - name: Inspect GStreamer installation
         shell: powershell
         run: |
 
-          Write-Host "=== GStreamer related files ==="
+          Write-Host "=========================================="
+          Write-Host "GStreamer related files"
+          Write-Host "=========================================="
 
           Get-ChildItem `
             "$env:PYTHON_SITE" `
@@ -157,11 +152,12 @@ jobs:
           New-Item `
             -ItemType Directory `
             -Force `
-            -Path "$app\gstreamer" | Out-Null
+            -Path "$app\gstreamer" |
+            Out-Null
 
 
       # ============================================================
-      # 10. COPY GSTREAMER RUNTIME
+      # 10. BUNDLE GSTREAMER DLL
       # ============================================================
       - name: Bundle GStreamer runtime
         shell: powershell
@@ -178,7 +174,7 @@ jobs:
             -ErrorAction SilentlyContinue
 
           if (-not $dlls) {
-              Write-Error "Tidak ada DLL GStreamer ditemukan."
+              Write-Error "Tidak ada DLL ditemukan."
               exit 1
           }
 
@@ -197,8 +193,7 @@ jobs:
                   $name -match "^ffi"
               ) {
 
-                  Write-Host "Copy DLL:"
-                  Write-Host $dll.FullName
+                  Write-Host "Copy DLL: $($dll.FullName)"
 
                   Copy-Item `
                     $dll.FullName `
@@ -209,7 +204,7 @@ jobs:
 
 
       # ============================================================
-      # 11. COPY GSTREAMER PLUGINS
+      # 11. BUNDLE GSTREAMER PLUGINS
       # ============================================================
       - name: Bundle GStreamer plugins
         shell: powershell
@@ -238,8 +233,7 @@ jobs:
                   $name -match "gstreamer.*\.dll"
               ) {
 
-                  Write-Host "Plugin:"
-                  Write-Host $plugin.FullName
+                  Write-Host "Plugin: $($plugin.FullName)"
 
                   Copy-Item `
                     $plugin.FullName `
@@ -250,7 +244,7 @@ jobs:
 
 
       # ============================================================
-      # 12. COPY GI / TYPELIB DATA
+      # 12. BUNDLE GOBJECT INTROSPECTION
       # ============================================================
       - name: Bundle GObject Introspection data
         shell: powershell
@@ -274,8 +268,7 @@ jobs:
 
               foreach ($type in $typelibs) {
 
-                  Write-Host "Typelib:"
-                  Write-Host $type.FullName
+                  Write-Host "Typelib: $($type.FullName)"
 
                   Copy-Item `
                     $type.FullName `
@@ -285,7 +278,7 @@ jobs:
 
           } else {
 
-              Write-Warning "Tidak ditemukan typelib di site-packages."
+              Write-Warning "Tidak ditemukan typelib."
 
           }
 
@@ -333,9 +326,9 @@ jobs:
 
 
       # ============================================================
-      # 15. CREATE TEST SCRIPT
+      # 15. TEST SCRIPT
       # ============================================================
-      - name: Create GStreamer test script
+      - name: Create GStreamer test launcher
         shell: powershell
         run: |
 
@@ -380,15 +373,12 @@ jobs:
           $env:GI_TYPELIB_PATH = `
             "$app\gstreamer\lib\girepository-1.0"
 
-          Write-Host "Testing GStreamer..."
+          Write-Host "Testing amarPlayer..."
 
           & "$app\amarPlayer.exe" --help
 
           if ($LASTEXITCODE -ne 0) {
-
-              Write-Warning `
-                "amarPlayer --help returned exit code $LASTEXITCODE."
-
+              Write-Warning "amarPlayer returned exit code $LASTEXITCODE."
           }
 
 
@@ -436,11 +426,9 @@ jobs:
           AppPublisher={#MyAppPublisher}
 
           DefaultDirName={autopf}\amarPlayer
-
           DefaultGroupName=amarPlayer
 
           OutputDir=release
-
           OutputBaseFilename=amarPlayer-Setup-Windows-x64
 
           ArchitecturesInstallIn64BitMode=x64
@@ -449,16 +437,16 @@ jobs:
           PrivilegesRequired=lowest
 
           Compression=lzma
-
           SolidCompression=yes
 
           Uninstallable=yes
-
           DisableProgramGroupPage=yes
 
           [Files]
 
-          Source: "..\build\amarPlayer.dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+          Source: "..\build\amarPlayer.dist\*";
+          DestDir: "{app}";
+          Flags: recursesubdirs ignoreversion
 
           [Icons]
 
@@ -489,7 +477,6 @@ jobs:
           Filename: "{app}\amarPlayer.exe";
           Description: "Jalankan amarPlayer";
           Flags: nowait postinstall skipifsilent
-
           "@ |
           Set-Content `
             "installer\amarPlayer.iss" `
@@ -497,7 +484,7 @@ jobs:
 
 
       # ============================================================
-      # 19. BUILD WINDOWS INSTALLER
+      # 19. BUILD INSTALLER
       # ============================================================
       - name: Build Windows installer
         shell: powershell
@@ -510,7 +497,6 @@ jobs:
 
               Write-Error "ISCC.exe tidak ditemukan."
               exit 1
-
           }
 
           & $iscc `
@@ -520,7 +506,6 @@ jobs:
 
               Write-Error "Inno Setup gagal."
               exit $LASTEXITCODE
-
           }
 
 
@@ -532,9 +517,9 @@ jobs:
         run: |
 
           Write-Host ""
-          Write-Host "======================================"
+          Write-Host "=========================================="
           Write-Host "amarPlayer Windows build selesai"
-          Write-Host "======================================"
+          Write-Host "=========================================="
           Write-Host ""
 
           Get-ChildItem `
@@ -553,4 +538,3 @@ jobs:
           name: amarPlayer-Windows-x64
           path: release/amarPlayer-Setup-Windows-x64.exe
           if-no-files-found: error
-          include-hidden-files: true
