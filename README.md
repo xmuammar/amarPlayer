@@ -4,7 +4,6 @@
 
 Aplikasi ini dirancang sebagai pemutar musik desktop yang ringan, modern, sederhana, dan dapat dikembangkan menjadi aplikasi portable untuk Linux maupun Windows.
 
----
 
 ---
 
@@ -17,8 +16,7 @@ Aplikasi ini dirancang sebagai pemutar musik desktop yang ringan, modern, sederh
 | 🍎 macOS         | Apple Silicon / ARM64 | `.app`           | 🚧 Pengembangan |
 | 🍎 macOS Intel   | x64                   | `.app`           | 🚧 Pengembangan |
 | 🪟 Windows 11    | x64 / AMD64           | `.exe` Installer | 🔮 Rencana      |
-| 🪟 Windows ARM64 | ARM64                 | `.exe`           | 
-🚧 Pengembangan |
+| 🪟 Windows ARM64 | ARM64                 | `.exe`           | 🚧 Pengembangan |
 
 ---
 ## ✨ Fitur
