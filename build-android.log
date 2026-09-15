@@ -1,0 +1,713 @@
+# Check configuration tokens
+# Ensure build layout
+# Check configuration tokens
+# Preparing build
+# Check requirements for android
+# Search for Git (git)
+#  -> found at /usr/bin/git
+# Search for Cython (cython)
+#  -> found at /home/muammar/.local/bin/cython
+# Search for Java compiler (javac)
+#  -> found at /usr/lib/jvm/java-latest-openjdk/bin/javac
+# Search for Java keytool (keytool)
+#  -> found at /usr/lib/jvm/java-latest-openjdk/bin/keytool
+# Install platform
+# Run ['git', 'config', '--get', 'remote.origin.url']
+# Cwd /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android
+https://github.com/kivy/python-for-android.git
+# Run ['git', 'branch', '-vv']
+# Cwd /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android
+* develop e772ad93 [origin/develop] python3: keep the order of patches and configure args stable (#3378)
+# Run ['/usr/bin/python3.11', '-m', 'pip', 'install', '-q', '--user', 'appdirs', 'colorama>=0.3.3', 'jinja2', 'sh>=2, <3.0; sys_platform!="win32"', 'meson', 'ninja', 'build', 'toml', 'packaging', 'setuptools', 'wheel~=0.43.0']
+# Cwd None
+
+[notice] A new release of pip is available: 26.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+# Apache ANT found at /home/muammar/.buildozer/android/platform/apache-ant-1.9.4
+# Android SDK found at /home/muammar/.buildozer/android/platform/android-sdk
+# Android NDK found at /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c
+# Recommended android's NDK version by p4a is: 28c
+# Run ['/usr/bin/python3.11', '-m', 'pythonforandroid.toolchain', 'aab', '-h', '--color=always', '--storage-dir=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a', '--ndk-api=23', '--ignore-setup-py', '--debug', '--qt-libs=Gui,Multimedia,Widgets,Core', '--load-local-libs=plugins_multimedia_ffmpegmediaplugin,plugins_multimedia_androidmediaplugin,plugins_platforms_qtforandroid', '--init-classes=']
+# Cwd /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android
+[WARNING]: prerequisites.py is experimental and does not support all prerequisites yet.
+[WARNING]: Please report any issues to the python-for-android issue tracker.
+[WARNING]: prerequisites.py is experimental and does not support all prerequisites yet.
+[WARNING]: Please report any issues to the python-for-android issue tracker.
+usage: toolchain.py aab [-h] [--debug] [--color {always,never,auto}]
+                        [--sdk-dir SDK_DIR] [--ndk-dir NDK_DIR]
+                        [--android-api ANDROID_API]
+                        [--ndk-version NDK_VERSION] [--ndk-api NDK_API]
+                        [--symlink-bootstrap-files]
+                        [--storage-dir STORAGE_DIR] [--arch ARCH]
+                        [--extra-index-url EXTRA_INDEX_URLS] [--skip-prebuilt]
+                        [--use-prebuilt-version-for USE_PREBUILT_VERSION_FOR]
+                        [--save-wheel-dir SAVE_WHEEL_DIR]
+                        [--dist-name DIST_NAME] [--requirements REQUIREMENTS]
+                        [--recipe-blacklist RECIPE_BLACKLIST]
+                        [--blacklist-requirements BLACKLIST_REQUIREMENTS]
+                        [--use-setup-py] [--ignore-setup-py]
+                        [--bootstrap BOOTSTRAP] [--hook HOOK] [--force-build]
+                        [--no-force-build] [--require-perfect-match]
+                        [--no-require-perfect-match] [--allow-replace-dist]
+                        [--no-allow-replace-dist]
+                        [--local-recipes LOCAL_RECIPES]
+                        [--activity-class-name ACTIVITY_CLASS_NAME]
+                        [--service-class-name SERVICE_CLASS_NAME]
+                        [--java-build-tool {auto,ant,gradle}] [--copy-libs]
+                        [--no-copy-libs] [--add-asset ASSETS]
+                        [--add-resource RESOURCES] [--private PRIVATE]
+                        [--release] [--with-debug-symbols]
+                        [--keystore KEYSTORE] [--signkey SIGNKEY]
+                        [--keystorepw KEYSTOREPW] [--signkeypw SIGNKEYPW]
+
+options:
+  -h, --help            show this help message and exit
+  --debug               Display debug output and all build info
+  --color {always,never,auto}
+                        Enable or disable color output (default enabled on
+                        tty)
+  --sdk-dir SDK_DIR, --sdk_dir SDK_DIR
+                        The filepath where the Android SDK is installed
+  --ndk-dir NDK_DIR, --ndk_dir NDK_DIR
+                        The filepath where the Android NDK is installed
+  --android-api ANDROID_API, --android_api ANDROID_API
+                        The Android API level to build against defaults to 33
+                        if not specified.
+  --ndk-version NDK_VERSION, --ndk_version NDK_VERSION
+                        DEPRECATED: the NDK version is now found automatically
+                        or not at all.
+  --ndk-api NDK_API     The Android API level to compile against. This should
+                        be your *minimal supported* API, not normally the same
+                        as your --android-api. Defaults to min(ANDROID_API,
+                        24) if not specified.
+  --symlink-bootstrap-files, --ssymlink_bootstrap_files
+                        If True, symlinks the bootstrap files creation. This
+                        is useful for development only, it could also cause
+                        weird problems.
+  --storage-dir STORAGE_DIR
+                        Primary storage directory for downloads and builds
+                        (default: /home/muammar/.local/share/python-for-
+                        android)
+  --arch ARCH           The archs to build for.
+  --extra-index-url EXTRA_INDEX_URLS
+                        Extra package indexes to look for prebuilt Android
+                        wheels. Can be used multiple times.
+  --skip-prebuilt       Always build from source; do not use prebuilt wheels.
+  --use-prebuilt-version-for USE_PREBUILT_VERSION_FOR
+                        For these packages, ignore pinned versions and use the
+                        latest prebuilt version from the extra index if
+                        available. Only applies to packages with a recipe.
+  --save-wheel-dir SAVE_WHEEL_DIR
+                        Directory to store wheels built by PyProjectRecipe.
+  --dist-name DIST_NAME, --dist_name DIST_NAME
+                        The name of the distribution to use or create
+  --requirements REQUIREMENTS
+                        Dependencies of your app, should be recipe names or
+                        Python modules. NOT NECESSARY if you are using Python
+                        3 with --use-setup-py
+  --recipe-blacklist RECIPE_BLACKLIST
+                        Blacklist an internal recipe from use. Allows
+                        disabling Python 3 core modules to save size
+  --blacklist-requirements BLACKLIST_REQUIREMENTS
+                        Blacklist an internal recipe from use. Allows
+                        disabling Python 3 core modules to save size
+  --use-setup-py        Process the setup.py of a project if present.
+                        (Experimental!
+  --ignore-setup-py     Don't run the setup.py of a project if present. This
+                        may be required if the setup.py is not designed to
+                        work inside p4a (e.g. by installing dependencies that
+                        won't work or aren't desired on Android
+  --bootstrap BOOTSTRAP
+                        The bootstrap to build with. Leave unset to choose
+                        automatically.
+  --hook HOOK           Filename to a module that contains python-for-android
+                        hooks
+  --local-recipes LOCAL_RECIPES, --local_recipes LOCAL_RECIPES
+                        Directory to look for local recipes
+  --activity-class-name ACTIVITY_CLASS_NAME
+                        The full java class name of the main activity
+  --service-class-name SERVICE_CLASS_NAME
+                        Full java package name of the PythonService class
+  --java-build-tool {auto,ant,gradle}
+                        The java build tool to use when packaging the APK,
+                        defaults to automatically selecting an appropriate
+                        tool.
+  --add-asset ASSETS    Put this in the assets folder in the apk.
+  --add-resource RESOURCES
+                        Put this in the res folder in the apk.
+  --private PRIVATE     the directory with the app source code files
+                        (containing your main.py entrypoint)
+  --release             Build your app as a non-debug release build. (Disables
+                        gdb debugging among other things)
+  --with-debug-symbols  Will keep debug symbols from `.so` files.
+  --keystore KEYSTORE   Keystore for JAR signing key, will use jarsigner
+                        default if not specified (release build only)
+  --signkey SIGNKEY     Key alias to sign PARSER_APK. with (release build
+                        only)
+  --keystorepw KEYSTOREPW
+                        Password for keystore
+  --signkeypw SIGNKEYPW
+                        Password for key alias
+
+  Whether to force compilation of a new distribution
+
+  --force-build
+  --no-force-build      (this is the default)
+  --require-perfect-match
+  --no-require-perfect-match
+                        (this is the default)
+  --allow-replace-dist  (this is the default)
+  --no-allow-replace-dist
+  --copy-libs
+  --no-copy-libs        (this is the default)
+# Check application requirements
+# Compile platform
+# Run ['/usr/bin/python3.11', '-m', 'pythonforandroid.toolchain', 'create', '--dist_name=amarPlayer', '--bootstrap=qt', '--requirements=python3,shiboken6,PySide6', '--arch=arm64-v8a', '--copy-libs', '--local-recipes', '/home/muammar/aplikasiMp3/deployment/recipes', '--color=always', '--storage-dir=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a', '--ndk-api=23', '--ignore-setup-py', '--debug', '--qt-libs=Gui,Multimedia,Widgets,Core', '--load-local-libs=plugins_multimedia_ffmpegmediaplugin,plugins_multimedia_androidmediaplugin,plugins_platforms_qtforandroid', '--init-classes=']
+# Cwd /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android
+[WARNING]: prerequisites.py is experimental and does not support all prerequisites yet.
+[WARNING]: Please report any issues to the python-for-android issue tracker.
+[WARNING]: prerequisites.py is experimental and does not support all prerequisites yet.
+[WARNING]: Please report any issues to the python-for-android issue tracker.
+[1m[INFO][0m:    Will compile for the following archs: arm64-v8a
+[1m[INFO][0m:    Found Android API target in $ANDROIDAPI: 36
+[1m[INFO][0m:    Available Android APIs are (36)
+[1m[INFO][0m:    Requested API target 36 is available, continuing.
+[1m[INFO][0m:    Found NDK dir in $ANDROIDNDK: /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c
+[1m[INFO][0m:    Found NDK version 27c
+[1m[31m[WARNING][39m[0m: Maximum recommended NDK version is 28c, but newer versions may work.
+[1m[31m[WARNING][39m[0m: Newer NDKs may not be fully supported by p4a.
+[1m[INFO][0m:    Getting NDK API version (i.e. minimum supported API) from user argument
+/usr/bin/python3: No module named cython
+[1m[31m[WARNING][39m[0m: Cython for python3 missing. If you are building for  a python 3 target (which is the default) then THINGS WILL BREAK.
+[1m[90m[DEBUG][39m[0m:   All possible dists: []
+[1m[90m[DEBUG][39m[0m:   Dist matching name and arch: []
+[1m[90m[DEBUG][39m[0m:   Dist matching ndk_api and recipe: []
+[1m[INFO][0m:    No existing dists meet the given requirements!
+[1m[90m[DEBUG][39m[0m:   Remove directory and subdirectory /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/dists/amarPlayer
+[1m[INFO][0m:    [1m[94mNo dist exists that meets your requirements, so one will be built.[0m
+[1m[INFO][0m:    Found a single valid recipe set: ['hostpython3', 'libffi', 'openssl', 'sqlite3', 'python3', 'genericndkbuild', 'shiboken6', 'pyside6']
+[1m[INFO][0m:    The selected bootstrap is qt
+[1m[INFO][0m:    [1m[32m# Creating dist with qt bootstrap[0m[39m
+[1m[INFO][0m:    [1m[94mDist will have name amarPlayer and requirements (python3, shiboken6, PySide6)[0m
+[1m[INFO][0m:    Dist contains the following requirements as recipes: ['hostpython3', 'libffi', 'openssl', 'sqlite3', 'python3', 'genericndkbuild', 'shiboken6', 'pyside6']
+[1m[INFO][0m:    Dist will also contain modules () installed from pip
+[1m[INFO][0m:    Dist will be build in mode debug
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/bootstrap_builds/qt[39m
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[90m[DEBUG][39m[0m:   Create directory /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/dists/amarPlayer
+[1m[INFO][0m:    [1m[94mRecipe build order is ['hostpython3', 'libffi', 'openssl', 'sqlite3', 'python3', 'genericndkbuild', 'shiboken6', 'pyside6'][0m
+[1m[INFO][0m:    [1m[32m# Downloading recipes [0m[39m
+[1m[INFO][0m:    [1m[32mDownloading hostpython3[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/packages/hostpython3[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/python/cpython/archive/refs/tags/v3.14.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.14.2.tar.gz
+[1m[INFO][0m:    hostpython3 download already cached, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mDownloading libffi[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/packages/libffi[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/libffi/libffi/archive/v3.4.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.4.2.tar.gz
+[1m[INFO][0m:    libffi download already cached, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mDownloading openssl[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/packages/openssl[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://www.openssl.org/source/openssl-3.3.1.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	openssl-3.3.1.tar.gz
+[1m[INFO][0m:    openssl download already cached, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mDownloading sqlite3[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/packages/sqlite3[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/sqlite/sqlite/archive/refs/tags/version-3.50.4.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	version-3.50.4.tar.gz
+[1m[INFO][0m:    sqlite3 download already cached, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mDownloading python3[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/packages/python3[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/python/cpython/archive/refs/tags/v3.14.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.14.2.tar.gz
+[1m[INFO][0m:    python3 download already cached, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mDownloading genericndkbuild[0m[39m
+[1m[INFO][0m:    Skipping genericndkbuild download as no URL is set
+[1m[INFO][0m:    [1m[32mDownloading shiboken6[0m[39m
+[1m[INFO][0m:    Skipping shiboken6 download as no URL is set
+[1m[INFO][0m:    [1m[32mDownloading PySide6[0m[39m
+[1m[INFO][0m:    Skipping PySide6 download as no URL is set
+[1m[INFO][0m:    [1m[32m# Building all recipes for arch arm64-v8a[0m[39m
+[1m[INFO][0m:    [1m[32m# Unpacking recipes[0m[39m
+[1m[INFO][0m:    [1m[32mUnpacking hostpython3 for arm64-v8a[0m[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/python/cpython/archive/refs/tags/v3.14.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.14.2.tar.gz
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop[39m
+[1m[INFO][0m:    hostpython3 is already unpacked, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mUnpacking libffi for arm64-v8a[0m[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/libffi/libffi/archive/v3.4.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.4.2.tar.gz
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23[39m
+[1m[INFO][0m:    libffi is already unpacked, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mUnpacking openssl for arm64-v8a[0m[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://www.openssl.org/source/openssl-3.3.1.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	openssl-3.3.1.tar.gz
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_23[39m
+[1m[INFO][0m:    openssl is already unpacked, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mUnpacking sqlite3 for arm64-v8a[0m[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/sqlite/sqlite/archive/refs/tags/version-3.50.4.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	version-3.50.4.tar.gz
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_23[39m
+[1m[INFO][0m:    sqlite3 is already unpacked, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mUnpacking python3 for arm64-v8a[0m[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running basename https://github.com/python/cpython/archive/refs/tags/v3.14.2.tar.gz[0m
+[1m[90m[DEBUG][39m[0m:   	v3.14.2.tar.gz
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_23[39m
+[1m[INFO][0m:    python3 is already unpacked, skipping
+[1m[INFO][0m:    [36m<- directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android[39m
+[1m[INFO][0m:    [1m[32mUnpacking genericndkbuild for arm64-v8a[0m[39m
+[1m[INFO][0m:    Skipping genericndkbuild unpack as no URL is set
+[1m[INFO][0m:    [1m[32mUnpacking shiboken6 for arm64-v8a[0m[39m
+[1m[INFO][0m:    Skipping shiboken6 unpack as no URL is set
+[1m[INFO][0m:    [1m[32mUnpacking PySide6 for arm64-v8a[0m[39m
+[1m[INFO][0m:    Skipping PySide6 unpack as no URL is set
+[1m[INFO][0m:    [1m[32m# Prebuilding recipes[0m[39m
+[1m[INFO][0m:    python3 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mPrebuilding hostpython3 for arm64-v8a[0m[39m
+[1m[INFO][0m:    hostpython3 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mApplying patches for hostpython3[arm64-v8a][0m[39m
+[1m[INFO][0m:    [1m[32mhostpython3 already patched, skipping[0m[39m
+[1m[INFO][0m:    [1m[32mPrebuilding libffi for arm64-v8a[0m[39m
+[1m[INFO][0m:    libffi has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mApplying patches for libffi[arm64-v8a][0m[39m
+[1m[INFO][0m:    [1m[32mlibffi already patched, skipping[0m[39m
+[1m[INFO][0m:    [1m[32mPrebuilding openssl for arm64-v8a[0m[39m
+[1m[INFO][0m:    openssl has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mPrebuilding sqlite3 for arm64-v8a[0m[39m
+[1m[INFO][0m:    sqlite3 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mPrebuilding python3 for arm64-v8a[0m[39m
+[1m[INFO][0m:    python3 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mApplying patches for python3[arm64-v8a][0m[39m
+[1m[INFO][0m:    [1m[32mpython3 already patched, skipping[0m[39m
+[1m[INFO][0m:    [1m[32mPrebuilding genericndkbuild for arm64-v8a[0m[39m
+[1m[INFO][0m:    genericndkbuild has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mPrebuilding shiboken6 for arm64-v8a[0m[39m
+[1m[INFO][0m:    shiboken6 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32mPrebuilding PySide6 for arm64-v8a[0m[39m
+[1m[INFO][0m:    PySide6 has no prebuild_arm64_v8a, skipping
+[1m[INFO][0m:    [1m[32m# Building recipes[0m[39m
+[1m[INFO][0m:    [1m[32mBuilding hostpython3 for arm64-v8a[0m[39m
+[1m[INFO][0m:    hostpython3 said it is already built, skipping
+[1m[INFO][0m:    [1m[32mBuilding libffi for arm64-v8a[0m[39m
+[1m[INFO][0m:    [36m-> directory context /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi[39m
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running autogen.sh[0m
+[1m[90m[DEBUG][39m[0m:   	autoreconf: export WARNINGS=
+[1m[90m[DEBUG][39m[0m:   	autoreconf: Entering directory '.'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Gettext
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: aclocal -I m4
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: tracing
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: libtoolize --copy
+[1m[90m[DEBUG][39m[0m:   	libtoolize: putting auxiliary files in '.'.
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file './ltmain.sh'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: putting macros in AC_CONFIG_MACRO_DIRS, 'm4'.
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/libtool.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltoptions.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltsugar.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltversion.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/lt~obsolete.m4'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Intltool
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Gtkdoc
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not needing autopoint
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: aclocal -I m4
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: /usr/bin/autoconf
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: warning: The macro 'AC_CANONICAL_SYSTEM' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2081: AC_CANONICAL_SYSTEM is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: warning: The macro 'AC_PROG_LIBTOOL' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	m4/libtool.m4:100: AC_PROG_LIBTOOL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:3: AC_FUNC_MMAP_BLACKLIST is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: warning: The macro 'AC_HEADER_STDC' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/headers.m4:663: AC_HEADER_STDC is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	m4/asmcfi.m4:1: GCC_AS_CFI_PSEUDO_OP is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: warning: The macro 'AC_TRY_LINK' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2918: AC_TRY_LINK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: warning: The macro 'AC_HELP_STRING' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_HELP_STRING' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_PROG_LD' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	m4/libtool.m4:3462: AC_PROG_LD is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:251: LIBFFI_CHECK_LINKER_FEATURES is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_TRY_RUN' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2995: AC_TRY_RUN is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:251: LIBFFI_CHECK_LINKER_FEATURES is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_TRY_LINK' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2918: AC_TRY_LINK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: /usr/bin/autoheader
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: automake --add-missing --copy --no-force
+[1m[90m[DEBUG][39m[0m:   	configure.ac:31: installing './compile'
+[1m[90m[DEBUG][39m[0m:   	configure.ac:19: installing './install-sh'
+[1m[90m[DEBUG][39m[0m:   	configure.ac:19: installing './missing'
+[1m[90m[DEBUG][39m[0m:   	Makefile.am: installing './depcomp'
+[1m[90m[DEBUG][39m[0m:   	doc/Makefile.am:3: installing 'doc/mdate-sh'
+[1m[90m[DEBUG][39m[0m:   	doc/Makefile.am:3: installing 'doc/texinfo.tex'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: Leaving directory '.'
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running autoreconf -vif[0m
+[1m[90m[DEBUG][39m[0m:   	autoreconf: export WARNINGS=
+[1m[90m[DEBUG][39m[0m:   	autoreconf: Entering directory '.'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Gettext
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: aclocal --force -I m4
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: tracing
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: libtoolize --copy --force
+[1m[90m[DEBUG][39m[0m:   	libtoolize: putting auxiliary files in '.'.
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file './ltmain.sh'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: putting macros in AC_CONFIG_MACRO_DIRS, 'm4'.
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/libtool.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltoptions.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltsugar.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/ltversion.m4'
+[1m[90m[DEBUG][39m[0m:   	libtoolize: copying file 'm4/lt~obsolete.m4'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Intltool
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not using Gtkdoc
+[1m[90m[DEBUG][39m[0m:   	autoreconf: configure.ac: not needing autopoint
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: aclocal --force -I m4
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: /usr/bin/autoconf --force
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: warning: The macro 'AC_CANONICAL_SYSTEM' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2081: AC_CANONICAL_SYSTEM is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:8: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: warning: The macro 'AC_PROG_LIBTOOL' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	m4/libtool.m4:100: AC_PROG_LIBTOOL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:41: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:3: AC_FUNC_MMAP_BLACKLIST is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:74: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: warning: The macro 'AC_HEADER_STDC' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/headers.m4:663: AC_HEADER_STDC is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:91: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	m4/asmcfi.m4:1: GCC_AS_CFI_PSEUDO_OP is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:118: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: warning: The macro 'AC_TRY_LINK' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2918: AC_TRY_LINK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:122: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:138: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: warning: The macro 'AC_TRY_COMPILE' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2845: AC_TRY_COMPILE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:690: _AS_IF_ELSE is expanded from...
+[1m[90m[DEBUG][39m[0m:   	lib/m4sugar/m4sh.m4:697: AS_IF is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2249: AC_CACHE_VAL is expanded from...
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2270: AC_CACHE_CHECK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:185: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: warning: The macro 'AC_HELP_STRING' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:310: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_HELP_STRING' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:204: AC_HELP_STRING is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_PROG_LD' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	m4/libtool.m4:3462: AC_PROG_LD is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:251: LIBFFI_CHECK_LINKER_FEATURES is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_TRY_RUN' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2995: AC_TRY_RUN is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:251: LIBFFI_CHECK_LINKER_FEATURES is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: warning: The macro 'AC_TRY_LINK' is obsolete.
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: You should run autoupdate.
+[1m[90m[DEBUG][39m[0m:   	./lib/autoconf/general.m4:2918: AC_TRY_LINK is expanded from...
+[1m[90m[DEBUG][39m[0m:   	acinclude.m4:353: LIBFFI_ENABLE_SYMVERS is expanded from...
+[1m[90m[DEBUG][39m[0m:   	configure.ac:418: the top level
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: /usr/bin/autoheader --force
+[1m[90m[DEBUG][39m[0m:   	autoreconf: running: automake --add-missing --copy --force-missing
+[1m[90m[DEBUG][39m[0m:   	configure.ac:31: installing './compile'
+[1m[90m[DEBUG][39m[0m:   	configure.ac:19: installing './missing'
+[1m[90m[DEBUG][39m[0m:   	Makefile.am: installing './depcomp'
+[1m[90m[DEBUG][39m[0m:   	autoreconf: Leaving directory '.'
+[1m[90m[DEBUG][39m[0m:   [90m->[0m running configure --host=aarch64-linux-android --prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi --disable-builddir --enable-shared[0m
+[1m[90m[DEBUG][39m[0m:   	checking build system type... aarch64-unknown-linux-gnu
+[1m[90m[DEBUG][39m[0m:   	checking host system type... aarch64-unknown-linux-android
+[1m[90m[DEBUG][39m[0m:   	checking target system type... aarch64-unknown-linux-android
+[1m[90m[DEBUG][39m[0m:   	checking for gsed... sed
+[1m[90m[DEBUG][39m[0m:   	checking for a BSD-compatible install... /usr/bin/install -c
+[1m[90m[DEBUG][39m[0m:   	checking whether sleep supports fractional seconds... yes
+[1m[90m[DEBUG][39m[0m:   	checking filesystem timestamp resolution... 0.01
+[1m[90m[DEBUG][39m[0m:   	checking whether build environment is sane... yes
+[1m[90m[DEBUG][39m[0m:   	checking for aarch64-linux-android-strip... /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-unneeded
+[1m[90m[DEBUG][39m[0m:   	checking for a race-free mkdir -p... /usr/bin/mkdir -p
+[1m[90m[DEBUG][39m[0m:   	checking for gawk... gawk
+[1m[90m[DEBUG][39m[0m:   	checking whether make -j8 sets $(MAKE)... yes
+[1m[90m[DEBUG][39m[0m:   	checking whether make -j8 supports nested variables... yes
+[1m[90m[DEBUG][39m[0m:   	checking xargs -n works... yes
+[1m[90m[DEBUG][39m[0m:   	checking whether UID '1000' is supported by ustar format... yes
+[1m[90m[DEBUG][39m[0m:   	checking whether GID '1000' is supported by ustar format... yes
+[1m[90m[DEBUG][39m[0m:   	checking how to create a ustar tar archive... gnutar
+[1m[90m[DEBUG][39m[0m:   	checking for aarch64-linux-android-gcc... /usr/bin/ccache /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/clang -target aarch64-linux-android23 -fomit-frame-pointer -march=armv8-a -fPIC
+[1m[90m[DEBUG][39m[0m:   	checking whether the C compiler works... no
+[1m[90m[DEBUG][39m[0m:   	configure: error: in '/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi':
+[1m[90m[DEBUG][39m[0m:   	configure: error: C compiler cannot create executables
+[1m[90m[DEBUG][39m[0m:   	See 'config.log' for more details
+Exception in thread background thread for pid 95891:
+Traceback (most recent call last):
+  File "/usr/lib64/python3.11/threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "/usr/lib64/python3.11/threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 1709, in wrap
+    fn(*rgs, **kwargs)
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 2720, in background_thread
+    handle_exit_code(exit_code)
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 2411, in fn
+    return self.command.handle_command_exit_code(exit_code)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 820, in handle_command_exit_code
+    raise exc
+sh.ErrorReturnCode_77: 
+
+  RAN: /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi/configure --host=aarch64-linux-android --prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi --disable-builddir --enable-shared
+
+  STDOUT:
+checking build system type... aarch64-unknown-linux-gnu
+checking host system type... aarch64-unknown-linux-android
+checking target system type... aarch64-unknown-linux-android
+checking for gsed... sed
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether sleep supports fractional seconds... yes
+checking filesystem timestamp resolution... 0.01
+checking whether build environment is sane... yes
+checking for aarch64-linux-android-strip... /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-unneeded
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make -j8 sets $(MAKE)... yes
+checking whether make -j8 supports nested variables... yes
+checking xargs -n works... yes
+checking whether UID '1000' is supported by ustar format... yes
+checking whether GID '1000' is supported by ustar format... yes
+checking how to create a ustar tar archive... gnutar
+checking for aarch64-linux-android-gcc... /usr/bin/ccache /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/clang -target aarch64-linux-android23 -fomit-frame-pointer -march=armv8-a -fPIC
+checking whether the C compiler works... no
+configure: error: in '/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi':
+configure: error: C compiler cannot create executables
+See 'config.log' for more details
+
+
+  STDERR:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 1267, in <module>
+    main()
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/entrypoints.py", line 18, in main
+    ToolchainCL()
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 698, in __init__
+    getattr(self, command)(args)
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 104, in wrapper_func
+    build_dist_from_args(ctx, dist, args)
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/toolchain.py", line 163, in build_dist_from_args
+    build_recipes(build_order, python_modules, ctx,
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/build.py", line 525, in build_recipes
+    recipe.build_arch(arch)
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/recipes/libffi/__init__.py", line 30, in build_arch
+    shprint(sh.Command('./configure'),
+  File "/home/muammar/aplikasiMp3/.buildozer/android/platform/python-for-android/pythonforandroid/logger.py", line 174, in shprint
+    for line in output:
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 876, in __next__
+    self.wait()
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 793, in wait
+    self.handle_command_exit_code(exit_code)
+  File "/home/muammar/.local/lib/python3.11/site-packages/sh/__init__.py", line 820, in handle_command_exit_code
+    raise exc
+sh.ErrorReturnCode_77: 
+
+  RAN: /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi/configure --host=aarch64-linux-android --prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi --disable-builddir --enable-shared
+
+  STDOUT:
+checking build system type... aarch64-unknown-linux-gnu
+checking host system type... aarch64-unknown-linux-android
+checking target system type... aarch64-unknown-linux-android
+checking for gsed... sed
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether sleep supports fractional seconds... yes
+checking filesystem timestamp resolution... 0.01
+checking whether build environment is sane... yes
+checking for aarch64-linux-android-strip... /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-unneeded
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make -j8 sets $(MAKE)... yes
+checking whether make -j8 supports nested variables... yes
+checking xargs -n works... yes
+checking whether UID '1000' is supported by ustar format... yes
+checking whether GID '1000' is supported by ustar format... yes
+checking how to create a ustar tar archive... gnutar
+checking for aarch64-linux-android-gcc... /usr/bin/ccache /home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/clang -target aarch64-linux-android23 -fomit-frame-pointer -march=armv8-a -fPIC
+checking whether the C compiler works... no
+configure: error: in '/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_23/libffi':
+configure: error: C compiler cannot create executables
+See 'config.log' for more details
+
+
+  STDERR:
+
+# Command failed: ['/usr/bin/python3.11', '-m', 'pythonforandroid.toolchain', 'create', '--dist_name=amarPlayer', '--bootstrap=qt', '--requirements=python3,shiboken6,PySide6', '--arch=arm64-v8a', '--copy-libs', '--local-recipes', '/home/muammar/aplikasiMp3/deployment/recipes', '--color=always', '--storage-dir=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a', '--ndk-api=23', '--ignore-setup-py', '--debug', '--qt-libs=Gui,Multimedia,Widgets,Core', '--load-local-libs=plugins_multimedia_ffmpegmediaplugin,plugins_multimedia_androidmediaplugin,plugins_platforms_qtforandroid', '--init-classes=']
+# ENVIRONMENT:
+#     SHELL = '/bin/bash'
+#     COLORTERM = 'truecolor'
+#     HISTCONTROL = 'ignoredups'
+#     XDG_MENU_PREFIX = 'gnome-'
+#     QT_IM_MODULES = 'wayland;ibus'
+#     PTYXIS_PROFILE = '63ed416e28f9d1a00a4f16ef6aa243ae'
+#     HOSTNAME = 'fedora'
+#     HISTSIZE = '1000'
+#     JAVA_HOME = '/usr/lib/jvm/java-latest-openjdk'
+#     SSH_AUTH_SOCK = '/run/user/1000/gcr/ssh'
+#     MEMORY_PRESSURE_WRITE = 'c29tZSAyMDAwMDAgMjAwMDAwMAA='
+#     XMODIFIERS = '@im=ibus'
+#     DESKTOP_SESSION = 'gnome'
+#     GPG_TTY = '/dev/pts/0'
+#     EDITOR = '/usr/bin/nano'
+#     PWD = '/home/muammar/aplikasiMp3'
+#     XDG_SESSION_DESKTOP = 'gnome'
+#     LOGNAME = 'muammar'
+#     XDG_SESSION_TYPE = 'wayland'
+#     SYSTEMD_EXEC_PID = '74404'
+#     XAUTHORITY = '/run/user/1000/.mutter-Xwaylandauth.YMZSV3'
+#     GDM_LANG = 'en_US.UTF-8'
+#     HOME = '/home/muammar'
+#     USERNAME = 'muammar'
+#     LANG = 'en_US.UTF-8'
+#     LS_COLORS = 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=01;37;41:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.7z=01;31:*.ace=01;31:*.alz=01;31:*.apk=01;31:*.arc=01;31:*.arj=01;31:*.bz=01;31:*.bz2=01;31:*.cab=01;31:*.cpio=01;31:*.crate=01;31:*.deb=01;31:*.drpm=01;31:*.dwm=01;31:*.dz=01;31:*.ear=01;31:*.egg=01;31:*.esd=01;31:*.gz=01;31:*.jar=01;31:*.lha=01;31:*.lrz=01;31:*.lz=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.lzo=01;31:*.pyz=01;31:*.rar=01;31:*.rpm=01;31:*.rz=01;31:*.sar=01;31:*.swm=01;31:*.t7z=01;31:*.tar=01;31:*.taz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tgz=01;31:*.tlz=01;31:*.txz=01;31:*.tz=01;31:*.tzo=01;31:*.tzst=01;31:*.udeb=01;31:*.war=01;31:*.whl=01;31:*.wim=01;31:*.xz=01;31:*.z=01;31:*.zip=01;31:*.zoo=01;31:*.zst=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.jxl=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=01;36:*.au=01;36:*.flac=01;36:*.m4a=01;36:*.mid=01;36:*.midi=01;36:*.mka=01;36:*.mp3=01;36:*.mpc=01;36:*.ogg=01;36:*.ra=01;36:*.wav=01;36:*.oga=01;36:*.opus=01;36:*.spx=01;36:*.xspf=01;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:'
+#     XDG_CURRENT_DESKTOP = 'GNOME'
+#     MEMORY_PRESSURE_WATCH = '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/dbus-:1.2-org.gnome.Ptyxis@4.service/memory.pressure'
+#     VTE_VERSION = '8401'
+#     WAYLAND_DISPLAY = 'wayland-0'
+#     INVOCATION_ID = 'de63e4db0f394bdc8ddeb2706211a678'
+#     MANAGERPID = '1077'
+#     MOZ_GMP_PATH = '/var/lib/widevine/gmp-widevinecdm/system-installed:/usr/lib64/mozilla/plugins/gmp-gmpopenh264/system-installed'
+#     GNOME_SETUP_DISPLAY = 'unix:/tmp/.X11-unix/X1'
+#     XDG_SESSION_CLASS = 'user'
+#     ANDROID_HOME = '/home/muammar/.buildozer/android/platform/android-sdk'
+#     TERM = 'xterm-256color'
+#     LESSOPEN = '||/usr/bin/lesspipe.sh %s'
+#     USER = 'muammar'
+#     DISPLAY = ':0'
+#     SHLVL = '1'
+#     ANDROID_SDK_ROOT = '/home/muammar/.buildozer/android/platform/android-sdk'
+#     QT_IM_MODULE = 'ibus'
+#     MANAGERPIDFDID = '24663'
+#     XDG_RUNTIME_DIR = '/run/user/1000'
+#     DEBUGINFOD_URLS = 'ima:enforcing https://debuginfod.fedoraproject.org/ ima:ignore '
+#     DEBUGINFOD_IMA_CERT_PATH = '/etc/keys/ima:'
+#     ANDROIDSDK = '/home/muammar/.buildozer/android/platform/android-sdk'
+#     JOURNAL_STREAM = '10:148207'
+#     XDG_DATA_DIRS = '/home/muammar/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/'
+#     PATH = '/home/muammar/.buildozer/android/platform/apache-ant-1.9.4/bin:/usr/lib/jvm/java-latest-openjdk/bin:/home/muammar/.local/bin:/home/muammar/bin:/usr/lib64/ccache:/usr/local/bin:/usr/bin'
+#     GDMSESSION = 'gnome'
+#     XDG_SESSION_EXTRA_DEVICE_ACCESS = 'render:accel'
+#     DBUS_SESSION_BUS_ADDRESS = 'unix:path=/run/user/1000/bus'
+#     MAIL = '/var/spool/mail/muammar'
+#     PTYXIS_VERSION = '50.1'
+#     FLATPAK_TTY_PROGRESS = '1'
+#     OLDPWD = '/home/muammar/aplikasiMp3'
+#     _ = '/usr/bin/python3.11'
+#     PACKAGES_PATH = '/home/muammar/.buildozer/android/packages'
+#     ANDROIDNDK = '/home/muammar/.pyside6_android_deploy/android-ndk/android-ndk-r27c'
+#     ANDROIDAPI = '36'
+#     ANDROIDMINAPI = '23'
+# 
+# Buildozer failed to execute the last command
+# The error might be hidden in the log above this error
+# Please read the full log, and search for it before
+# raising an issue with buildozer itself.
+# In case of a bug report, please add a full log with log_level = 2

@@ -1,0 +1,7 @@
+module Qt.labs.assetdownloader
+linktarget Qt6::QmlAssetDownloaderPrivateplugin
+optional plugin qml_Qt_labs_assetdownloader_qmlassetdownloaderprivateplugin
+classname Qt_labs_assetdownloaderPlugin
+typeinfo plugins.qmltypes
+prefer :/qt-project.org/imports/Qt/labs/assetdownloader/
+

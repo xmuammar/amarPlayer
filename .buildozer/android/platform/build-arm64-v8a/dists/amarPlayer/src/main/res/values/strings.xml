@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="KivySupportCutout">
+        <item name="android:windowNoTitle">true</item>
+        <!-- Display cutout is an area on some devices that extends into the display surface -->
+        
+    </style>
+    <string name="app_name">amarPlayer</string>
+    <string name="private_version">9fef1ad7229d718a59ac55f2dde1efed1bb5a5c7</string>
+    <string name="presplash_color">#000000</string>
+</resources>
