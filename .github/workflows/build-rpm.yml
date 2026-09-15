@@ -1,0 +1,229 @@
+
+name: Build amarPlayer Fedora RPM
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-rpm:
+    name: Build Fedora RPM
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ============================================================
+      # CHECK SOURCE
+      # ============================================================
+
+      - name: Check amarPlayer source
+        shell: bash
+        run: |
+          echo "=========================================="
+          echo "amarPlayer source"
+          echo "=========================================="
+
+          test -f amarPlayer.py
+          test -f amarPlayer.png
+          test -f README.md
+          test -f packaging/fedora/amarPlayer.spec
+
+          echo "Source OK."
+
+
+      # ============================================================
+      # BUILD RPM INSIDE FEDORA
+      # ============================================================
+
+      - name: Build RPM in Fedora
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "Starting Fedora RPM build"
+          echo "=========================================="
+
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            fedora:latest \
+            bash -lc '
+
+              set -e
+
+              echo "=========================================="
+              echo "Fedora environment"
+              echo "=========================================="
+
+              cat /etc/fedora-release
+
+              echo ""
+              echo "Installing RPM build tools..."
+
+              dnf -y update
+
+              dnf -y install \
+                rpm-build \
+                rpmdevtools \
+                redhat-rpm-config \
+                python3-devel \
+                desktop-file-utils \
+                git \
+                tar \
+                gzip
+
+              echo ""
+              echo "=========================================="
+              echo "Preparing RPM tree"
+              echo "=========================================="
+
+              rm -rf /tmp/rpmbuild
+
+              mkdir -p /tmp/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+
+              echo ""
+              echo "=========================================="
+              echo "Creating source archive"
+              echo "=========================================="
+
+              VERSION=$(awk '"'"'$1 == "Version:" {print $2}'"'"' packaging/fedora/amarPlayer.spec)
+
+              echo "Version: $VERSION"
+
+              mkdir -p "/tmp/source/amarPlayer-$VERSION"
+
+              cp amarPlayer.py \
+                "/tmp/source/amarPlayer-$VERSION/"
+
+              cp amarPlayer.png \
+                "/tmp/source/amarPlayer-$VERSION/"
+
+              cp README.md \
+                "/tmp/source/amarPlayer-$VERSION/"
+
+              tar -czf \
+                "/tmp/rpmbuild/SOURCES/amarPlayer-$VERSION.tar.gz" \
+                -C /tmp/source \
+                "amarPlayer-$VERSION"
+
+              cp packaging/fedora/amarPlayer.spec \
+                /tmp/rpmbuild/SPECS/amarPlayer.spec
+
+              echo ""
+              echo "=========================================="
+              echo "RPM BUILD"
+              echo "=========================================="
+
+              rpmbuild \
+                --define "_topdir /tmp/rpmbuild" \
+                -ba \
+                /tmp/rpmbuild/SPECS/amarPlayer.spec
+
+              echo ""
+              echo "=========================================="
+              echo "RPM RESULT"
+              echo "=========================================="
+
+              find /tmp/rpmbuild/RPMS \
+                -type f \
+                -name "*.rpm" \
+                -print
+
+              find /tmp/rpmbuild/SRPMS \
+                -type f \
+                -name "*.src.rpm" \
+                -print
+
+              echo ""
+              echo "=========================================="
+              echo "Copying RPM to GitHub workspace"
+              echo "=========================================="
+
+              mkdir -p /workspace/release/rpm
+
+              find /tmp/rpmbuild/RPMS \
+                -type f \
+                -name "*.rpm" \
+                -exec cp {} /workspace/release/rpm/ \;
+
+              find /tmp/rpmbuild/SRPMS \
+                -type f \
+                -name "*.src.rpm" \
+                -exec cp {} /workspace/release/rpm/ \;
+
+              echo ""
+              echo "RPM files:"
+              ls -lah /workspace/release/rpm
+            '
+
+
+      # ============================================================
+      # VERIFY RPM
+      # ============================================================
+
+      - name: Verify RPM
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "RPM verification"
+          echo "=========================================="
+
+          ls -lah release/rpm
+
+          RPM=$(find release/rpm \
+            -type f \
+            -name "*.rpm" \
+            ! -name "*.src.rpm" \
+            | head -n 1)
+
+          if [ -z "$RPM" ]; then
+            echo "ERROR: RPM tidak ditemukan."
+            exit 1
+          fi
+
+          echo ""
+          echo "RPM:"
+          echo "$RPM"
+
+          echo ""
+          echo "RPM information:"
+
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            fedora:latest \
+            rpm -qip "/workspace/$RPM"
+
+          echo ""
+          echo "RPM TEST PASSED."
+
+
+      # ============================================================
+      # UPLOAD RPM
+      # ============================================================
+
+      - name: Upload Fedora RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: amarPlayer-Fedora-RPM
+          path: release/rpm/*.rpm
+          if-no-files-found: error
+          retention-days: 30
+

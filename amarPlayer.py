@@ -1,5 +1,5 @@
-
 #!/usr/bin/env python3
+
 
 import sys
 import os
@@ -2747,6 +2747,8 @@ class AmarPlayer(QMainWindow):
 
 def main():
 
+    print("DEBUG 1: main() mulai", flush=True)
+
     app = QApplication(
         sys.argv
     )
@@ -2759,9 +2761,19 @@ def main():
         APP_NAME
     )
 
+    print("DEBUG 2: QApplication selesai", flush=True)
+
+    app.aboutToQuit.connect(
+        lambda: print("DEBUG: QApplication.aboutToQuit TERPICU", flush=True)
+    )
+
     window = AmarPlayer()
 
+    print("DEBUG 3: AmarPlayer() selesai", flush=True)
+
     window.show()
+
+    print("DEBUG 4: window.show() selesai", flush=True)
 
     # ========================================================
     # OPEN AUDIO FILES FROM FEDORA
@@ -2806,9 +2818,13 @@ def main():
             command_line_files
         )
 
-    sys.exit(
-        app.exec()
-    )
+    print("DEBUG 5: masuk app.exec()", flush=True)
+
+    result = app.exec()
+
+    print(f"DEBUG 6: app.exec() selesai, result={result}", flush=True)
+
+    sys.exit(result)
 
 
 # ============================================================
