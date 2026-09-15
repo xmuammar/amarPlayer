@@ -1,807 +1,256 @@
-
 # amarPlayer
 
-**amarPlayer** adalah aplikasi pemutar musik desktop yang dikembangkan oleh **Muammar, SST., M.Kom.** menggunakan Python, PySide6, GStreamer, Mutagen, dan Pillow.
+**Pemutar Musik Modern Berbasis Python, PySide6, GStreamer & QtMultimedia**
 
-amarPlayer dibuat sebagai pemutar musik desktop yang sederhana, modern, ringan, dan dapat dikembangkan untuk berbagai sistem operasi dan arsitektur.
-
-Pengembangan amarPlayer saat ini tidak hanya berfokus pada Linux desktop, tetapi juga mulai diperluas ke **Android**, dengan rencana pengembangan berikutnya menuju platform lain seperti **iOS**.
+**Modern Music Player Built with Python, PySide6, GStreamer & QtMultimedia**
 
 ---
 
-# ✨ Fitur
+## Bahasa / Language
 
-* Pemutar musik desktop berbasis PySide6
-* GStreamer sebagai multimedia backend pada desktop Linux
-* QtMultimedia sebagai multimedia backend Android
-* Playlist musik
-* Penyimpanan playlist secara otomatis
-* Pencarian musik
-* Scan folder musik
-* Drag and drop file musik
+* [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)
+* [🇬🇧 English](#-english)
+
+---
+
+# 🇮🇩 Bahasa Indonesia
+
+## Tentang amarPlayer
+
+**amarPlayer** adalah aplikasi pemutar musik open-source yang dikembangkan menggunakan **Python dan PySide6**.
+
+Proyek ini awalnya dibuat sebagai pemutar musik desktop untuk Linux dengan **GStreamer** sebagai backend audio.
+
+Dalam perkembangannya, amarPlayer mulai dikembangkan menjadi aplikasi lintas platform, termasuk eksperimen porting ke **Android ARM64** menggunakan **PySide6 QtMultimedia**.
+
+amarPlayer tetap mempertahankan source desktop utama, sementara versi Android dikembangkan secara terpisah agar perubahan khusus Android tidak merusak versi desktop yang sudah berjalan.
+
+---
+
+# Status Proyek
+
+| Platform          | Status                    | Keterangan                 |
+| ----------------- | ------------------------- | -------------------------- |
+| Linux Desktop     | ✅ Berjalan                | Versi desktop utama        |
+| Fedora            | ✅ Berjalan                | RPM berhasil dibuat        |
+| Fedora COPR       | ✅ Berhasil                | x86_64 dan aarch64         |
+| Debian / Ubuntu   | ✅ Package berhasil dibuat | `.deb` tersedia            |
+| Android ARM64     | 🧪 Eksperimental          | APK berhasil dibuat        |
+| Instalasi Android | ✅ Berhasil                | APK dapat dipasang         |
+| Android Runtime   | ⚠️ Debugging              | Saat ini masih layar putih |
+| Windows           | 🚧 Eksperimental          | Pengembangan berikutnya    |
+
+---
+
+# Fitur Utama
+
+## Pemutar Musik
+
+amarPlayer menyediakan kontrol pemutaran musik seperti:
+
+* Play
+* Pause
+* Next
+* Previous
+* Seek
+* Volume
 * Shuffle
 * Repeat
-* Kontrol volume
-* Progress bar dan seek audio
-* Informasi durasi audio
-* Metadata musik menggunakan Mutagen
-* Album art menggunakan Pillow
-* Equalizer 10-band pada desktop
-* Dukungan berbagai format audio
-* Membuka file musik melalui command line
-* Antarmuka desktop yang sederhana dan responsif
-* Port Android menggunakan source terpisah
 
 ---
 
-# 🎵 Format Audio
+## Playlist
 
-amarPlayer mendukung berbagai format audio melalui backend multimedia yang tersedia pada masing-masing platform:
+Fitur playlist meliputi:
 
-```text
-.mp3
-.flac
-.wav
-.ogg
-.oga
-.opus
-.m4a
-.aac
-.mp4
-```
-
-Ketersediaan format tertentu bergantung pada plugin multimedia yang tersedia pada sistem operasi dan platform pengguna.
+* Menambahkan file musik
+* Menambahkan banyak lagu sekaligus
+* Menghapus lagu
+* Memilih lagu
+* Menyimpan playlist
+* Membuka kembali playlist
+* Mencari lagu
 
 ---
 
-# 🛠️ Teknologi
+## Metadata Audio
 
-amarPlayer dikembangkan menggunakan:
+amarPlayer dapat membaca informasi metadata lagu seperti:
 
-* Python 3
+* Judul
+* Artist
+* Album
+* Durasi
+* Metadata audio
+* Album artwork
+
+Metadata diproses menggunakan library seperti **Mutagen**.
+
+---
+
+## Album Artwork
+
+Jika file musik memiliki cover album di dalam metadata, amarPlayer dapat menampilkannya pada antarmuka aplikasi.
+
+Pemrosesan gambar dapat menggunakan **Pillow**.
+
+---
+
+## Pencarian
+
+Playlist memiliki fitur pencarian untuk menemukan lagu dengan cepat tanpa harus menggulir seluruh daftar musik.
+
+---
+
+## Shuffle dan Repeat
+
+amarPlayer mendukung:
+
+* Normal playback
+* Shuffle
+* Repeat
+
+---
+
+## Equalizer 10-Band
+
+Versi Linux memiliki antarmuka **equalizer 10-band**.
+
+Pada versi Android, tampilan equalizer masih dipertahankan, tetapi pemrosesan DSP Android belum sepenuhnya diimplementasikan.
+
+---
+
+# Format Audio
+
+Format audio yang dapat didukung antara lain:
+
+* MP3
+* FLAC
+* WAV
+* OGG
+* Opus
+* AAC
+* M4A
+* MP4 Audio
+
+Dukungan sebenarnya dapat bergantung pada codec dan backend multimedia yang tersedia pada sistem.
+
+---
+
+# Teknologi
+
+## Linux Desktop
+
+Versi desktop menggunakan:
+
+* Python
 * PySide6
-* GStreamer
-* QtMultimedia
+* Qt
 * PyGObject
+* GStreamer
 * Mutagen
 * Pillow
 
-### Desktop Linux
-
-Backend multimedia:
-
-```text
-Python
- ├── PySide6
- ├── PyGObject
- ├── Mutagen
- └── Pillow
-        │
-        ▼
-    amarPlayer
-        │
-        ▼
-    GStreamer
-        │
-        ▼
-   Audio Output
-```
-
-### Android
-
-Backend multimedia Android telah dipindahkan dari GStreamer ke QtMultimedia:
+Arsitektur sederhananya:
 
 ```text
 Python
    │
-   ▼
-PySide6
+   ├── PySide6 / Qt
+   │      └── Antarmuka Desktop
    │
-   ▼
-amarPlayer_android.py
+   ├── GStreamer
+   │      └── Pemutaran Audio
    │
-   ▼
-QMediaPlayer
+   ├── Mutagen
+   │      └── Metadata Audio
    │
-   ▼
-QAudioOutput
-   │
-   ▼
-Android Audio
+   └── Pillow
+          └── Album Artwork
 ```
-
-Pemindahan ini dilakukan agar port Android menggunakan multimedia backend yang sesuai dengan lingkungan Qt Android.
 
 ---
 
-# 📂 Struktur Project
+## Android
+
+Port Android menggunakan:
+
+* Python
+* PySide6
+* Qt
+* QtMultimedia
+* python-for-android
+* Buildozer
+* Android SDK
+* Android NDK
+* Gradle
+* Java 21
+
+Arsitektur:
+
+```text
+Android
+   │
+   └── Qt / PySide6
+          │
+          ├── QtMultimedia
+          │      └── Audio Playback
+          │
+          ├── Python
+          │      └── Logic Aplikasi
+          │
+          └── Qt Android Platform
+```
+
+GStreamer pada versi Android telah digantikan dengan **QtMultimedia**.
+
+---
+
+# Struktur Source Code
 
 ```text
 amarPlayer/
+│
 ├── amarPlayer.py
+│   └── Aplikasi desktop utama
+│
 ├── amarPlayer_android.py
+│   └── Versi Android
+│
 ├── main.py
+│   └── Entry point Android
+│
 ├── amarPlayer.png
-├── amarPlayer-debug.log
+│   └── Icon aplikasi
+│
 ├── README.md
-├── build-installer.sh
+│
+├── buildozer.spec
+│   └── Konfigurasi Android
+│
+├── pysidedeploy.spec
+│
+├── deployment/
+│   ├── recipes/
+│   └── jar/
 │
 ├── packaging/
-│   ├── debian/
-│   │   ├── control
-│   │   ├── rules
-│   │   ├── changelog
-│   │   └── amarPlayer.desktop
-│   │
-│   └── fedora/
-│       └── amarPlayer.spec
-│
-├── debian/
-│   ├── control
-│   ├── rules
-│   ├── changelog
-│   └── amarPlayer.desktop
+│   ├── fedora/
+│   └── debian/
 │
 ├── android-wheels/
-│   ├── pyside6-6.11.2-android_aarch64.whl
-│   └── shiboken6-6.11.2-android_aarch64.whl
+│   └── PySide6 / Shiboken Android wheels
 │
-├── release/
+├── bin/
+│   └── Hasil build lokal
 │
-├── .github/
-│   └── workflows/
-│       └── build-rpm.yml
-│
-└── appimagetool-aarch64.AppImage
+└── .buildozer/
+    └── Cache build Android
 ```
 
 ---
 
-# 🖥️ Multi-Platform Architecture
-
-Pengembangan amarPlayer menggunakan source terpisah berdasarkan platform.
-
-```text
-                         amarPlayer
-                             │
-             ┌───────────────┼───────────────┐
-             │               │               │
-          Desktop          Android           iOS
-             │               │               │
-    amarPlayer.py   amarPlayer_android.py   Future Port
-             │               │
-        GStreamer       QtMultimedia
-```
-
-`amarPlayer.py` merupakan source utama desktop dan **tidak diubah oleh proses port Android**.
-
-Android menggunakan:
-
-```text
-amarPlayer_android.py
-```
-
-sedangkan `main.py` digunakan sebagai entry point yang diperlukan oleh sistem deployment Android.
-
----
-
-# 🐧 Linux
-
-Linux merupakan salah satu target utama pengembangan amarPlayer.
-
-Tujuan packaging adalah menyediakan amarPlayer untuk sebanyak mungkin distribusi Linux, baik melalui paket native maupun format universal.
-
-## Status Packaging Linux
-
-| Distribusi / Ekosistem | Format             | Status           |
-| ---------------------- | ------------------ | ---------------- |
-| Fedora x86_64          | RPM                | ✅ Berhasil       |
-| Fedora aarch64         | RPM                | ✅ Berhasil       |
-| Fedora COPR            | RPM                | ✅ Berhasil       |
-| RHEL                   | RPM                | 🔄 Pengembangan  |
-| CentOS Stream          | RPM                | 🔄 Pengembangan  |
-| Rocky Linux            | RPM                | 🔄 Pengembangan  |
-| AlmaLinux              | RPM                | 🔄 Pengembangan  |
-| openSUSE               | RPM                | 🔄 Pengembangan  |
-| SUSE Linux Enterprise  | RPM                | 🔄 Pengembangan  |
-| Debian                 | DEB                | ✅ Berhasil build |
-| Ubuntu                 | DEB                | 🔄 Pengujian     |
-| Linux Mint             | DEB                | 🔄 Pengujian     |
-| Pop!_OS                | DEB                | 🔄 Pengujian     |
-| Arch Linux             | Arch Package       | 🔄 Pengembangan  |
-| Manjaro                | Arch Package       | 🔄 Pengembangan  |
-| EndeavourOS            | Arch Package       | 🔄 Pengembangan  |
-| AppImage               | Universal          | 🔄 Pengembangan  |
-| Flatpak                | Universal          | 🔄 Pengembangan  |
-| Open Build Service     | Multi-distribution | 🔄 Pengembangan  |
-
----
-
-# 📦 Fedora / RPM
-
-amarPlayer sudah berhasil dibangun sebagai paket RPM pada Fedora.
-
-Target Fedora:
-
-```text
-Fedora 44 x86_64
-Fedora 44 aarch64
-```
-
-Paket dibangun menggunakan Fedora COPR.
-
-## COPR
-
-Repository:
-
-```text
-xmuammar/amarPlayer
-```
-
-Build yang telah berhasil:
-
-```text
-Build ID: 10987450
-Status: succeeded
-```
-
-## Instalasi Fedora
-
-Aktifkan repository COPR:
-
-```bash
-sudo dnf copr enable xmuammar/amarPlayer
-```
-
-Kemudian instal amarPlayer:
-
-```bash
-sudo dnf install amarPlayer
-```
-
-Jalankan:
-
-```bash
-amarPlayer
-```
-
----
-
-# 🏢 RPM Family
-
-Packaging RPM amarPlayer direncanakan untuk berbagai distribusi berbasis RPM:
-
-```text
-Fedora
-RHEL
-CentOS Stream
-Rocky Linux
-AlmaLinux
-openSUSE
-SUSE Linux Enterprise
-```
-
-Target arsitektur:
-
-```text
-x86_64
-aarch64 / ARM64
-```
-
-Tidak semua distribusi memiliki nama atau versi paket dependensi yang sama. Karena itu setiap target distribusi akan diuji secara terpisah.
-
----
-
-# 🟦 Debian / Ubuntu Family
-
-Paket Debian `.deb` digunakan sebagai format native untuk distribusi berbasis Debian.
-
-Target:
-
-```text
-Debian
-Ubuntu
-Linux Mint
-Pop!_OS
-dan distribusi berbasis Debian/Ubuntu lainnya
-```
-
-Target arsitektur:
-
-```text
-amd64 / x86_64
-arm64 / aarch64
-```
-
-## Status Debian
-
-Paket Debian amarPlayer **sudah berhasil dibangun** menggunakan lingkungan Debian ARM64 melalui Podman.
-
-Paket:
-
-```text
-amarplayer_1.0.0-1_all.deb
-```
-
-Architecture:
-
-```text
-all
-```
-
-Karena aplikasi utama amarPlayer ditulis menggunakan Python dan tidak membawa binary native khusus arsitektur.
-
-## Isi Paket
-
-```text
-/usr/bin/amarPlayer
-/usr/share/amarPlayer/amarPlayer.py
-/usr/share/applications/amarPlayer.desktop
-/usr/share/icons/hicolor/512x512/apps/amarPlayer.png
-```
-
-## Dependency Debian
-
-```text
-python3
-python3-pyside6.qtcore
-python3-pyside6.qtgui
-python3-pyside6.qtwidgets
-python3-gi
-python3-gst-1.0
-python3-mutagen
-python3-pil
-gstreamer1.0-tools
-gstreamer1.0-plugins-base
-gstreamer1.0-plugins-good
-gstreamer1.0-plugins-bad
-gstreamer1.0-libav
-```
-
-Dependency tidak dibundel ke dalam file `.deb`. Sistem Debian/Ubuntu akan menangani dependency melalui package manager.
-
-## Build Debian
-
-Environment build menggunakan Podman:
-
-```text
-amarplayer-debian-builder
-```
-
-Build:
-
-```bash
-cd ~/aplikasiMp3 && \
-podman exec amarplayer-debian-builder \
-bash -lc 'dpkg-buildpackage -us -uc -b'
-```
-
-Hasil:
-
-```text
-amarplayer_1.0.0-1_all.deb
-```
-
-## Instalasi Debian / Ubuntu
-
-```bash
-sudo apt install ./amarplayer_1.0.0-1_all.deb
-```
-
-Kemudian:
-
-```bash
-amarPlayer
-```
-
----
-
-# 🏹 Arch Linux Family
-
-Packaging Arch direncanakan untuk:
-
-```text
-Arch Linux
-Manjaro
-EndeavourOS
-dan distribusi berbasis Arch lainnya
-```
-
-Format paket:
-
-```text
-.pkg.tar.zst
-```
-
----
-
-# 📦 AppImage
-
-AppImage digunakan sebagai salah satu format universal amarPlayer.
-
-Tujuannya adalah memungkinkan pengguna menjalankan amarPlayer pada berbagai distribusi Linux tanpa harus memasang paket native khusus untuk setiap distribusi.
-
-Contoh:
-
-```bash
-chmod +x amarPlayer.AppImage
-./amarPlayer.AppImage
-```
-
-Target:
-
-```text
-Linux x86_64
-Linux aarch64 / ARM64
-```
-
----
-
-# 📦 Flatpak
-
-Flatpak direncanakan sebagai format distribusi universal untuk desktop Linux.
-
-Target:
-
-```text
-x86_64
-aarch64 / ARM64
-```
-
----
-
-# 🏗️ Open Build Service
-
-Open Build Service (OBS) direncanakan sebagai sistem build lintas distribusi.
-
-Target:
-
-```text
-Fedora
-openSUSE
-SUSE Linux Enterprise
-Debian
-Ubuntu
-dan distribusi lain yang didukung OBS
-```
-
----
-
-# 📱 Android
-
-Android sekarang menjadi salah satu target pengembangan aktif amarPlayer.
-
-Port Android dibuat dengan pendekatan **porting source**, bukan membuat aplikasi yang benar-benar terpisah.
-
-Source desktop:
-
-```text
-amarPlayer.py
-```
-
-tetap dipertahankan.
-
-Source Android:
-
-```text
-amarPlayer_android.py
-```
-
-digunakan untuk menyesuaikan aplikasi dengan API dan multimedia backend Android.
-
----
-
-# 🔄 Porting Android
-
-Port Android telah melalui beberapa perubahan utama.
-
-## Backend Multimedia
-
-Desktop:
-
-```text
-GStreamer
-```
-
-Android:
-
-```text
-QMediaPlayer
-QAudioOutput
-```
-
-Fitur dasar yang sudah dimigrasikan:
-
-```text
-Play                  ✅
-Pause                 ✅
-Stop                  ✅
-Seek                  ✅
-Duration              ✅
-End of media          ✅
-Volume                ✅
-Error handling        ✅
-Playlist              ✅
-Close event           ✅
-```
-
-GStreamer dan GLib timer **tidak digunakan lagi pada source Android**.
-
----
-
-# 📂 Android Storage
-
-Android menggunakan mekanisme penyimpanan aplikasi melalui Qt:
-
-```python
-QStandardPaths.StandardLocation.AppDataLocation
-```
-
-Playlist Android disimpan pada direktori data aplikasi.
-
-Source Android juga telah disiapkan untuk menangani URI Android:
-
-```text
-content://
-```
-
-Hal ini penting karena Android modern menggunakan Storage Access Framework dan content URI untuk akses file media.
-
----
-
-# 🎵 Android Media URI
-
-amarPlayer Android mendukung konsep:
-
-```text
-content://media/...
-```
-
-Source Android memiliki fungsi untuk:
-
-* mendeteksi Android URI
-* membaca ekstensi media
-* membuka media menggunakan `QFile`
-* membaca metadata dari data media
-* membuat cache lokal untuk kebutuhan playback
-* menyimpan URI ke playlist
-
-Format yang dipertahankan antara lain:
-
-```text
-.mp3
-.flac
-.wav
-.ogg
-.oga
-.opus
-.m4a
-.aac
-.mp4
-```
-
----
-
-# 🖼️ Android Metadata dan Album Art
-
-Port Android mempertahankan pembacaan metadata menggunakan Mutagen.
-
-Metadata yang ditangani meliputi:
-
-```text
-Title
-Artist
-Album
-Album Art
-```
-
-Untuk URI Android, data media dapat dibaca melalui `QFile` dan diproses dari memory buffer.
-
-Album art juga dipertahankan untuk format yang didukung Mutagen.
-
----
-
-# 🎚️ Equalizer Android
-
-Antarmuka equalizer 10-band tetap dipertahankan.
-
-Namun backend DSP equalizer GStreamer yang digunakan pada desktop belum diaktifkan pada Android.
-
-Status:
-
-```text
-Equalizer UI       ✅
-Preset UI          ✅
-Android DSP        ⏳ Belum diaktifkan
-```
-
-Hal ini sengaja dipisahkan agar port Android dapat terlebih dahulu mencapai tahap playback yang stabil.
-
----
-
-# 📦 Android Build Toolchain
-
-Tool deployment yang digunakan:
-
-```text
-pyside6-android-deploy
-```
-
-Versi PySide6:
-
-```text
-6.11.2
-```
-
-Python host yang digunakan untuk deployment:
-
-```text
-Python 3.11
-```
-
-Python 3.11 diperlukan oleh tool deployment Android yang digunakan dalam project ini.
-
----
-
-# 🧰 Android Wheels
-
-Wheel Android yang sudah tersedia secara lokal:
-
-```text
-android-wheels/
-├── pyside6-6.11.2-android_aarch64.whl
-└── shiboken6-6.11.2-android_aarch64.whl
-```
-
-Target arsitektur Android saat ini:
-
-```text
-aarch64 / ARM64
-```
-
-Wheel tersebut telah diunduh dan disimpan secara lokal agar tidak perlu diunduh kembali pada proses berikutnya.
-
----
-
-# 🐍 Python 3.11 Android Deployment
-
-Python 3.11 telah dipasang khusus untuk kebutuhan deployment Android.
-
-Dependency deployment yang telah tersedia:
-
-```text
-Jinja2
-pkginfo
-tqdm
-packaging==24.1
-```
-
-Host PySide6:
-
-```text
-PySide6 6.11.2
-```
-
-Host Shiboken:
-
-```text
-Shiboken6 6.11.2
-```
-
----
-
-# 📱 Android Entry Point
-
-Tool Android membutuhkan entry point bernama:
-
-```text
-main.py
-```
-
-Karena itu project memiliki:
-
-```python
-import runpy
-
-runpy.run_path(
-    "amarPlayer_android.py",
-    run_name="__main__"
-)
-```
-
-`main.py` hanya berfungsi sebagai entry point deployment Android.
-
-Source utama Android tetap:
-
-```text
-amarPlayer_android.py
-```
-
----
-
-# 🏗️ Status Android Build
-
-Proses deployment Android **sudah mencapai tahap pemeriksaan toolchain**, tetapi APK belum berhasil dibuat.
-
-Tool deployment mendeteksi kebutuhan Android NDK:
-
-```text
-Android NDK r27c
-```
-
-Ukuran archive NDK:
-
-```text
-±664 MB
-```
-
-Pada percobaan pertama, download mencapai:
-
-```text
-±105 MB / ±664 MB
-```
-
-sebelum proses dihentikan untuk menghemat kuota internet.
-
-File parsial masih tersimpan:
-
-```text
-~/.pyside6_android_deploy/android-ndk/android-ndk-r27c-linux.zip
-```
-
-Ukuran terakhir yang tercatat:
-
-```text
-104988672 bytes
-```
-
-Karena file tersebut masih tersedia, proses berikutnya dapat dilanjutkan dari data yang sudah ada apabila toolchain Android kembali dilanjutkan.
-
----
-
-# ⚠️ Status APK
-
-Saat ini:
-
-```text
-Android source       ✅
-Android port         ✅
-Android wheels       ✅
-main.py              ✅
-PySide6 host         ✅
-Shiboken6 host       ✅
-NDK                   🔄 Download tertunda
-Android SDK           ⏳ Belum disiapkan
-APK                   ⏳ Belum dibangun
-```
-
-**amarPlayer Android belum dianggap selesai sampai APK berhasil dibangun dan diuji pada perangkat Android.**
-
----
-
-# 💻 Windows
-
-Windows juga menjadi salah satu target distribusi amarPlayer.
-
-Target:
-
-```text
-Windows x64
-Windows ARM64
-```
-
-Build Windows dikembangkan melalui CI/CD apabila lingkungan Windows x64 tidak tersedia secara lokal.
-
-Status:
-
-```text
-Windows x64     🔄 CI/CD
-Windows ARM64   ⏳ Pengembangan
-```
-
----
-
-# ▶️ Menjalankan dari Source
+# Menjalankan amarPlayer di Linux
 
 Clone repository:
 
@@ -810,93 +259,502 @@ git clone https://github.com/xmuammar/amarPlayer.git
 cd amarPlayer
 ```
 
-Desktop:
+Install library Python:
+
+```bash
+python3 -m pip install PySide6 mutagen Pillow
+```
+
+Kemudian jalankan:
 
 ```bash
 python3 amarPlayer.py
 ```
 
-Android source:
+---
+
+# Dependency Fedora
+
+Contoh dependency:
 
 ```bash
-python3 amarPlayer_android.py
+sudo dnf install \
+python3 \
+python3-gobject \
+python3-gstreamer1 \
+gstreamer1 \
+gstreamer1-plugins-base \
+gstreamer1-plugins-good \
+gstreamer1-plugins-bad-free \
+gstreamer1-plugin-mpg123
 ```
-
-Entry point Android:
-
-```bash
-python3 main.py
-```
-
-Pastikan dependency yang sesuai dengan platform sudah tersedia.
 
 ---
 
-# 🐍 Dependensi Python
+# Fedora RPM
 
-Dependensi utama:
+amarPlayer telah berhasil dibuat menjadi package RPM.
+
+Contoh hasil build:
 
 ```text
-Python 3
-PySide6
-PyGObject
-Mutagen
-Pillow
+amarPlayer-1.0.0-1.fc44.noarch.rpm
+amarPlayer-1.0.0-1.fc44.src.rpm
 ```
 
-Dependensi multimedia desktop:
+RPM mencakup:
+
+* amarPlayer
+* Desktop launcher
+* Icon aplikasi
+* MIME association
+* Dokumentasi README
+
+---
+
+# Fedora COPR
+
+Build amarPlayer melalui Fedora COPR telah berhasil untuk:
 
 ```text
-GStreamer
-GStreamer plugins
+x86_64
+aarch64
 ```
 
-Backend Android:
+---
+
+# Debian Package
+
+Package Debian juga telah berhasil dibuat:
 
 ```text
-QtMultimedia
+amarplayer_1.0.0-1_all.deb
+```
+
+Konfigurasi Debian berada pada:
+
+```text
+packaging/debian/
+```
+
+---
+
+# Android Port
+
+Versi Android merupakan **port dari amarPlayer**, bukan aplikasi baru yang dibuat dari nol.
+
+Tujuannya adalah mempertahankan sebanyak mungkin:
+
+* Antarmuka PySide6
+* Logic playlist
+* Metadata
+* Artwork
+* Sistem pencarian
+* Struktur aplikasi
+
+sambil mengganti komponen yang tidak kompatibel dengan Android.
+
+---
+
+## QtMultimedia
+
+Pada Android, backend GStreamer diganti menjadi:
+
+```python
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+```
+
+Komponen utama:
+
+```text
 QMediaPlayer
 QAudioOutput
 ```
 
-Nama paket dapat berbeda antara distribusi Linux.
+---
+
+## Penyimpanan Android
+
+Data internal aplikasi menggunakan:
+
+```python
+QStandardPaths.AppDataLocation
+```
+
+agar sesuai dengan sistem penyimpanan Android.
 
 ---
 
-# 📁 Penyimpanan Playlist
+## Content URI Android
+
+Android sering memberikan file dengan URI:
+
+```text
+content://...
+```
+
+bukan path Linux biasa.
+
+Versi Android amarPlayer telah mulai mendukung:
+
+* `content://`
+* Android file picker
+* Local cache
+* Persiapan file sebelum playback
+
+---
+
+# Build Android ARM64
+
+APK Android ARM64 pertama berhasil dibuat menggunakan:
+
+```text
+Fedora Asahi Remix
+Apple Silicon
+ARM64 / aarch64
+```
+
+Target APK:
+
+```text
+arm64-v8a
+```
+
+Konfigurasi utama:
+
+```text
+Android API      : 36
+Minimum API      : 24
+Architecture     : arm64-v8a
+Java             : JDK 21
+Android NDK      : r29
+```
+
+---
+
+# Fedora Asahi dan Apple Silicon
+
+Mesin build menggunakan:
+
+```text
+Architecture : aarch64
+Page Size    : 16384 bytes / 16 KB
+```
+
+Beberapa Android SDK tools dari Google hanya tersedia sebagai binary Linux:
+
+```text
+x86_64
+```
+
+Salah satu yang paling penting adalah:
+
+```text
+aapt2
+```
+
+---
+
+# Native Android NDK ARM64
+
+Untuk menghindari ketergantungan penuh terhadap emulator x86_64, digunakan Android NDK ARM64 native.
+
+Versi:
+
+```text
+Android NDK r29
+```
+
+Toolchain yang berhasil dijalankan secara native antara lain:
+
+```text
+clang
+ld.lld
+llvm-ar
+llvm-strip
+llvm-ranlib
+```
+
+---
+
+# Masalah AAPT2
+
+AAPT2 Android SDK merupakan binary x86_64.
+
+Menjalankannya langsung melalui FEX pada host Fedora Asahi dengan page size 16 KB menyebabkan masalah.
+
+Solusi yang berhasil adalah menjalankan proses Gradle di dalam:
+
+```text
+muvm
+```
+
+Host:
+
+```text
+Page Size = 16384
+```
+
+Di dalam muvm:
+
+```text
+Page Size = 4096
+```
+
+Arsitektur build akhirnya:
+
+```text
+Fedora Asahi ARM64
+        │
+        ▼
+      muvm
+   Page Size 4K
+        │
+        ▼
+      Gradle
+        │
+        ▼
+      AAPT2
+        │
+        ▼
+       APK
+```
+
+Pengujian daemon AAPT2 berhasil menghasilkan:
+
+```text
+Ready
+Exiting daemon
+```
+
+---
+
+# APK Android Pertama
+
+Build Android pertama yang berhasil menghasilkan:
+
+```text
+amarPlayer-debug.apk
+```
+
+Ukuran sekitar:
+
+```text
+174 MB
+```
+
+Lokasi asli:
+
+```text
+.buildozer/android/platform/build-arm64-v8a/
+dists/amarPlayer/build/outputs/apk/debug/
+amarPlayer-debug.apk
+```
+
+Salinan lokal dapat ditempatkan di:
+
+```text
+bin/
+```
+
+---
+
+# Status Android Saat Ini
+
+Saat ini:
+
+```text
+Build APK          ✅
+APK dapat dipasang ✅
+Aplikasi terbuka   ✅
+UI Android         ⚠️
+Audio Android      ⚠️
+```
+
+APK dapat di-install pada Android.
+
+Namun ketika aplikasi dibuka, saat ini masih muncul **layar putih kosong**.
+
+Artinya sistem build Android sudah berhasil, tetapi runtime PySide6/Qt pada Android masih perlu diperiksa.
+
+---
+
+# Debug Android Tanpa Kabel
+
+amarPlayer dapat di-debug menggunakan:
+
+```text
+Wireless ADB
+```
+
+Pair perangkat:
+
+```bash
+adb pair IP_ADDRESS:PAIRING_PORT
+```
+
+Hubungkan:
+
+```bash
+adb connect IP_ADDRESS:DEBUG_PORT
+```
+
+Periksa perangkat:
+
+```bash
+adb devices
+```
+
+Lihat log:
+
+```bash
+adb logcat
+```
+
+Wireless ADB akan digunakan untuk mencari penyebab layar putih pada Android.
+
+---
+
+# Build Cache
+
+Build Android menghasilkan cache yang cukup besar:
+
+```text
+.buildozer/
+```
+
+Ukuran cache dapat melebihi:
+
+```text
+4 GB
+```
+
+Cache ini sengaja dipertahankan agar dependency yang sudah berhasil dikompilasi tidak perlu dibuat ulang.
+
+Folder tersebut sebaiknya tidak dimasukkan ke GitHub.
+
+---
+
+# Git
+
+Repository:
+
+```text
+https://github.com/xmuammar/amarPlayer
+```
+
+Clone:
+
+```bash
+git clone https://github.com/xmuammar/amarPlayer.git
+```
+
+Workflow Git:
+
+```bash
+git add .
+git commit -m "Update amarPlayer"
+git push origin main
+```
+
+APK dan file build yang sangat besar disimpan secara lokal dan tidak dimasukkan ke Git biasa.
+
+---
+
+# Milestone
 
 ## Linux
 
 ```text
-~/.local/share/amarPlayer/amarPlayer_playlist.json
+Desktop Application       ✅
+PySide6 GUI               ✅
+GStreamer                 ✅
+Playlist                  ✅
+Metadata                  ✅
+Album Artwork             ✅
+Search                    ✅
+Shuffle                   ✅
+Repeat                    ✅
+10-Band Equalizer         ✅
+```
+
+## Packaging
+
+```text
+Fedora RPM                ✅
+Fedora SRPM               ✅
+Fedora COPR x86_64        ✅
+Fedora COPR aarch64       ✅
+Debian Package            ✅
 ```
 
 ## Android
 
-Android menggunakan:
-
 ```text
-QStandardPaths.AppDataLocation
+Android Port              ✅
+PySide6 Android Wheels    ✅
+QtMultimedia              ✅
+Content URI               ✅
+Native ARM64 NDK          ✅
+Python ARM64              ✅
+Qt / PySide6 Packaging    ✅
+JDK 21                    ✅
+Gradle                    ✅
+AAPT2 + muvm              ✅
+APK Generation            ✅
+APK Installation          ✅
+Application Launch        ✅
+Android UI                ⚠️ Debugging
+Audio Playback            ⚠️ Testing
 ```
 
-sehingga data aplikasi mengikuti mekanisme penyimpanan Android.
+---
+
+# Roadmap
+
+Pengembangan berikutnya:
+
+1. Debug layar putih Android menggunakan ADB logcat.
+2. Memastikan Qt Android platform plugin berjalan.
+3. Menampilkan seluruh UI PySide6.
+4. Menguji Android file picker.
+5. Menguji `content://`.
+6. Menguji QtMultimedia playback.
+7. Menguji metadata audio.
+8. Menguji album artwork.
+9. Mengembangkan equalizer Android.
+10. Mengurangi ukuran APK.
+11. Membuat release Android stabil.
+12. Melanjutkan build Windows.
 
 ---
 
-# ⚙️ Konfigurasi
+# Filosofi Pengembangan
 
-amarPlayer menggunakan direktori data pengguna agar konfigurasi dan playlist tidak bergantung pada lokasi instalasi aplikasi.
+amarPlayer bermula sebagai proyek pemutar musik pribadi di Linux.
 
-Dengan demikian aplikasi yang diinstal secara system-wide tetap memiliki data pengguna yang terpisah.
+Seiring perkembangan proyek, amarPlayer menjadi eksperimen lintas platform untuk mempelajari bagaimana aplikasi Python/PySide6 dapat berjalan di berbagai sistem operasi.
+
+Versi desktop tetap dipertahankan sebagai versi utama, sementara Android dikembangkan secara bertahap tanpa mengorbankan source desktop yang sudah berjalan.
 
 ---
 
-# 🔧 Pengembangan
+# Lisensi
 
-Source utama:
+amarPlayer menggunakan:
+
+**MIT License**
+
+---
+
+# Developer
+
+**Muammar**
+
+GitHub:
 
 ```text
-/home/muammar/aplikasiMp3
+https://github.com/xmuammar
 ```
 
 Repository:
@@ -905,157 +763,722 @@ Repository:
 https://github.com/xmuammar/amarPlayer
 ```
 
-Pengembangan dilakukan secara bertahap:
+---
+
+# Ringkasan
 
 ```text
-Source Application
-       │
-       ├── Linux Desktop
-       │      └── RPM / DEB / AppImage / Flatpak
-       │
-       ├── Android
-       │      └── APK
-       │
-       ├── Windows
-       │      └── x64 / ARM64
-       │
-       └── iOS
-              └── Future Port
+Linux Desktop        ✅
+Fedora RPM           ✅
+Fedora COPR          ✅
+Debian Package       ✅
+Android ARM64 APK    ✅
+Install Android      ✅
+Android UI           ⚠️ Debugging
+```
+
+Target berikutnya adalah menjalankan seluruh UI PySide6 dengan benar di Android dan memastikan playback musik QtMultimedia berfungsi.
+
+---
+
+---
+
+# 🇬🇧 English
+
+## About amarPlayer
+
+**amarPlayer** is an open-source music player developed with **Python and PySide6**.
+
+The project originally started as a Linux desktop music player using **GStreamer** as its audio backend.
+
+It has gradually evolved into a cross-platform project, including an experimental **Android ARM64** port using **PySide6 QtMultimedia**.
+
+The original desktop source is preserved while Android-specific development is maintained separately to prevent Android changes from breaking the working Linux desktop version.
+
+---
+
+# Project Status
+
+| Platform             | Status          | Notes                            |
+| -------------------- | --------------- | -------------------------------- |
+| Linux Desktop        | ✅ Working       | Main desktop version             |
+| Fedora               | ✅ Working       | RPM successfully built           |
+| Fedora COPR          | ✅ Working       | x86_64 and aarch64               |
+| Debian / Ubuntu      | ✅ Package Built | `.deb` available                 |
+| Android ARM64        | 🧪 Experimental | APK successfully built           |
+| Android Installation | ✅ Working       | APK installs successfully        |
+| Android Runtime      | ⚠️ Debugging    | Currently showing a white screen |
+| Windows              | 🚧 Experimental | Future development               |
+
+---
+
+# Main Features
+
+## Music Playback
+
+amarPlayer provides:
+
+* Play
+* Pause
+* Next
+* Previous
+* Seek
+* Volume
+* Shuffle
+* Repeat
+
+---
+
+## Playlist Management
+
+Playlist functionality includes:
+
+* Add music files
+* Add multiple tracks
+* Remove tracks
+* Select tracks
+* Save playlists
+* Restore playlists
+* Search tracks
+
+---
+
+## Audio Metadata
+
+amarPlayer can read:
+
+* Title
+* Artist
+* Album
+* Duration
+* Audio metadata
+* Album artwork
+
+Metadata processing is handled using libraries such as **Mutagen**.
+
+---
+
+## Album Artwork
+
+If embedded album artwork exists inside the audio file, amarPlayer can display it in the player interface.
+
+Image processing can be handled through **Pillow**.
+
+---
+
+## Search
+
+The playlist can be searched to quickly locate tracks.
+
+---
+
+## Shuffle and Repeat
+
+amarPlayer supports:
+
+* Normal playback
+* Shuffle
+* Repeat
+
+---
+
+## 10-Band Equalizer
+
+The Linux version includes a **10-band equalizer** interface.
+
+The interface is still present in the Android port, but Android DSP processing has not yet been fully implemented.
+
+---
+
+# Supported Audio Formats
+
+Common formats include:
+
+* MP3
+* FLAC
+* WAV
+* OGG
+* Opus
+* AAC
+* M4A
+* MP4 Audio
+
+Actual support depends on the multimedia backend and installed codecs.
+
+---
+
+# Technology Stack
+
+## Linux Desktop
+
+The desktop version uses:
+
+* Python
+* PySide6
+* Qt
+* PyGObject
+* GStreamer
+* Mutagen
+* Pillow
+
+Architecture:
+
+```text
+Python
+   │
+   ├── PySide6 / Qt
+   │      └── Desktop GUI
+   │
+   ├── GStreamer
+   │      └── Audio Playback
+   │
+   ├── Mutagen
+   │      └── Audio Metadata
+   │
+   └── Pillow
+          └── Album Artwork
 ```
 
 ---
-
-# 🧪 Pengujian
-
-Setiap paket diharapkan melalui pengujian:
-
-1. Build package
-2. Instalasi
-3. Menjalankan aplikasi
-4. Membuka file audio
-5. Memutar audio
-6. Membaca metadata
-7. Menampilkan album art
-8. Menggunakan playlist
-9. Menggunakan equalizer
-10. Pengujian format audio
-11. Pengujian seek
-12. Pengujian volume
-13. Pengujian perpindahan lagu
-14. Pengujian penyimpanan playlist
-
-Pengujian dilakukan secara bertahap pada setiap distribusi, arsitektur, dan platform.
-
----
-
-# 🚀 Roadmap
-
-## Linux
-
-* [x] Fedora RPM
-* [x] Fedora x86_64
-* [x] Fedora aarch64
-* [x] Fedora COPR
-* [x] Debian DEB build
-* [ ] Debian DEB runtime testing
-* [ ] Ubuntu DEB
-* [ ] Linux Mint DEB
-* [ ] Pop!_OS DEB
-* [ ] RHEL RPM
-* [ ] CentOS Stream RPM
-* [ ] Rocky Linux RPM
-* [ ] AlmaLinux RPM
-* [ ] openSUSE RPM
-* [ ] SUSE Linux Enterprise RPM
-* [ ] Arch Linux package
-* [ ] Manjaro package
-* [ ] AppImage x86_64
-* [ ] AppImage aarch64
-* [ ] Flatpak
-* [ ] Open Build Service
-* [ ] Automated multi-distribution releases
 
 ## Android
 
-* [x] Android source port
-* [x] `amarPlayer_android.py`
-* [x] Android `main.py`
-* [x] QMediaPlayer
-* [x] QAudioOutput
-* [x] Play / Pause
-* [x] Seek
-* [x] Duration
-* [x] Volume
-* [x] Playlist
-* [x] Android `content://` URI handling
-* [x] Android data directory
-* [x] Android media cache
-* [x] Android PySide6 wheel
-* [x] Android Shiboken wheel
-* [x] Python 3.11 deployment environment
-* [ ] NDK r27c
-* [ ] Android SDK
-* [ ] APK build
-* [ ] APK installation test
-* [ ] Android runtime testing
-* [ ] Android DSP equalizer
-* [ ] Android release build
+The Android port uses:
 
-## Windows
+* Python
+* PySide6
+* Qt
+* QtMultimedia
+* python-for-android
+* Buildozer
+* Android SDK
+* Android NDK
+* Gradle
+* Java 21
 
-* [ ] Windows x64
-* [ ] Windows ARM64
-* [ ] Automated Windows release
+Architecture:
 
-## Future
+```text
+Android
+   │
+   └── Qt / PySide6
+          │
+          ├── QtMultimedia
+          │      └── Audio Playback
+          │
+          ├── Python
+          │      └── Application Logic
+          │
+          └── Qt Android Platform
+```
 
-* [ ] iOS port
-* [ ] Automated multi-platform release pipeline
-* [ ] Unified release management
+GStreamer was replaced by **QtMultimedia** for Android.
 
 ---
 
-# 📊 Target Arsitektur
-
-amarPlayer ditujukan untuk beberapa arsitektur:
+# Source Structure
 
 ```text
-x86_64 / amd64
-aarch64 / arm64
+amarPlayer/
+│
+├── amarPlayer.py
+│   └── Main desktop application
+│
+├── amarPlayer_android.py
+│   └── Android port
+│
+├── main.py
+│   └── Android entry point
+│
+├── amarPlayer.png
+│
+├── README.md
+│
+├── buildozer.spec
+│
+├── pysidedeploy.spec
+│
+├── deployment/
+│
+├── packaging/
+│   ├── fedora/
+│   └── debian/
+│
+├── android-wheels/
+│
+├── bin/
+│
+└── .buildozer/
 ```
-
-ARM64 sangat penting untuk perangkat modern seperti:
-
-* Apple Silicon melalui Linux/Asahi
-* ARM laptop
-* ARM desktop
-* ARM server
-* Single-board computer yang kompatibel
-* Android ARM64 devices
 
 ---
 
-# 📜 Lisensi
+# Running on Linux
 
-amarPlayer menggunakan:
+Clone:
 
-```text
-MIT License
+```bash
+git clone https://github.com/xmuammar/amarPlayer.git
+cd amarPlayer
+```
+
+Install Python dependencies:
+
+```bash
+python3 -m pip install PySide6 mutagen Pillow
+```
+
+Run:
+
+```bash
+python3 amarPlayer.py
 ```
 
 ---
 
-# 👨‍💻 Developer
+# Fedora Dependencies
 
-**Muammar, SST., M.Kom.**
+```bash
+sudo dnf install \
+python3 \
+python3-gobject \
+python3-gstreamer1 \
+gstreamer1 \
+gstreamer1-plugins-base \
+gstreamer1-plugins-good \
+gstreamer1-plugins-bad-free \
+gstreamer1-plugin-mpg123
+```
 
-Project:
+---
+
+# Fedora RPM
+
+amarPlayer has successfully been packaged as an RPM.
+
+Example:
 
 ```text
-amarPlayer
+amarPlayer-1.0.0-1.fc44.noarch.rpm
+amarPlayer-1.0.0-1.fc44.src.rpm
 ```
+
+---
+
+# Fedora COPR
+
+Successful COPR builds:
+
+```text
+x86_64
+aarch64
+```
+
+---
+
+# Debian Package
+
+A Debian package was also successfully created:
+
+```text
+amarplayer_1.0.0-1_all.deb
+```
+
+Packaging configuration:
+
+```text
+packaging/debian/
+```
+
+---
+
+# Android Port
+
+The Android version is a **port of amarPlayer**, not an unrelated application rewritten from scratch.
+
+The goal is to preserve:
+
+* PySide6 UI
+* Playlist logic
+* Metadata handling
+* Album artwork
+* Search
+* Application structure
+
+while replacing desktop-specific components.
+
+---
+
+# QtMultimedia
+
+Android playback uses:
+
+```python
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+```
+
+Main components:
+
+```text
+QMediaPlayer
+QAudioOutput
+```
+
+---
+
+# Android Storage
+
+Application data uses:
+
+```python
+QStandardPaths.AppDataLocation
+```
+
+---
+
+# Android Content URI
+
+Android commonly returns files as:
+
+```text
+content://...
+```
+
+The Android port includes support for:
+
+* Content URIs
+* Android file picker
+* Local cache handling
+* Preparing selected files for playback
+
+---
+
+# Android ARM64 Build
+
+The first successful Android ARM64 build was produced on:
+
+```text
+Fedora Asahi Remix
+Apple Silicon
+ARM64 / aarch64
+```
+
+Target:
+
+```text
+arm64-v8a
+```
+
+Main configuration:
+
+```text
+Android API      : 36
+Minimum API      : 24
+Architecture     : arm64-v8a
+Java             : JDK 21
+Android NDK      : r29
+```
+
+---
+
+# Fedora Asahi / Apple Silicon
+
+Build host:
+
+```text
+Architecture : aarch64
+Page Size    : 16384 bytes / 16 KB
+```
+
+Some Android SDK tools are distributed only as Linux x86_64 binaries.
+
+One important example is:
+
+```text
+aapt2
+```
+
+---
+
+# Native ARM64 Android NDK
+
+A native ARM64 Android NDK was used.
+
+Version:
+
+```text
+NDK r29
+```
+
+Working native tools include:
+
+```text
+clang
+ld.lld
+llvm-ar
+llvm-strip
+llvm-ranlib
+```
+
+---
+
+# AAPT2 and muvm
+
+Running x86_64 AAPT2 directly through FEX on the 16 KB Fedora Asahi host caused compatibility problems.
+
+The successful solution was running Gradle inside **muvm**.
+
+Host:
+
+```text
+Page Size = 16384
+```
+
+Inside muvm:
+
+```text
+Page Size = 4096
+```
+
+Build architecture:
+
+```text
+Fedora Asahi ARM64
+        │
+        ▼
+      muvm
+   4K Page Size
+        │
+        ▼
+      Gradle
+        │
+        ▼
+      AAPT2
+        │
+        ▼
+       APK
+```
+
+AAPT2 daemon successfully returned:
+
+```text
+Ready
+Exiting daemon
+```
+
+---
+
+# First Android APK
+
+Successful output:
+
+```text
+amarPlayer-debug.apk
+```
+
+Approximate size:
+
+```text
+174 MB
+```
+
+Original path:
+
+```text
+.buildozer/android/platform/build-arm64-v8a/
+dists/amarPlayer/build/outputs/apk/debug/
+amarPlayer-debug.apk
+```
+
+---
+
+# Current Android Status
+
+```text
+APK Build          ✅
+APK Installation   ✅
+Application Launch ✅
+Android UI         ⚠️
+Android Audio      ⚠️
+```
+
+The APK installs and launches successfully.
+
+However, the current experimental Android build displays a **blank white screen**.
+
+The Android build toolchain is therefore working, while runtime debugging is still required.
+
+---
+
+# Wireless Android Debugging
+
+Wireless ADB can be used without a USB cable.
+
+Pair:
+
+```bash
+adb pair IP_ADDRESS:PAIRING_PORT
+```
+
+Connect:
+
+```bash
+adb connect IP_ADDRESS:DEBUG_PORT
+```
+
+Verify:
+
+```bash
+adb devices
+```
+
+Logs:
+
+```bash
+adb logcat
+```
+
+---
+
+# Build Cache
+
+Android builds generate a large cache:
+
+```text
+.buildozer/
+```
+
+It may exceed:
+
+```text
+4 GB
+```
+
+The build cache is intentionally preserved to avoid rebuilding successfully compiled dependencies.
+
+---
+
+# Git
+
+Repository:
+
+```text
+https://github.com/xmuammar/amarPlayer
+```
+
+Clone:
+
+```bash
+git clone https://github.com/xmuammar/amarPlayer.git
+```
+
+Development workflow:
+
+```bash
+git add .
+git commit -m "Update amarPlayer"
+git push origin main
+```
+
+Large APK and build-cache files should normally remain local.
+
+---
+
+# Milestones
+
+## Linux
+
+```text
+Desktop Application       ✅
+PySide6 GUI               ✅
+GStreamer                 ✅
+Playlist                  ✅
+Metadata                  ✅
+Album Artwork             ✅
+Search                    ✅
+Shuffle                   ✅
+Repeat                    ✅
+10-Band Equalizer         ✅
+```
+
+## Packaging
+
+```text
+Fedora RPM                ✅
+Fedora SRPM               ✅
+Fedora COPR x86_64        ✅
+Fedora COPR aarch64       ✅
+Debian Package            ✅
+```
+
+## Android
+
+```text
+Android Port              ✅
+PySide6 Android Wheels    ✅
+QtMultimedia              ✅
+Content URI               ✅
+Native ARM64 NDK          ✅
+Python ARM64              ✅
+Qt / PySide6 Packaging    ✅
+JDK 21                    ✅
+Gradle                    ✅
+AAPT2 + muvm              ✅
+APK Generation            ✅
+APK Installation          ✅
+Application Launch        ✅
+Android UI                ⚠️ Debugging
+Audio Playback            ⚠️ Testing
+```
+
+---
+
+# Roadmap
+
+1. Diagnose Android white screen using ADB logcat.
+2. Validate Qt Android platform initialization.
+3. Display the complete PySide6 UI.
+4. Test Android file picker.
+5. Test `content://` handling.
+6. Test QtMultimedia playback.
+7. Validate metadata.
+8. Validate album artwork.
+9. Implement Android equalizer support.
+10. Reduce APK size.
+11. Create stable Android releases.
+12. Continue Windows support.
+
+---
+
+# Development Philosophy
+
+amarPlayer started as a personal Linux music-player project.
+
+It gradually evolved into a cross-platform experiment exploring how Python and PySide6 applications can run across different operating systems.
+
+The Linux desktop version remains the reference implementation while Android development continues independently.
+
+---
+
+# License
+
+amarPlayer is distributed under the:
+
+**MIT License**
+
+---
+
+# Developer
+
+**Muammar**
 
 GitHub:
+
+```text
+https://github.com/xmuammar
+```
+
+Repository:
 
 ```text
 https://github.com/xmuammar/amarPlayer
@@ -1063,17 +1486,17 @@ https://github.com/xmuammar/amarPlayer
 
 ---
 
-# ❤️ Tentang amarPlayer
+# Current Summary
 
-amarPlayer dikembangkan sebagai project pribadi untuk menghasilkan pemutar musik desktop yang sederhana, praktis, ringan, dan dapat digunakan sehari-hari.
+```text
+Linux Desktop        ✅ Working
+Fedora RPM           ✅ Built
+Fedora COPR          ✅ Built
+Debian Package       ✅ Built
+Android ARM64 APK    ✅ Built
+Android Installation ✅ Working
+Android UI           ⚠️ Under Debugging
+```
 
-Pengembangan amarPlayer tidak hanya berfokus pada pembuatan aplikasi, tetapi juga pada bagaimana aplikasi tersebut dapat didistribusikan kepada pengguna dari berbagai sistem operasi, distribusi Linux, arsitektur CPU, dan perangkat.
-
-Pengembangan dimulai dari aplikasi desktop Linux, kemudian berkembang ke packaging RPM dan DEB, dan sekarang mulai diperluas ke Android.
-
-Pendekatan pengembangan amarPlayer adalah mempertahankan source desktop yang sudah stabil sambil membuat port khusus untuk platform yang memiliki kebutuhan berbeda.
-
-Target akhirnya adalah:
-
-> **Satu aplikasi, banyak platform, banyak distribusi, banyak arsitektur, dan proses distribusi yang semakin otomatis.**
+The next major milestone is getting the full PySide6 interface running correctly on Android and validating music playback through QtMultimedia.
 
