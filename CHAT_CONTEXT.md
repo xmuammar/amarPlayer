@@ -929,6 +929,14 @@ Tidak ada perubahan Fedora tanpa izin.
 - APK dipasang ke `192.168.100.199:38789` dengan `adb install -r` dan sukses. Setelah Scan, playlist berubah dari 40 menjadi 41 lagu, menunjukkan `musik.mp3` masuk. Pemilihan lagu lalu Play mengaktifkan Android `AudioTrack`/`qt.multimedia.android.aaudiostream`; PID tetap hidup dan tidak ada traceback/crash.
 - Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
 
+## Pembaruan Codex — 17 September 2026, 02:10 WIB
+
+- Dukungan filter scan diperluas dari format dasar menjadi MP3, FLAC, WAV, OGG/OGA, Opus, M4A, AAC, MP4, AIF/AIFF, AMR, APE, AC3/EAC3, MKA, M4B, MIDI, SPX, TTA, WV, WMA, CAF, 3GP/3GPP, dan WEBM.
+- Scan Android sekarang memiliki progress bar 0–100%, tombol Scan dinonaktifkan selama proses, dan indikator disembunyikan setelah selesai.
+- APK terbaru `bin/amarPlayer-allformats-scan-debug.apk` berhasil dibangun melalui muvm dengan AAPT2 lokal dan dipasang ke perangkat melalui ADB.
+- Codec playback tetap mengikuti dukungan QtMultimedia perangkat; semua ekstensi yang dikenali sekarang dipindai dan ditampilkan di playlist.
+- Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
+
 ## Pembaruan Codex — 17 September 2026, 01:50 WIB
 
 - Bug pemilihan playlist diperbaiki: signal `itemDoubleClicked` diganti menjadi `itemClicked`, sehingga satu tap langsung memanggil `play_item()` dan `QMediaPlayer.play()`.

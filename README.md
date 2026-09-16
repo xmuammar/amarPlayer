@@ -135,7 +135,7 @@ Perbaikan Android yang sudah diterapkan:
 * Playlist memakai pixel scrolling dan kinetic touch scrolling agar swipe terasa halus.
 * Volume internal tidak ditampilkan; keluaran aplikasi menggunakan level penuh dan volume diatur dengan tombol speaker HP.
 
-Format yang dikenali aplikasi: MP3, FLAC, WAV, OGG, OGA, Opus, M4A, AAC, dan MP4 audio. Dukungan codec tetap bergantung pada backend QtMultimedia perangkat.
+Format yang dipindai aplikasi meliputi MP3, FLAC, WAV, OGG, OGA, Opus, M4A, AAC, MP4, AIF/AIFF, AMR, APE, AC3, EAC3, MKA, M4B, MIDI, SPX, TTA, WV, WMA, CAF, 3GP/3GPP, dan WEBM. Pemutaran akhir tetap bergantung pada codec yang tersedia di backend QtMultimedia perangkat.
 
 ## Build Android di Fedora Asahi
 
@@ -171,6 +171,9 @@ Format audio yang dapat didukung antara lain:
 * AAC
 * M4A
 * MP4 Audio
+* AIF/AIFF, AMR, APE, AC3/EAC3
+* MKA, M4B, MIDI, SPX, TTA, WV, WMA, CAF
+* 3GP/3GPP dan WEBM
 
 Dukungan sebenarnya dapat bergantung pada codec dan backend multimedia yang tersedia pada sistem.
 

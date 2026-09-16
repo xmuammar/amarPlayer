@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QAbstractItemView,
     QScroller,
+    QProgressBar,
 )
 
 
@@ -77,6 +78,25 @@ SUPPORTED_EXTENSIONS = {
     ".m4a",
     ".aac",
     ".mp4",
+    ".aif",
+    ".aiff",
+    ".amr",
+    ".ape",
+    ".ac3",
+    ".eac3",
+    ".mka",
+    ".m4b",
+    ".mid",
+    ".midi",
+    ".oga",
+    ".spx",
+    ".tta",
+    ".wv",
+    ".wma",
+    ".caf",
+    ".3gp",
+    ".3gpp",
+    ".webm",
 }
 
 ANDROID_SCAN_FOLDERS = (
@@ -457,7 +477,7 @@ def is_audio_file(path):
 
     return os.path.isfile(path)
 
-def scan_audio_files(folder):
+def scan_audio_files(folder, progress_callback=None):
 
     results = []
 
@@ -478,15 +498,24 @@ def scan_audio_files(folder):
         key=lambda x: x.lower()
     )
 
+    if progress_callback:
+        progress_callback(100)
+
     return results
 
 
-def android_fallback_audio_files():
+def android_fallback_audio_files(progress_callback=None):
     """Cari audio di lokasi umum ketika QFileDialog Android tidak mengembalikan URI."""
     results = []
-    for folder in ANDROID_SCAN_FOLDERS:
-        if os.path.isdir(folder):
-            results.extend(scan_audio_files(folder))
+    folders = [
+        folder for folder in ANDROID_SCAN_FOLDERS
+        if os.path.isdir(folder)
+    ]
+    total = max(1, len(folders))
+    for index, folder in enumerate(folders):
+        results.extend(scan_audio_files(folder))
+        if progress_callback:
+            progress_callback(int(((index + 1) / total) * 95))
 
     # Some Android devices expose the directory through MediaStore while
     # Python's os.walk() does not enumerate it.  Preserve the user's common
@@ -497,6 +526,9 @@ def android_fallback_audio_files():
     ):
         if media_extension(candidate) in SUPPORTED_EXTENSIONS:
             results.append(candidate)
+
+    if progress_callback:
+        progress_callback(100)
 
     return sorted(set(results), key=str.lower)
 
@@ -674,6 +706,15 @@ class AmarPlayer(QMainWindow):
         header.addWidget(
             self.scan_btn
         )
+
+        self.scan_progress = QProgressBar()
+        self.scan_progress.setRange(0, 100)
+        self.scan_progress.setValue(0)
+        self.scan_progress.setTextVisible(True)
+        self.scan_progress.setFormat("%p%")
+        self.scan_progress.setFixedWidth(105)
+        self.scan_progress.setVisible(False)
+        header.addWidget(self.scan_progress)
 
         root.addLayout(
             header
@@ -1719,7 +1760,27 @@ class AmarPlayer(QMainWindow):
     # ========================================================
 
     def scan_folder(self):
-        self.add_paths(android_fallback_audio_files())
+        self.scan_btn.setEnabled(False)
+        self.scan_progress.setValue(0)
+        self.scan_progress.setVisible(True)
+        QApplication.processEvents()
+
+        try:
+            paths = android_fallback_audio_files(
+                self.update_scan_progress
+            )
+            self.add_paths(paths)
+            self.update_scan_progress(100)
+        finally:
+            self.scan_btn.setEnabled(True)
+            QTimer.singleShot(
+                900,
+                lambda: self.scan_progress.setVisible(False)
+            )
+
+    def update_scan_progress(self, value):
+        self.scan_progress.setValue(max(0, min(100, int(value))))
+        QApplication.processEvents()
 
     # ========================================================
     # ADD PATHS
