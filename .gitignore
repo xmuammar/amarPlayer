@@ -2,5 +2,7 @@ release/
 
 
 
-# APK hasil build disimpan lokal
+# APK arsip build tetap lokal; paket publik disimpan di download melalui Git LFS
 *.apk
+
+!download/*.apk

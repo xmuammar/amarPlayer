@@ -1,0 +1,5 @@
+download/*.apk filter=lfs diff=lfs merge=lfs -text
+download/*.rpm filter=lfs diff=lfs merge=lfs -text
+download/*.deb filter=lfs diff=lfs merge=lfs -text
+download/*.exe filter=lfs diff=lfs merge=lfs -text
+download/*.AppImage filter=lfs diff=lfs merge=lfs -text

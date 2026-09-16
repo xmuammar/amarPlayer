@@ -1,5 +1,10 @@
 # amarPlayer
 
+**[⬇ Download APK, RPM, DEB, dan AppImage](download/README.md)**
+
+Paket instalasi tersedia di folder [`download/`](download/). Windows EXE belum tersedia.
+Installation packages are available in [`download/`](download/); Windows EXE is not available yet.
+
 **Pemutar Musik Modern Berbasis Python, PySide6, GStreamer & QtMultimedia**
 
 **Modern Music Player Built with Python, PySide6, GStreamer & QtMultimedia**

@@ -39,6 +39,8 @@ class PySideRecipe(PythonRecipe):
             "libQt6Multimedia_arm64-v8a.so",
             "libQt6Network_arm64-v8a.so",
             "libQt6Concurrent_arm64-v8a.so",
+            "libQt6FFmpegStub-crypto_arm64-v8a.so",
+            "libQt6FFmpegStub-ssl_arm64-v8a.so",
             "libavcodec.so",
             "libavformat.so",
             "libavutil.so",
@@ -48,8 +50,9 @@ class PySideRecipe(PythonRecipe):
         libs_dir = Path(self.ctx.get_libs_dir(arch.arch))
         for library in required_libs:
             source = lib_dir / library
-            if source.exists():
-                shutil.copyfile(source, libs_dir / library)
+            if not source.is_file():
+                raise FileNotFoundError(f"Required Qt runtime library missing: {source}")
+            shutil.copyfile(source, libs_dir / library)
         shutil.copyfile(lib_dir.parent.parent / "libpyside6.abi3.so",
                         Path(self.ctx.get_libs_dir(arch.arch)) / "libpyside6.abi3.so")
 
