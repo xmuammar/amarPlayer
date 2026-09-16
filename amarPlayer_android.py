@@ -77,6 +77,15 @@ SUPPORTED_EXTENSIONS = {
     ".mp4",
 }
 
+ANDROID_SCAN_FOLDERS = (
+    "/storage/emulated/0/mp3",
+    "/sdcard/mp3",
+    "/storage/emulated/0/Music",
+    "/sdcard/Music",
+    "/storage/emulated/0/Download",
+    "/sdcard/Download",
+)
+
 def is_android_uri(path):
     return (
         isinstance(path, str)
@@ -469,12 +478,7 @@ def scan_audio_files(folder):
 def android_fallback_audio_files():
     """Cari audio di lokasi umum ketika QFileDialog Android tidak mengembalikan URI."""
     results = []
-    for folder in (
-        "/sdcard/Music",
-        "/sdcard/Download",
-        "/storage/emulated/0/Music",
-        "/storage/emulated/0/Download",
-    ):
+    for folder in ANDROID_SCAN_FOLDERS:
         if os.path.isdir(folder):
             results.extend(scan_audio_files(folder))
 
@@ -644,36 +648,8 @@ class AmarPlayer(QMainWindow):
 
         header.addStretch()
 
-        self.eq_button = QPushButton(
-            "EQ"
-        )
-
-        self.eq_button.setCheckable(
-            True
-        )
-
-        self.add_file_btn = QPushButton(
-            "+ File"
-        )
-
-        self.add_folder_btn = QPushButton(
-            "+ Folder"
-        )
-
         self.scan_btn = QPushButton(
             "Scan"
-        )
-
-        header.addWidget(
-            self.eq_button
-        )
-
-        header.addWidget(
-            self.add_file_btn
-        )
-
-        header.addWidget(
-            self.add_folder_btn
         )
 
         header.addWidget(
@@ -1042,18 +1018,6 @@ class AmarPlayer(QMainWindow):
         # ====================================================
         # SIGNALS
         # ====================================================
-
-        self.eq_button.clicked.connect(
-            self.toggle_eq
-        )
-
-        self.add_file_btn.clicked.connect(
-            self.add_files
-        )
-
-        self.add_folder_btn.clicked.connect(
-            self.add_folder
-        )
 
         self.scan_btn.clicked.connect(
             self.scan_folder
@@ -1738,21 +1702,7 @@ class AmarPlayer(QMainWindow):
     # ========================================================
 
     def scan_folder(self):
-
-        folder = QFileDialog.getExistingDirectory(
-            self,
-            "Scan Folder Musik"
-        )
-
-        if not folder:
-            self.add_paths(android_fallback_audio_files())
-            return
-
-        self.add_paths(
-            scan_audio_files(
-                folder
-            )
-        )
+        self.add_paths(android_fallback_audio_files())
 
     # ========================================================
     # ADD PATHS
