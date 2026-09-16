@@ -26,7 +26,7 @@ p4a.branch = develop
 android.permissions = android.permission.CAMERA, android.permission.MODIFY_AUDIO_SETTINGS, android.permission.BLUETOOTH, android.permission.RECORD_AUDIO, android.permission.WRITE_EXTERNAL_STORAGE, android.permission.READ_EXTERNAL_STORAGE, android.permission.READ_MEDIA_AUDIO, android.permission.READ_MEDIA_VIDEO, android.permission.INTERNET
 android.add_jars = /home/muammar/aplikasiMp3/deployment/jar/PySide6/jar/Qt6AndroidBindings.jar,/home/muammar/aplikasiMp3/deployment/jar/PySide6/jar/Qt6AndroidMultimedia.jar,/home/muammar/aplikasiMp3/deployment/jar/PySide6/jar/Qt6Android.jar
 p4a.extra_args = --qt-libs=Gui,Multimedia,Widgets,Core --load-local-libs=plugins_multimedia_ffmpegmediaplugin,plugins_multimedia_androidmediaplugin,plugins_platforms_qtforandroid --init-classes=
-icon.filename = /home/muammar/.local/lib/python3.14/site-packages/PySide6/scripts/deploy_lib/pyside_icon.jpg
+icon.filename = /home/muammar/aplikasiMp3/amarPlayer.png
 
 [buildozer]
 log_level = 2

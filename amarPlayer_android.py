@@ -602,6 +602,8 @@ class AmarPlayer(QMainWindow):
 
         header = QHBoxLayout()
 
+        self.header_layout = header
+
         header.setSpacing(
             7
         )
@@ -2893,10 +2895,12 @@ class AmarPlayer(QMainWindow):
         """Atur susunan player agar tidak bertumpuk pada layar sempit."""
         width = self.centralWidget().width() if self.centralWidget() else self.width()
         if width < 760:
+            self.header_layout.setDirection(QBoxLayout.Direction.TopToBottom)
             self.player_layout.setDirection(QBoxLayout.Direction.TopToBottom)
             side = max(120, min(190, width - 48))
             self.cover.setFixedSize(side, side)
         else:
+            self.header_layout.setDirection(QBoxLayout.Direction.LeftToRight)
             self.player_layout.setDirection(QBoxLayout.Direction.LeftToRight)
             self.cover.setFixedSize(190, 190)
         super().resizeEvent(event)
