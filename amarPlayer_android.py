@@ -8,7 +8,7 @@ import os
 import json
 import random
 
-from PySide6.QtCore import Qt, QTimer, QSize, QStandardPaths, QFile, QUrl
+from PySide6.QtCore import Qt, QTimer, QSize, QStandardPaths, QFile, QFileInfo, QUrl
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QBoxLayout,
     QLabel,
     QPushButton,
     QSlider,
@@ -141,11 +142,12 @@ def android_media_cache_path(path):
 
 def prepare_playback_path(path):
 
-    if not is_android_uri(path):
+    if not is_android_uri(path) and not path.startswith(("/sdcard/", "/storage/")):
         return path
 
-    cache_path = android_media_cache_path(
-        path
+    cache_path = android_media_cache_path(path) if is_android_uri(path) else os.path.join(
+        QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
+        "local_" + hashlib.sha256(path.encode("utf-8")).hexdigest() + media_extension(path),
     )
 
     if not cache_path:
@@ -156,9 +158,10 @@ def prepare_playback_path(path):
     if os.path.isfile(cache_path):
         return cache_path
 
-    qfile = open_android_media(
-        path
-    )
+    qfile = open_android_media(path) if is_android_uri(path) else QFile(path)
+
+    if not qfile.isOpen() and not qfile.open(QFile.OpenModeFlag.ReadOnly):
+        return None
 
     if qfile is None:
         return None
@@ -431,12 +434,13 @@ def is_audio_file(path):
             in SUPPORTED_EXTENSIONS
         )
 
-    return (
-        os.path.isfile(path)
-        and
-        media_extension(path)
-        in SUPPORTED_EXTENSIONS
-    )
+    if media_extension(path) not in SUPPORTED_EXTENSIONS:
+        return False
+
+    if path.startswith(("/sdcard/", "/storage/")):
+        return QFileInfo(path).exists()
+
+    return os.path.isfile(path)
 
 def scan_audio_files(folder):
 
@@ -462,6 +466,21 @@ def scan_audio_files(folder):
     return results
 
 
+def android_fallback_audio_files():
+    """Cari audio di lokasi umum ketika QFileDialog Android tidak mengembalikan URI."""
+    results = []
+    for folder in (
+        "/sdcard/Music",
+        "/sdcard/Download",
+        "/storage/emulated/0/Music",
+        "/storage/emulated/0/Download",
+    ):
+        if os.path.isdir(folder):
+            results.extend(scan_audio_files(folder))
+
+    return sorted(set(results), key=str.lower)
+
+
 # ============================================================
 # PLAYER
 # ============================================================
@@ -477,14 +496,11 @@ class AmarPlayer(QMainWindow):
         )
 
         # Ukuran khusus laptop 1280x720
-        self.resize(
-            1180,
-            680
-        )
+        self.resize(980, 700)
 
         self.setMinimumSize(
-            900,
-            600
+            320,
+            480
         )
 
         self.current_index = -1
@@ -545,13 +561,6 @@ class AmarPlayer(QMainWindow):
 
         self.timer.start(
             200
-        )
-        self.glib_timer.timeout.connect(
-            self.process_glib
-        )
-
-        self.glib_timer.start(
-            20
         )
 
         # ====================================================
@@ -687,6 +696,8 @@ class AmarPlayer(QMainWindow):
             player_frame
         )
 
+        self.player_layout = player_layout
+
         player_layout.setContentsMargins(
             16,
             14,
@@ -704,10 +715,7 @@ class AmarPlayer(QMainWindow):
 
         self.cover = QLabel()
 
-        self.cover.setFixedSize(
-            190,
-            190
-        )
+        self.cover.setFixedSize(190, 190)
 
         self.cover.setAlignment(
             Qt.AlignCenter
@@ -988,6 +996,8 @@ class AmarPlayer(QMainWindow):
                 42
             )
         )
+
+        self.playlist.setSpacing(3)
 
         self.playlist.setMinimumHeight(
             180
@@ -1604,9 +1614,10 @@ class AmarPlayer(QMainWindow):
                     url.toLocalFile()
                 )
 
-        self.add_paths(
-            paths
-        )
+        if not paths:
+            paths = android_fallback_audio_files()
+
+        self.add_paths(paths)
     # ========================================================
     # COMMAND LINE / FEDORA FILE ASSOCIATION
     # ========================================================
@@ -1711,6 +1722,7 @@ class AmarPlayer(QMainWindow):
         )
 
         if not folder:
+            self.add_paths(android_fallback_audio_files())
             return
 
         self.add_paths(
@@ -1731,6 +1743,7 @@ class AmarPlayer(QMainWindow):
         )
 
         if not folder:
+            self.add_paths(android_fallback_audio_files())
             return
 
         self.add_paths(
@@ -1786,9 +1799,19 @@ class AmarPlayer(QMainWindow):
                 key
             )
 
-            metadata = read_metadata(
-                path
-            )
+            # Membaca metadata melalui Mutagen pada filesystem Android
+            # dapat memblokir saat scoped storage belum memberikan akses.
+            # Gunakan nama file segera; metadata lengkap tetap dipakai
+            # untuk file desktop dan content:// dari SAF.
+            if path.startswith("/sdcard/") or path.startswith("/storage/"):
+                metadata = {
+                    "title": os.path.splitext(os.path.basename(path))[0],
+                    "artist": "Unknown Artist",
+                    "album": "",
+                    "cover": None,
+                }
+            else:
+                metadata = read_metadata(path)
 
             item = QListWidgetItem()
 
@@ -1843,6 +1866,8 @@ class AmarPlayer(QMainWindow):
                 f"{title}\n{second}"
             )
 
+            item.setSizeHint(QSize(0, 64))
+
             self.playlist.addItem(
                 item
             )
@@ -1880,9 +1905,15 @@ class AmarPlayer(QMainWindow):
                 Qt.UserRole
             )
 
-            metadata = read_metadata(
-                path
-            )
+            if path.startswith(("/sdcard/", "/storage/")):
+                metadata = {
+                    "title": os.path.splitext(os.path.basename(path))[0],
+                    "artist": "Unknown Artist",
+                    "album": "",
+                    "cover": None,
+                }
+            else:
+                metadata = read_metadata(path)
 
             second = " • ".join(
                 x
@@ -1964,10 +1995,7 @@ class AmarPlayer(QMainWindow):
         if not playback_path:
             return
 
-        if not os.path.exists(
-            playback_path
-        ):
-
+        if not os.path.exists(playback_path):
             return
 
         self.current_index = index
@@ -1984,9 +2012,15 @@ class AmarPlayer(QMainWindow):
 
         self.player.play()
 
-        metadata = read_metadata(
-            path
-        )
+        if path.startswith(("/sdcard/", "/storage/")):
+            metadata = {
+                "title": os.path.splitext(os.path.basename(path))[0],
+                "artist": "Unknown Artist",
+                "album": "",
+                "cover": None,
+            }
+        else:
+            metadata = read_metadata(path)
 
         self.song_title.setText(
             metadata["title"]
@@ -2355,17 +2389,9 @@ class AmarPlayer(QMainWindow):
             "▶"
         )
 
-    def eq_changed(
-        self,
-        value
-    ):
-
-        try:
-
-            self.update_tone()
-
-        except Exception:
-            pass
+    def eq_changed(self, index, value, label):
+        label.setText(str(value))
+        self.update_tone()
 
     # ========================================================
     # PRESETS
@@ -2752,7 +2778,7 @@ class AmarPlayer(QMainWindow):
         if not os.path.exists(
             PLAYLIST_FILE
         ):
-
+            self.add_paths(android_fallback_audio_files())
             return
 
         try:
@@ -2776,12 +2802,17 @@ class AmarPlayer(QMainWindow):
                     paths
                 )
 
+                if self.playlist.count() == 0:
+                    self.add_paths(android_fallback_audio_files())
+
         except Exception as error:
 
             print(
                 "Playlist load error:",
                 error
             )
+
+            self.add_paths(android_fallback_audio_files())
 
     # ========================================================
     # DRAG
@@ -2857,6 +2888,18 @@ class AmarPlayer(QMainWindow):
     # ========================================================
     # CLOSE
     # ========================================================
+
+    def resizeEvent(self, event):
+        """Atur susunan player agar tidak bertumpuk pada layar sempit."""
+        width = self.centralWidget().width() if self.centralWidget() else self.width()
+        if width < 760:
+            self.player_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            side = max(120, min(190, width - 48))
+            self.cover.setFixedSize(side, side)
+        else:
+            self.player_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self.cover.setFixedSize(190, 190)
+        super().resizeEvent(event)
 
     def closeEvent(
         self,
@@ -2968,5 +3011,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-
-

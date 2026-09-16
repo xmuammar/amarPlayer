@@ -35,9 +35,9 @@ amarPlayer tetap mempertahankan source desktop utama, sementara versi Android di
 | Fedora            | ✅ Berjalan                | RPM berhasil dibuat        |
 | Fedora COPR       | ✅ Berhasil                | x86_64 dan aarch64         |
 | Debian / Ubuntu   | ✅ Package berhasil dibuat | `.deb` tersedia            |
-| Android ARM64     | 🧪 Eksperimental          | APK berhasil dibuat        |
-| Instalasi Android | ✅ Berhasil                | APK dapat dipasang         |
-| Android Runtime   | ⚠️ Debugging              | Saat ini masih layar putih |
+| Android ARM64     | 🧪 Eksperimental          | APK debug ARM64 berhasil dibuat |
+| Instalasi Android | ✅ Berhasil                | APK dapat dipasang melalui ADB |
+| Android Runtime   | 🧪 Dalam pengujian         | Qt/PySide6 berhasil start; playback masih diuji |
 | Windows           | 🚧 Eksperimental          | Pengembangan berikutnya    |
 
 ---
@@ -116,7 +116,44 @@ amarPlayer mendukung:
 
 Versi Linux memiliki antarmuka **equalizer 10-band**.
 
-Pada versi Android, tampilan equalizer masih dipertahankan, tetapi pemrosesan DSP Android belum sepenuhnya diimplementasikan.
+Pada versi Android, kontrol equalizer, preset, reset, preamp, bass, dan treble tersedia di UI. Backend QtMultimedia Android belum menyediakan DSP 10-band yang sama seperti desktop, sehingga kontrol ini saat ini menyimpan dan menampilkan nilai tanpa mengubah sinyal audio.
+
+---
+
+# Status Android Terbaru
+
+Port Android menggunakan `main.py` sebagai entry point dan menjalankan modul `amarPlayer_android` dari bytecode APK. Build memakai Python 3.11, PySide6 6.11.2, Shiboken6, QtMultimedia, dan arsitektur `arm64-v8a`.
+
+Perbaikan Android yang sudah diterapkan:
+
+* Play, pause, previous, next, shuffle, repeat, volume, dan seek terhubung ke `QMediaPlayer`.
+* File lokal Android disalin ke cache aplikasi sebelum diputar agar kompatibel dengan scoped storage.
+* Playlist disimpan di `AppDataLocation/amarPlayer/amarPlayer_playlist.json`.
+* Jika picker Android tidak mengembalikan URI, aplikasi memindai folder `Music` dan `Download`.
+* Izin `READ_MEDIA_AUDIO`, `READ_MEDIA_VIDEO`, dan `READ_EXTERNAL_STORAGE` diminta di manifest.
+* Layout player berubah vertikal pada layar sempit dan tinggi baris playlist dibuat tetap agar teks tidak bertumpuk.
+
+Format yang dikenali aplikasi: MP3, FLAC, WAV, OGG, OGA, Opus, M4A, AAC, dan MP4 audio. Dukungan codec tetap bergantung pada backend QtMultimedia perangkat.
+
+## Build Android di Fedora Asahi
+
+Build dilakukan tanpa menghapus cache `.buildozer`:
+
+```bash
+export ANDROIDNDK="$HOME/.android-ndk-arm64/r29"
+export ANDROID_NDK_HOME="$ANDROIDNDK"
+export ANDROID_NDK_ROOT="$ANDROIDNDK"
+export JAVA_HOME="$HOME/.jdk/jdk-21"
+export PATH="$JAVA_HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/.android-ndk-arm64/compat${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+buildozer -v android debug
+```
+
+Pada host Fedora dengan page size 16K, Gradle dapat perlu dijalankan melalui `muvm` dan memakai override AAPT2 yang tercantum di `CHAT_CONTEXT.md`. APK debug berada di folder `bin/` dan instalasi menggunakan endpoint ADB eksplisit:
+
+```bash
+adb -s DEVICE install -r bin/amarPlayer-final-debug.apk
+```
 
 ---
 
@@ -1499,4 +1536,3 @@ Android UI           ⚠️ Under Debugging
 ```
 
 The next major milestone is getting the full PySide6 interface running correctly on Android and validating music playback through QtMultimedia.
-

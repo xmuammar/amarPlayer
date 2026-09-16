@@ -1,2 +1,2 @@
 import runpy
-runpy.run_path("amarPlayer_android.py", run_name="__main__")
+runpy.run_module("amarPlayer_android", run_name="__main__")
