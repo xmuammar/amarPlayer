@@ -929,6 +929,13 @@ Tidak ada perubahan Fedora tanpa izin.
 - APK dipasang ke `192.168.100.199:38789` dengan `adb install -r` dan sukses. Setelah Scan, playlist berubah dari 40 menjadi 41 lagu, menunjukkan `musik.mp3` masuk. Pemilihan lagu lalu Play mengaktifkan Android `AudioTrack`/`qt.multimedia.android.aaudiostream`; PID tetap hidup dan tidak ada traceback/crash.
 - Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
 
+## Pembaruan Codex — 17 September 2026, 02:25 WIB
+
+- Atas permintaan pengguna, `SUPPORTED_EXTENSIONS` Android dikembalikan menjadi MP3 saja (`.mp3`); ekstensi lain tidak lagi discan atau dimasukkan playlist.
+- Tombol Scan sekarang berlabel `🔍  Scan` dengan ikon pencarian.
+- README Bahasa Indonesia dan Inggris diperbarui agar menyatakan dukungan Android hanya MP3.
+- Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
+
 ## Pembaruan Codex — 17 September 2026, 02:10 WIB
 
 - Dukungan filter scan diperluas dari format dasar menjadi MP3, FLAC, WAV, OGG/OGA, Opus, M4A, AAC, MP4, AIF/AIFF, AMR, APE, AC3/EAC3, MKA, M4B, MIDI, SPX, TTA, WV, WMA, CAF, 3GP/3GPP, dan WEBM.

@@ -70,33 +70,6 @@ PLAYLIST_FILE = os.path.join(
 
 SUPPORTED_EXTENSIONS = {
     ".mp3",
-    ".flac",
-    ".wav",
-    ".ogg",
-    ".oga",
-    ".opus",
-    ".m4a",
-    ".aac",
-    ".mp4",
-    ".aif",
-    ".aiff",
-    ".amr",
-    ".ape",
-    ".ac3",
-    ".eac3",
-    ".mka",
-    ".m4b",
-    ".mid",
-    ".midi",
-    ".oga",
-    ".spx",
-    ".tta",
-    ".wv",
-    ".wma",
-    ".caf",
-    ".3gp",
-    ".3gpp",
-    ".webm",
 }
 
 ANDROID_SCAN_FOLDERS = (
@@ -700,7 +673,7 @@ class AmarPlayer(QMainWindow):
         header.addStretch()
 
         self.scan_btn = QPushButton(
-            "Scan"
+            "🔍  Scan"
         )
 
         header.addWidget(
