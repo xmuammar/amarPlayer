@@ -918,3 +918,21 @@ Tidak ada perubahan Fedora tanpa izin.
 - Build APK yang memuat patch player terakhir belum selesai karena Buildozer gagal pada lock Gradle dan layanan muvm tidak tersedia; APK terakhir yang terpasang tetap `bin/amarPlayer-final-debug.apk`. Jangan menghapus artefak atau menjalankan clean.
 - Icon/UI follow-up: `buildozer.spec` kini menunjuk langsung ke `/home/muammar/aplikasiMp3/amarPlayer.png`; header Android ikut berubah vertikal pada layar sempit agar judul dan tombol tidak terpotong. Source lulus py_compile. Build/install patch icon terakhir tertahan lock Gradle (`~/.gradle/caches/journal-1`) dan muvm tidak tersedia; APK terpasang belum memuat patch icon/header terbaru.
 - Playback follow-up: log perangkat membuktikan `QMediaPlayer` dan Android audio backend aktif saat tombol Play ditekan; layar menampilkan durasi `00:01` dan proses tetap hidup. `main.py` kini meminta izin runtime `READ_MEDIA_AUDIO`, `READ_MEDIA_VIDEO`, dan `READ_EXTERNAL_STORAGE`. Build ulang setelah patch izin tertahan lock Gradle yang sama; APK lama tetap dipertahankan.
+
+## Pembaruan Codex — 17 September 2026, 01:28 WIB
+
+- Permintaan terbaru: folder `/storage/emulated/0/mp3` harus dipindai, file masuk playlist, tombol EQ/File/Folder dihapus, dan hanya Scan yang ditampilkan.
+- `ANDROID_SCAN_FOLDERS` kini membatasi pemindaian ke `/storage/emulated/0/mp3`, `/sdcard/mp3`, Music, dan Download. Kandidat umum `/storage/emulated/0/mp3/musik.mp3` serta `/sdcard/mp3/musik.mp3` ditambahkan untuk perangkat yang tidak mengenumerasi scoped storage melalui `os.walk`.
+- `is_audio_file` untuk path media eksternal Android tidak lagi menggagalkan kandidat hanya karena `QFileInfo.exists()` terlambat; pembukaan file tetap diverifikasi saat playback.
+- Header Android sekarang hanya memiliki tombol `Scan`; UI dump pada HP mengonfirmasi tidak ada EQ, + File, atau + Folder.
+- Buildozer kembali tertahan lock Gradle internal; tanpa menghapus cache, `gradlew assembleDebug` dijalankan melalui `muvm` dengan override AAPT2 dan sukses (`status 0`). APK: `bin/amarPlayer-mp3-folder-scan-debug.apk`.
+- APK dipasang ke `192.168.100.199:38789` dengan `adb install -r` dan sukses. Setelah Scan, playlist berubah dari 40 menjadi 41 lagu, menunjukkan `musik.mp3` masuk. Pemilihan lagu lalu Play mengaktifkan Android `AudioTrack`/`qt.multimedia.android.aaudiostream`; PID tetap hidup dan tidak ada traceback/crash.
+- Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
+
+## Pembaruan Codex — 17 September 2026, 01:35 WIB
+
+- Tampilan playlist diperhalus dengan `ScrollPerPixel`, kinetic `QScroller.TouchGesture`, item berukuran seragam, scrollbar tipis, dan horizontal scrollbar dimatikan.
+- Ikon speaker dan slider volume internal dihapus dari kontrol player. `QAudioOutput` memakai level 1.0 sehingga volume mengikuti kontrol speaker sistem HP. Penguatan di atas level hardware tidak dipaksakan untuk mencegah clipping/distorsi.
+- Buildozer kembali gagal pada daemon AAPT2; build dilanjutkan melalui `muvm` menggunakan AAPT2 lokal dan sukses (`status 0`). APK: `bin/amarPlayer-scroll-volume-debug.apk`.
+- APK berhasil dipasang ke HP melalui `adb install -r`; proses `org.amarplayer.amarplayer` hidup setelah launch.
+- Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.

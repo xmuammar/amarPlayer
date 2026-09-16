@@ -37,7 +37,7 @@ amarPlayer tetap mempertahankan source desktop utama, sementara versi Android di
 | Debian / Ubuntu   | ✅ Package berhasil dibuat | `.deb` tersedia            |
 | Android ARM64     | 🧪 Eksperimental          | APK debug ARM64 berhasil dibuat |
 | Instalasi Android | ✅ Berhasil                | APK dapat dipasang melalui ADB |
-| Android Runtime   | 🧪 Dalam pengujian         | Qt/PySide6 berhasil start; playback masih diuji |
+| Android Runtime   | ✅ Teruji                  | Scan folder, playlist, dan playback diuji pada perangkat ARM64 |
 | Windows           | 🚧 Eksperimental          | Pengembangan berikutnya    |
 
 ---
@@ -53,7 +53,7 @@ amarPlayer menyediakan kontrol pemutaran musik seperti:
 * Next
 * Previous
 * Seek
-* Volume
+* Volume mengikuti kontrol sistem perangkat
 * Shuffle
 * Repeat
 
@@ -116,7 +116,7 @@ amarPlayer mendukung:
 
 Versi Linux memiliki antarmuka **equalizer 10-band**.
 
-Pada versi Android, kontrol equalizer, preset, reset, preamp, bass, dan treble tersedia di UI. Backend QtMultimedia Android belum menyediakan DSP 10-band yang sama seperti desktop, sehingga kontrol ini saat ini menyimpan dan menampilkan nilai tanpa mengubah sinyal audio.
+Pada versi Android, panel equalizer desktop tidak ditampilkan. Backend QtMultimedia Android belum menyediakan DSP 10-band yang sama seperti desktop.
 
 ---
 
@@ -129,9 +129,11 @@ Perbaikan Android yang sudah diterapkan:
 * Play, pause, previous, next, shuffle, repeat, volume, dan seek terhubung ke `QMediaPlayer`.
 * File lokal Android disalin ke cache aplikasi sebelum diputar agar kompatibel dengan scoped storage.
 * Playlist disimpan di `AppDataLocation/amarPlayer/amarPlayer_playlist.json`.
-* Jika picker Android tidak mengembalikan URI, aplikasi memindai folder `Music` dan `Download`.
+* Android menyediakan tombol `Scan` tunggal; pemindaian dibatasi ke folder `mp3`, `Music`, dan `Download` yang diizinkan aplikasi.
 * Izin `READ_MEDIA_AUDIO`, `READ_MEDIA_VIDEO`, dan `READ_EXTERNAL_STORAGE` diminta di manifest.
 * Layout player berubah vertikal pada layar sempit dan tinggi baris playlist dibuat tetap agar teks tidak bertumpuk.
+* Playlist memakai pixel scrolling dan kinetic touch scrolling agar swipe terasa halus.
+* Volume internal tidak ditampilkan; keluaran aplikasi menggunakan level penuh dan volume diatur dengan tombol speaker HP.
 
 Format yang dikenali aplikasi: MP3, FLAC, WAV, OGG, OGA, Opus, M4A, AAC, dan MP4 audio. Dukungan codec tetap bergantung pada backend QtMultimedia perangkat.
 
@@ -844,7 +846,7 @@ The original desktop source is preserved while Android-specific development is m
 | Debian / Ubuntu      | ✅ Package Built | `.deb` available                 |
 | Android ARM64        | 🧪 Experimental | APK successfully built           |
 | Android Installation | ✅ Working       | APK installs successfully        |
-| Android Runtime      | ⚠️ Debugging    | Currently showing a white screen |
+| Android Runtime      | ✅ Tested       | Folder scan, playlist, and playback tested on ARM64 device |
 | Windows              | 🚧 Experimental | Future development               |
 
 ---
@@ -860,7 +862,7 @@ amarPlayer provides:
 * Next
 * Previous
 * Seek
-* Volume
+* Volume controlled by the device system
 * Shuffle
 * Repeat
 
@@ -923,7 +925,7 @@ amarPlayer supports:
 
 The Linux version includes a **10-band equalizer** interface.
 
-The interface is still present in the Android port, but Android DSP processing has not yet been fully implemented.
+The equalizer interface is desktop-only; Android QtMultimedia does not provide the same 10-band DSP processing.
 
 ---
 

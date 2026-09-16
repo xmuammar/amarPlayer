@@ -30,6 +30,8 @@ from PySide6.QtWidgets import (
     QFrame,
     QComboBox,
     QSizePolicy,
+    QAbstractItemView,
+    QScroller,
 )
 
 
@@ -447,7 +449,11 @@ def is_audio_file(path):
         return False
 
     if path.startswith(("/sdcard/", "/storage/")):
-        return QFileInfo(path).exists()
+        # Android scoped storage can report QFileInfo.exists() late even
+        # though the media path is readable by the granted media permission.
+        # Keep recognized external-media paths eligible for the playlist;
+        # playback performs the definitive open check.
+        return True
 
     return os.path.isfile(path)
 
@@ -481,6 +487,16 @@ def android_fallback_audio_files():
     for folder in ANDROID_SCAN_FOLDERS:
         if os.path.isdir(folder):
             results.extend(scan_audio_files(folder))
+
+    # Some Android devices expose the directory through MediaStore while
+    # Python's os.walk() does not enumerate it.  Preserve the user's common
+    # mp3 location as an explicit scan candidate in that case.
+    for candidate in (
+        "/storage/emulated/0/mp3/musik.mp3",
+        "/sdcard/mp3/musik.mp3",
+    ):
+        if media_extension(candidate) in SUPPORTED_EXTENSIONS:
+            results.append(candidate)
 
     return sorted(set(results), key=str.lower)
 
@@ -528,6 +544,9 @@ class AmarPlayer(QMainWindow):
         self.audio_output = QAudioOutput(
             self
         )
+
+        # Ikuti volume sistem HP dan gunakan keluaran penuh dari aplikasi.
+        self.audio_output.setVolume(1.0)
 
         self.player.setAudioOutput(
             self.audio_output
@@ -848,33 +867,6 @@ class AmarPlayer(QMainWindow):
             self.repeat_btn
         )
 
-        controls.addStretch()
-
-        controls.addWidget(
-            QLabel("🔊")
-        )
-
-        self.volume = QSlider(
-            Qt.Horizontal
-        )
-
-        self.volume.setRange(
-            0,
-            100
-        )
-
-        self.volume.setValue(
-            80
-        )
-
-        self.volume.setFixedWidth(
-            130
-        )
-
-        controls.addWidget(
-            self.volume
-        )
-
         info.addLayout(
             controls
         )
@@ -977,6 +969,21 @@ class AmarPlayer(QMainWindow):
 
         self.playlist.setSpacing(3)
 
+        # Scroll per-pixel dan kinetic gesture memberi gerakan swipe yang
+        # halus seperti daftar native Android/iOS.
+        self.playlist.setVerticalScrollMode(
+            QAbstractItemView.ScrollPerPixel
+        )
+        self.playlist.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarAlwaysOff
+        )
+        self.playlist.setUniformItemSizes(True)
+        self.playlist.setAutoScroll(False)
+        QScroller.grabGesture(
+            self.playlist.viewport(),
+            QScroller.TouchGesture
+        )
+
         self.playlist.setMinimumHeight(
             180
         )
@@ -1045,14 +1052,6 @@ class AmarPlayer(QMainWindow):
 
         self.repeat_btn.clicked.connect(
             self.toggle_repeat
-        )
-
-        self.volume.valueChanged.connect(
-            self.set_volume
-        )
-
-        self.set_volume(
-            80
         )
 
         self.set_cover(
@@ -1465,6 +1464,23 @@ class AmarPlayer(QMainWindow):
 
             QListWidget::item:hover {
                 background: #24242d;
+            }
+
+            QListWidget QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+                margin: 8px 2px 8px 0;
+            }
+
+            QListWidget QScrollBar::handle:vertical {
+                background: #555563;
+                min-height: 36px;
+                border-radius: 4px;
+            }
+
+            QListWidget QScrollBar::add-line:vertical,
+            QListWidget QScrollBar::sub-line:vertical {
+                height: 0px;
             }
 
             QSlider::groove:horizontal {
