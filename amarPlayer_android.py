@@ -993,7 +993,8 @@ class AmarPlayer(QMainWindow):
             QSizePolicy.Expanding
         )
 
-        self.playlist.itemDoubleClicked.connect(
+        # Satu tap pada lagu langsung memilih dan memulai pemutaran.
+        self.playlist.itemClicked.connect(
             self.play_item
         )
 

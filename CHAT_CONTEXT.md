@@ -929,6 +929,13 @@ Tidak ada perubahan Fedora tanpa izin.
 - APK dipasang ke `192.168.100.199:38789` dengan `adb install -r` dan sukses. Setelah Scan, playlist berubah dari 40 menjadi 41 lagu, menunjukkan `musik.mp3` masuk. Pemilihan lagu lalu Play mengaktifkan Android `AudioTrack`/`qt.multimedia.android.aaudiostream`; PID tetap hidup dan tidak ada traceback/crash.
 - Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
 
+## Pembaruan Codex — 17 September 2026, 01:50 WIB
+
+- Bug pemilihan playlist diperbaiki: signal `itemDoubleClicked` diganti menjadi `itemClicked`, sehingga satu tap langsung memanggil `play_item()` dan `QMediaPlayer.play()`.
+- Buildozer kembali gagal pada daemon AAPT2; Gradle dilanjutkan melalui `muvm` dengan AAPT2 lokal dan sukses. APK: `bin/amarPlayer-autoplay-debug.apk`.
+- APK berhasil dipasang ke HP melalui `adb install -r`; proses aplikasi hidup setelah launch.
+- Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
+
 ## Pembaruan Codex — 17 September 2026, 01:35 WIB
 
 - Tampilan playlist diperhalus dengan `ScrollPerPixel`, kinetic `QScroller.TouchGesture`, item berukuran seragam, scrollbar tipis, dan horizontal scrollbar dimatikan.
