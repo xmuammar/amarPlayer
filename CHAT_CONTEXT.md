@@ -929,6 +929,15 @@ Tidak ada perubahan Fedora tanpa izin.
 - APK dipasang ke `192.168.100.199:38789` dengan `adb install -r` dan sukses. Setelah Scan, playlist berubah dari 40 menjadi 41 lagu, menunjukkan `musik.mp3` masuk. Pemilihan lagu lalu Play mengaktifkan Android `AudioTrack`/`qt.multimedia.android.aaudiostream`; PID tetap hidup dan tidak ada traceback/crash.
 - Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
 
+## Pembaruan Codex — 17 September 2026, 02:08 WIB
+
+- APK sebelumnya berukuran sekitar 173 MB karena recipe PySide6 menyalin seluruh library Qt (147 `.so`). Recipe diperketat agar hanya menyalin Qt Core, Gui, Widgets, Multimedia, Network, Concurrent, serta library FFmpeg yang dibutuhkan player.
+- `buildozer.spec` mengecualikan folder build/package dari asset aplikasi. Distribution baru `amarPlayerLite` dibuat tanpa menghapus distribution lama.
+- APK optimized berhasil dibuat dengan ukuran sekitar 113 MB (`bin/amarPlayer-lite-optimized-debug.apk`), turun sekitar 60 MB, dan tetap memakai package Android yang sama.
+- APK optimized berhasil dipasang ke HP; PID aplikasi hidup dan manifest memuat semua library runtime yang diperlukan, termasuk QtMultimedia dan plugin audio.
+- README diperbarui dengan catatan optimasi ukuran dan batas codec.
+- Tidak menjalankan clean manual, menghapus cache/build lama, reset Git, sudo, atau perubahan Fedora.
+
 ## Pembaruan Codex — 17 September 2026, 02:25 WIB
 
 - Atas permintaan pengguna, `SUPPORTED_EXTENSIONS` Android dikembalikan menjadi MP3 saja (`.mp3`); ekstensi lain tidak lagi discan atau dimasukkan playlist.

@@ -31,8 +31,25 @@ class PySideRecipe(PythonRecipe):
 
         lib_dir = Path(f"{self.ctx.get_python_install_dir(arch.arch)}/PySide6/Qt/lib")
 
-        info("Copying Qt libraries to be loaded on startup")
-        shutil.copytree(lib_dir, self.ctx.get_libs_dir(arch.arch), dirs_exist_ok=True)
+        info("Copying only Qt libraries required by amarPlayer")
+        required_libs = {
+            "libQt6Core_arm64-v8a.so",
+            "libQt6Gui_arm64-v8a.so",
+            "libQt6Widgets_arm64-v8a.so",
+            "libQt6Multimedia_arm64-v8a.so",
+            "libQt6Network_arm64-v8a.so",
+            "libQt6Concurrent_arm64-v8a.so",
+            "libavcodec.so",
+            "libavformat.so",
+            "libavutil.so",
+            "libswresample.so",
+            "libswscale.so",
+        }
+        libs_dir = Path(self.ctx.get_libs_dir(arch.arch))
+        for library in required_libs:
+            source = lib_dir / library
+            if source.exists():
+                shutil.copyfile(source, libs_dir / library)
         shutil.copyfile(lib_dir.parent.parent / "libpyside6.abi3.so",
                         Path(self.ctx.get_libs_dir(arch.arch)) / "libpyside6.abi3.so")
 

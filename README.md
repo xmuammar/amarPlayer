@@ -157,6 +157,12 @@ Pada host Fedora dengan page size 16K, Gradle dapat perlu dijalankan melalui `mu
 adb -s DEVICE install -r bin/amarPlayer-final-debug.apk
 ```
 
+Build Android terbaru memakai distribution Qt minimal yang hanya membawa
+library Core, Gui, Widgets, Multimedia, Network, Concurrent, dan codec FFmpeg
+yang diperlukan. APK optimized ARM64 berada di
+`bin/amarPlayer-lite-optimized-debug.apk` dan berukuran sekitar 113 MB,
+lebih kecil dari bundle sebelumnya sekitar 173 MB.
+
 ---
 
 # Format Audio

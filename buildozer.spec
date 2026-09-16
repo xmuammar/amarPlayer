@@ -4,6 +4,7 @@ package.name = amarPlayer
 package.domain = org.amarPlayer
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,qml,js
+source.exclude_dirs = .git,.buildozer,bin,build,release,debian,packaging,installer,android-wheels,__pycache__
 version = 0.1
 requirements = python3==3.11.9,hostpython3==3.11.9,shiboken6,PySide6
 orientation = portrait
