@@ -11,6 +11,42 @@ Installation packages are available in [`download/`](download/); Windows EXE is 
 
 ---
 
+## Download / Unduh
+
+| Platform | Paket / Package | Status |
+| --- | --- | --- |
+| Android ARM64 | [APK debug](https://media.githubusercontent.com/media/xmuammar/amarPlayer/main/download/amarPlayer-android-arm64-debug.apk) | Startup dan pemutaran MP3 diuji / Startup and MP3 playback tested |
+| Fedora 44 | [RPM noarch](https://media.githubusercontent.com/media/xmuammar/amarPlayer/main/download/amarPlayer-1.0.0-1.fc44.noarch.rpm) | Versi / Version 1.0.0 |
+| Debian / Ubuntu | [DEB](https://media.githubusercontent.com/media/xmuammar/amarPlayer/main/download/amarplayer_1.0.0-1_all.deb) | Versi / Version 1.0.0 |
+| Linux ARM64 | [AppImage](https://media.githubusercontent.com/media/xmuammar/amarPlayer/main/download/amarPlayer-Linux-aarch64.AppImage) | aarch64 |
+| Windows | EXE | Belum tersedia / Not available yet |
+
+Ukuran file, checksum, dan petunjuk Git LFS tersedia di [panduan download](download/README.md).
+File sizes, checksums, and Git LFS instructions are available in the [download guide](download/README.md).
+
+### Instalasi / Installation
+
+Unduh paket yang sesuai, lalu jalankan perintah berikut dari folder unduhan.
+Download the matching package, then run the appropriate command from your downloads folder.
+
+```bash
+# Fedora 44
+sudo dnf install ./amarPlayer-1.0.0-1.fc44.noarch.rpm
+
+# Debian / Ubuntu
+sudo apt install ./amarplayer_1.0.0-1_all.deb
+
+# Linux ARM64
+chmod +x amarPlayer-Linux-aarch64.AppImage
+./amarPlayer-Linux-aarch64.AppImage
+
+# Android ARM64 via ADB
+adb -s DEVICE install -r amarPlayer-android-arm64-debug.apk
+```
+
+APK juga dapat dibuka langsung di HP untuk instalasi. Android masih berupa debug build eksperimental; paket desktop merupakan build yang sudah tersedia sebelumnya.
+You can also open the APK on your phone to install it. Android remains an experimental debug build; desktop packages are previously available builds.
+
 ## Bahasa / Language
 
 * [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)
@@ -156,28 +192,24 @@ export LD_LIBRARY_PATH="$HOME/.android-ndk-arm64/compat${LD_LIBRARY_PATH:+:$LD_L
 buildozer -v android debug
 ```
 
-Pada host Fedora dengan page size 16K, Gradle dapat perlu dijalankan melalui `muvm` dan memakai override AAPT2 yang tercantum di `CHAT_CONTEXT.md`. APK debug berada di folder `bin/` dan instalasi menggunakan endpoint ADB eksplisit:
+Pada host Fedora dengan page size 16K, Gradle dapat perlu dijalankan melalui `muvm` dan memakai override AAPT2 yang tercantum di `CHAT_CONTEXT.md`. Arsip build lokal berada di `bin/`; APK publik tersedia di `download/`. Instalasi menggunakan endpoint ADB eksplisit:
 
 ```bash
-adb -s DEVICE install -r bin/amarPlayer-final-debug.apk
+adb -s DEVICE install -r download/amarPlayer-android-arm64-debug.apk
 ```
 
 Build Android terbaru memakai distribution Qt minimal yang hanya membawa
-library Core, Gui, Widgets, Multimedia, Network, Concurrent, dan codec FFmpeg
-yang diperlukan. APK optimized ARM64 berada di
-`bin/amarPlayer-lite-optimized-debug.apk` dan berukuran sekitar 113 MB,
-lebih kecil dari bundle sebelumnya sekitar 173 MB.
+library Core, Gui, Widgets, Multimedia, Network, Concurrent, codec FFmpeg,
+serta stub SSL dan crypto yang dibutuhkan FFmpeg. APK perbaikan publik berada di
+`download/amarPlayer-android-arm64-debug.apk` (115,62 MiB / sekitar 121 MB).
+Build optimized sebelumnya kehilangan stub SSL sehingga aplikasi menutup saat startup;
+kedua stub sudah ditambahkan dan build perbaikan telah diuji di HP.
 
 ---
 
 # Format Audio
 
-Format audio yang dapat didukung antara lain:
-
-* MP3
-* MP3
-
-Dukungan sebenarnya dapat bergantung pada codec dan backend multimedia yang tersedia pada sistem.
+Android hanya memindai dan memutar file **MP3**. Dukungan format desktop mengikuti backend GStreamer dan codec yang tersedia pada sistem.
 
 ---
 
@@ -284,6 +316,9 @@ amarPlayer/
 │
 ├── android-wheels/
 │   └── PySide6 / Shiboken Android wheels
+│
+├── download/
+│   └── APK, RPM, DEB, AppImage (Git LFS), README, SHA256SUMS
 │
 ├── bin/
 │   └── Hasil build lokal
@@ -605,21 +640,18 @@ bin/
 
 # Status Android Saat Ini
 
-Saat ini:
+Terakhir diuji pada 17 September 2026 menggunakan HP ARM64 model 2510DRA23E.
 
-```text
-Build APK          ✅
-APK dapat dipasang ✅
-Aplikasi terbuka   ✅
-UI Android         ⚠️
-Audio Android      ⚠️
-```
+| Pemeriksaan | Hasil |
+| --- | --- |
+| Instalasi pembaruan APK | Berhasil, data aplikasi dipertahankan |
+| Startup Python dan Qt | Berhasil; library FFmpeg dimuat |
+| Tampilan aplikasi | Header, tombol Scan, kontrol player, dan playlist tampil |
+| Pemutaran MP3 | Satu tap memulai playback; waktu berjalan dan AudioTrack aktif menuju speaker |
 
-APK dapat di-install pada Android.
+Masalah layar putih pada build lama dan kegagalan startup akibat library SSL FFmpeg yang hilang sudah diperbaiki. Lagu dijeda setelah pengujian; suara tidak diverifikasi melalui pendengaran.
 
-Namun ketika aplikasi dibuka, saat ini masih muncul **layar putih kosong**.
-
-Artinya sistem build Android sudah berhasil, tetapi runtime PySide6/Qt pada Android masih perlu diperiksa.
+Izin media sudah diberikan pada perangkat pengujian. Alur permintaan izin pada instalasi baru belum tervalidasi; log masih mencatat modul `android.permissions` tidak tersedia. Scan dibatasi ke folder `mp3`, `Music`, dan `Download` yang dapat diakses aplikasi.
 
 ---
 
@@ -655,7 +687,7 @@ Lihat log:
 adb logcat
 ```
 
-Wireless ADB akan digunakan untuk mencari penyebab layar putih pada Android.
+Wireless ADB digunakan untuk memeriksa startup, interaksi UI, dan log playback pada perangkat.
 
 ---
 
@@ -696,12 +728,12 @@ git clone https://github.com/xmuammar/amarPlayer.git
 Workflow Git:
 
 ```bash
-git add .
+git add README.md download/ .gitattributes .gitignore
 git commit -m "Update amarPlayer"
 git push origin main
 ```
 
-APK dan file build yang sangat besar disimpan secara lokal dan tidak dimasukkan ke Git biasa.
+Paket publik di `download/` disimpan melalui **Git LFS**, termasuk APK. Pasang Git LFS dan jalankan `git lfs install` sebelum clone; gunakan `git lfs pull --include="download/*"` untuk mengambil paket pada clone yang sudah ada. Arsip build lain dan cache tetap lokal. Tambahkan file source yang diubah secara eksplisit saat commit.
 
 ---
 
@@ -738,7 +770,7 @@ Debian Package            ✅
 Android Port              ✅
 PySide6 Android Wheels    ✅
 QtMultimedia              ✅
-Content URI               ✅
+Content URI               ⚠️ Not fully validated
 Native ARM64 NDK          ✅
 Python ARM64              ✅
 Qt / PySide6 Packaging    ✅
@@ -748,28 +780,19 @@ AAPT2 + muvm              ✅
 APK Generation            ✅
 APK Installation          ✅
 Application Launch        ✅
-Android UI                ⚠️ Debugging
-Audio Playback            ⚠️ Testing
+Android UI                ✅ Tested
+MP3 Playback              ✅ Tested
 ```
 
 ---
 
 # Roadmap
 
-Pengembangan berikutnya:
-
-1. Debug layar putih Android menggunakan ADB logcat.
-2. Memastikan Qt Android platform plugin berjalan.
-3. Menampilkan seluruh UI PySide6.
-4. Menguji Android file picker.
-5. Menguji `content://`.
-6. Menguji QtMultimedia playback.
-7. Menguji metadata audio.
-8. Menguji album artwork.
-9. Mengembangkan equalizer Android.
-10. Mengurangi ukuran APK.
-11. Membuat release Android stabil.
-12. Melanjutkan build Windows.
+1. Memvalidasi dan memperbaiki permintaan izin media pada instalasi Android baru.
+2. Menguji scan, playlist, playback, dan kontrol player pada lebih banyak perangkat.
+3. Memvalidasi metadata, album artwork, dan penanganan `content://`.
+4. Menyiapkan release Android stabil dengan penandatanganan release.
+5. Melanjutkan dukungan Windows dan menyediakan installer EXE setelah diuji.
 
 ---
 
@@ -818,10 +841,11 @@ Fedora COPR          ✅
 Debian Package       ✅
 Android ARM64 APK    ✅
 Install Android      ✅
-Android UI           ⚠️ Debugging
+Android UI           ✅ Teruji
+Android MP3          ✅ Playback teruji
 ```
 
-Target berikutnya adalah menjalankan seluruh UI PySide6 dengan benar di Android dan memastikan playback musik QtMultimedia berfungsi.
+Target berikutnya adalah memvalidasi izin media pada instalasi baru dan menguji stabilitas pada lebih banyak perangkat Android.
 
 ---
 
@@ -1044,6 +1068,9 @@ amarPlayer/
 │   └── debian/
 │
 ├── android-wheels/
+│
+├── download/
+│   └── APK, RPM, DEB, AppImage (Git LFS), README, SHA256SUMS
 │
 ├── bin/
 │
@@ -1333,19 +1360,20 @@ amarPlayer-debug.apk
 
 # Current Android Status
 
-```text
-APK Build          ✅
-APK Installation   ✅
-Application Launch ✅
-Android UI         ⚠️
-Android Audio      ⚠️
-```
+Last tested on 17 September 2026 on an ARM64 phone, model 2510DRA23E.
 
-The APK installs and launches successfully.
+| Check | Result |
+| --- | --- |
+| APK update installation | Successful; app data preserved |
+| Python and Qt startup | Successful; FFmpeg libraries loaded |
+| Application UI | Header, Scan button, playback controls, and playlist displayed |
+| MP3 playback | One tap starts playback; elapsed time advances and AudioTrack routes to the speaker |
 
-However, the current experimental Android build displays a **blank white screen**.
+The old blank-screen issue and the startup failure caused by missing FFmpeg SSL libraries have been fixed. Playback was paused after testing; audible output was not independently checked.
 
-The Android build toolchain is therefore working, while runtime debugging is still required.
+The current APK is `download/amarPlayer-android-arm64-debug.apk` (115.62 MiB / approximately 121 MB). Its minimal Qt bundle includes the SSL and crypto stubs required by FFmpeg.
+
+Media permissions had already been granted on the test device. Permission prompts on a fresh installation remain unverified; logs still report the missing `android.permissions` module. Android supports MP3 only and scans accessible `mp3`, `Music`, and `Download` folders. System volume buttons control the output volume.
 
 ---
 
@@ -1414,12 +1442,12 @@ git clone https://github.com/xmuammar/amarPlayer.git
 Development workflow:
 
 ```bash
-git add .
+git add README.md download/ .gitattributes .gitignore
 git commit -m "Update amarPlayer"
 git push origin main
 ```
 
-Large APK and build-cache files should normally remain local.
+Public packages in `download/`, including the APK, are stored using **Git LFS**. Install Git LFS and run `git lfs install` before cloning; use `git lfs pull --include="download/*"` for an existing clone. Other build archives and caches remain local. Explicitly stage any changed source files when committing.
 
 ---
 
@@ -1456,7 +1484,7 @@ Debian Package            ✅
 Android Port              ✅
 PySide6 Android Wheels    ✅
 QtMultimedia              ✅
-Content URI               ✅
+Content URI               ⚠️ Not fully validated
 Native ARM64 NDK          ✅
 Python ARM64              ✅
 Qt / PySide6 Packaging    ✅
@@ -1466,26 +1494,19 @@ AAPT2 + muvm              ✅
 APK Generation            ✅
 APK Installation          ✅
 Application Launch        ✅
-Android UI                ⚠️ Debugging
-Audio Playback            ⚠️ Testing
+Android UI                ✅ Tested
+MP3 Playback              ✅ Tested
 ```
 
 ---
 
 # Roadmap
 
-1. Diagnose Android white screen using ADB logcat.
-2. Validate Qt Android platform initialization.
-3. Display the complete PySide6 UI.
-4. Test Android file picker.
-5. Test `content://` handling.
-6. Test QtMultimedia playback.
-7. Validate metadata.
-8. Validate album artwork.
-9. Implement Android equalizer support.
-10. Reduce APK size.
-11. Create stable Android releases.
-12. Continue Windows support.
+1. Validate and fix media permission prompts on fresh Android installations.
+2. Test scanning, playlists, playback, and player controls on more devices.
+3. Validate metadata, album artwork, and `content://` handling.
+4. Prepare a stable Android release with release signing.
+5. Continue Windows support and provide an EXE installer after testing.
 
 ---
 
@@ -1534,7 +1555,8 @@ Fedora COPR          ✅ Built
 Debian Package       ✅ Built
 Android ARM64 APK    ✅ Built
 Android Installation ✅ Working
-Android UI           ⚠️ Under Debugging
+Android UI           ✅ Tested
+Android MP3          ✅ Playback tested
 ```
 
-The next major milestone is getting the full PySide6 interface running correctly on Android and validating music playback through QtMultimedia.
+The next milestones are validating media permissions on fresh installations and testing stability across more Android devices.
