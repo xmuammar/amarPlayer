@@ -49,7 +49,7 @@ Functions and classes provided:
 
    While many objects natively support use in with statements, sometimes a
    resource needs to be managed that isn't a context manager in its own right,
-   and doesn't implement a ``close()`` method for use with ``contextlib.closing``.
+   and doesn't implement a ``close()`` method for use with ``contextlib.closing``
 
    An abstract example would be the following to ensure correct resource
    management::
@@ -151,9 +151,9 @@ Functions and classes provided:
    created by :func:`asynccontextmanager` to meet the requirement that context
    managers support multiple invocations in order to be used as decorators.
 
-   .. versionchanged:: 3.10
-      Async context managers created with :func:`asynccontextmanager` can
-      be used as decorators.
+  .. versionchanged:: 3.10
+     Async context managers created with :func:`asynccontextmanager` can
+     be used as decorators.
 
 
 .. function:: closing(thing)
@@ -312,17 +312,8 @@ Functions and classes provided:
 
    This context manager is :ref:`reentrant <reentrant-cms>`.
 
-   If the code within the :keyword:`!with` block raises a
-   :exc:`BaseExceptionGroup`, suppressed exceptions are removed from the
-   group.  Any exceptions of the group which are not suppressed are re-raised in
-   a new group which is created using the original group's :meth:`~BaseExceptionGroup.derive`
-   method.
-
    .. versionadded:: 3.4
 
-   .. versionchanged:: 3.12
-      ``suppress`` now supports suppressing exceptions raised as
-      part of a :exc:`BaseExceptionGroup`.
 
 .. function:: redirect_stdout(new_target)
 
@@ -629,8 +620,7 @@ Functions and classes provided:
    The :meth:`~ExitStack.close` method is not implemented; :meth:`aclose` must be used
    instead.
 
-   .. method:: enter_async_context(cm)
-      :async:
+   .. coroutinemethod:: enter_async_context(cm)
 
       Similar to :meth:`ExitStack.enter_context` but expects an asynchronous context
       manager.
@@ -648,8 +638,7 @@ Functions and classes provided:
 
       Similar to :meth:`ExitStack.callback` but expects a coroutine function.
 
-   .. method:: aclose()
-      :async:
+   .. coroutinemethod:: aclose()
 
       Similar to :meth:`ExitStack.close` but properly handles awaitables.
 
@@ -800,7 +789,7 @@ executing that callback::
        if result:
            stack.pop_all()
 
-This allows the intended cleanup behaviour to be made explicit up front,
+This allows the intended cleanup up behaviour to be made explicit up front,
 rather than requiring a separate flag variable.
 
 If a particular application uses this pattern a lot, it can be simplified

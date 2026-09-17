@@ -352,8 +352,6 @@ If you don't include such a comment, the default encoding used will be UTF-8 as
 already mentioned.  See also :pep:`263` for more information.
 
 
-.. _unicode-properties:
-
 Unicode Properties
 ------------------
 
@@ -451,7 +449,7 @@ When run, this outputs:
 
 .. code-block:: shell-session
 
-    $ python compare-strs.py
+    $ python3 compare-strs.py
     length of first string= 1
     length of second string= 2
     True

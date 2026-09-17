@@ -1,5 +1,5 @@
-:mod:`!test` --- Regression tests package for Python
-====================================================
+:mod:`test` --- Regression tests package for Python
+===================================================
 
 .. module:: test
    :synopsis: Regression tests package containing the testing suite for Python.
@@ -192,10 +192,6 @@ top-level directory where Python was built. On Windows,
 executing :program:`rt.bat` from your :file:`PCbuild` directory will run all
 regression tests.
 
-.. versionadded:: 3.14
-   Output is colorized by default and can be
-   :ref:`controlled using environment variables <using-on-controlling-color>`.
-
 
 :mod:`test.support` --- Utilities for the Python test suite
 ===========================================================
@@ -246,27 +242,7 @@ The :mod:`test.support` module defines the following constants:
 
 .. data:: is_android
 
-   ``True`` if ``sys.platform`` is ``android``.
-
-
-.. data:: is_emscripten
-
-   ``True`` if ``sys.platform`` is ``emscripten``.
-
-
-.. data:: is_wasi
-
-   ``True`` if ``sys.platform`` is ``wasi``.
-
-
-.. data:: is_apple_mobile
-
-   ``True`` if ``sys.platform`` is ``ios``, ``tvos``, or ``watchos``.
-
-
-.. data:: is_apple
-
-   ``True`` if ``sys.platform`` is ``darwin`` or ``is_apple_mobile`` is ``True``.
+   ``True`` if the system is Android.
 
 
 .. data:: unix_shell
@@ -344,15 +320,6 @@ The :mod:`test.support` module defines the following constants:
 
    A constant that is likely larger than the underlying OS pipe buffer size,
    to make writes blocking.
-
-
-.. data:: Py_DEBUG
-
-   ``True`` if Python was built with the :c:macro:`Py_DEBUG` macro
-   defined, that is, if
-   Python was :ref:`built in debug mode <debug-build>`.
-
-   .. versionadded:: 3.12
 
 
 .. data:: SOCK_MAX_SIZE
@@ -523,13 +490,6 @@ The :mod:`test.support` module defines the following functions:
 
    Setting *subdir* indicates a relative path to use to find the file
    rather than looking directly in the path directories.
-
-
-.. function:: get_pagesize()
-
-   Get size of a page in bytes.
-
-   .. versionadded:: 3.12
 
 
 .. function:: setswitchinterval(interval)
@@ -755,12 +715,6 @@ The :mod:`test.support` module defines the following functions:
    macOS version is less than the minimum, the test is skipped.
 
 
-.. decorator:: requires_gil_enabled
-
-   Decorator for skipping tests on the free-threaded build.  If the
-   :term:`GIL` is disabled, the test is skipped.
-
-
 .. decorator:: requires_IEEE_754
 
    Decorator for skipping tests on non-IEEE 754 platforms.
@@ -796,12 +750,6 @@ The :mod:`test.support` module defines the following functions:
    Decorator for only running the test if :data:`HAVE_DOCSTRINGS`.
 
 
-.. decorator:: requires_limited_api
-
-   Decorator for only running the test if :ref:`Limited C API <limited-c-api>`
-   is available.
-
-
 .. decorator:: cpython_only
 
    Decorator for tests only applicable to CPython.
@@ -811,11 +759,6 @@ The :mod:`test.support` module defines the following functions:
 
    Decorator for invoking :func:`check_impl_detail` on *guards*.  If that
    returns ``False``, then uses *msg* as the reason for skipping the test.
-
-.. decorator:: thread_unsafe(reason=None)
-
-   Decorator for marking tests as thread-unsafe.  This test always runs in one
-   thread even when invoked with ``--parallel-threads``.
 
 
 .. decorator:: no_tracing
@@ -849,15 +792,6 @@ The :mod:`test.support` module defines the following functions:
 .. decorator:: bigaddrspacetest
 
    Decorator for tests that fill the address space.
-
-
-.. function:: linked_to_musl()
-
-   Return ``False`` if there is no evidence the interpreter was compiled with
-   ``musl``, otherwise return a version triple, either ``(0, 0, 0)`` if the
-   version is unknown, or the actual version if it is known.  Intended for use
-   in ``skip`` decorators.  ``emscripten`` and ``wasi`` are assumed to be
-   compiled with ``musl``; otherwise ``platform.libc_ver`` is checked.
 
 
 .. function:: check_syntax_error(testcase, statement, errtext='', *, lineno=None, offset=None)
@@ -984,7 +918,7 @@ The :mod:`test.support` module defines the following functions:
    other modules, possibly a C backend (like ``csv`` and its ``_csv``).
 
    The *extra* argument can be a set of names that wouldn't otherwise be automatically
-   detected as "public", like objects without a proper :attr:`~definition.__module__`
+   detected as "public", like objects without a proper ``__module__``
    attribute. If provided, it will be added to the automatically detected ones.
 
    The *not_exported* argument can be a set of names that must not be treated
@@ -1384,13 +1318,6 @@ The :mod:`test.support.threading_helper` module provides support for threading t
    .. versionadded:: 3.8
 
 
-.. function:: run_concurrently(worker_func, nthreads, args=(), kwargs={})
-
-    Run the worker function concurrently in multiple threads.
-    Re-raises an exception if any thread raises one, after all threads have
-    finished.
-
-
 :mod:`test.support.os_helper` --- Utilities for os tests
 ========================================================================
 
@@ -1471,12 +1398,9 @@ The :mod:`test.support.os_helper` module provides support for os tests.
    ``value``.
 
 
-.. method:: EnvironmentVarGuard.unset(envvar, *others)
+.. method:: EnvironmentVarGuard.unset(envvar)
 
-   Temporarily unset one or more environment variables.
-
-   .. versionchanged:: 3.14
-      More than one environment variable can be unset.
+   Temporarily unset the environment variable ``envvar``.
 
 
 .. function:: can_symlink()
@@ -1749,7 +1673,7 @@ The :mod:`test.support.warnings_helper` module provides support for warnings tes
 
 .. function:: check_warnings(*filters, quiet=True)
 
-   A convenience wrapper for :func:`warnings.catch_warnings` that makes it
+   A convenience wrapper for :func:`warnings.catch_warnings()` that makes it
    easier to test that a warning was correctly raised.  It is approximately
    equivalent to calling ``warnings.catch_warnings(record=True)`` with
    :meth:`warnings.simplefilter` set to ``always`` and with the option to

@@ -1,6 +1,6 @@
 import token
 import tokenize
-from collections.abc import Iterator
+from typing import Dict, Iterator, List
 
 Mark = int  # NewType('Mark', int)
 
@@ -8,11 +8,7 @@ exact_token_types = token.EXACT_TOKEN_TYPES
 
 
 def shorttok(tok: tokenize.TokenInfo) -> str:
-    formatted = (
-        f"{tok.start[0]}.{tok.start[1]}: "
-        f"{token.tok_name[tok.type]}:{tok.string!r}"
-    )
-    return f"{formatted:<25.25}"
+    return "%-25.25s" % f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
 
 
 class Tokenizer:
@@ -21,7 +17,7 @@ class Tokenizer:
     This is pretty tied to Python's syntax.
     """
 
-    _tokens: list[tokenize.TokenInfo]
+    _tokens: List[tokenize.TokenInfo]
 
     def __init__(
         self, tokengen: Iterator[tokenize.TokenInfo], *, path: str = "", verbose: bool = False
@@ -30,7 +26,7 @@ class Tokenizer:
         self._tokens = []
         self._index = 0
         self._verbose = verbose
-        self._lines: dict[int, str] = {}
+        self._lines: Dict[int, str] = {}
         self._path = path
         if verbose:
             self.report(False, False)
@@ -76,7 +72,7 @@ class Tokenizer:
                 break
         return tok
 
-    def get_lines(self, line_numbers: list[int]) -> list[str]:
+    def get_lines(self, line_numbers: List[int]) -> List[str]:
         """Retrieve source lines corresponding to line numbers."""
         if self._lines:
             lines = self._lines

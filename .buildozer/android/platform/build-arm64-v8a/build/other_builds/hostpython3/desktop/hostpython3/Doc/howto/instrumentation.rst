@@ -269,8 +269,6 @@ should instead read:
 (assuming a :ref:`debug build <debug-build>` of CPython 3.6)
 
 
-.. _static-markers:
-
 Available static markers
 ------------------------
 
@@ -309,7 +307,7 @@ Available static markers
 .. object:: gc__start(int generation)
 
    Fires when the Python interpreter starts a garbage collection cycle.
-   ``arg0`` is the generation to scan, like :func:`gc.collect`.
+   ``arg0`` is the generation to scan, like :func:`gc.collect()`.
 
 .. object:: gc__done(long collected)
 

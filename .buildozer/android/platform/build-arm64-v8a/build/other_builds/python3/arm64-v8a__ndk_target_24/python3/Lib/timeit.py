@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 """Tool for measuring execution time of small code snippets.
 
 This module avoids a number of common traps for measuring execution
@@ -44,6 +46,7 @@ Functions:
     timeit(string, string) -> float
     repeat(string, string) -> list
     default_timer() -> float
+
 """
 
 import gc
@@ -261,9 +264,10 @@ def main(args=None, *, _wrap_timer=None):
         args = sys.argv[1:]
     import getopt
     try:
-        opts, args = getopt.getopt(args, "n:u:s:r:pvh",
+        opts, args = getopt.getopt(args, "n:u:s:r:tcpvh",
                                    ["number=", "setup=", "repeat=",
-                                    "process", "verbose", "unit=", "help"])
+                                    "time", "clock", "process",
+                                    "verbose", "unit=", "help"])
     except getopt.error as err:
         print(err)
         print("use -h/--help for command line help")
@@ -301,7 +305,7 @@ def main(args=None, *, _wrap_timer=None):
                 precision += 1
             verbose += 1
         if o in ("-h", "--help"):
-            print(__doc__, end="")
+            print(__doc__, end=' ')
             return 0
     setup = "\n".join(setup) or "pass"
 

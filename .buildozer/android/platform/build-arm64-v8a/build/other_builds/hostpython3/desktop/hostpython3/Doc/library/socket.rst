@@ -1,5 +1,5 @@
-:mod:`!socket` --- Low-level networking interface
-=================================================
+:mod:`socket` --- Low-level networking interface
+================================================
 
 .. module:: socket
    :synopsis: Low-level networking interface.
@@ -137,49 +137,24 @@ created.  Socket addresses are represented as follows:
 - :const:`AF_BLUETOOTH` supports the following protocols and address
   formats:
 
-  - :const:`BTPROTO_L2CAP` accepts a tuple
-    ``(bdaddr, psm[, cid[, bdaddr_type]])`` where:
-
-    - ``bdaddr`` is a string specifying the Bluetooth address.
-    - ``psm`` is an integer specifying the Protocol/Service Multiplexer.
-    - ``cid`` is an optional integer specifying the Channel Identifier.
-      If not given, defaults to zero.
-    - ``bdaddr_type`` is an optional integer specifying the address type;
-      one of :const:`BDADDR_BREDR` (default), :const:`BDADDR_LE_PUBLIC`,
-      :const:`BDADDR_LE_RANDOM`.
-
-    .. versionchanged:: 3.14
-       Added ``cid`` and ``bdaddr_type`` fields.
+  - :const:`BTPROTO_L2CAP` accepts ``(bdaddr, psm)`` where ``bdaddr`` is
+    the Bluetooth address as a string and ``psm`` is an integer.
 
   - :const:`BTPROTO_RFCOMM` accepts ``(bdaddr, channel)`` where ``bdaddr``
     is the Bluetooth address as a string and ``channel`` is an integer.
 
-  - :const:`BTPROTO_HCI` accepts a format that depends on your OS.
-
-    - On Linux it accepts an integer ``device_id`` or a tuple
-      ``(device_id, [channel])`` where ``device_id``
-      specifies the number of the Bluetooth device,
-      and ``channel`` is an optional integer specifying the HCI channel
-      (:const:`HCI_CHANNEL_RAW` by default).
-    - On FreeBSD, NetBSD and DragonFly BSD it accepts ``bdaddr``
-      where ``bdaddr`` is the Bluetooth address as a string.
+  - :const:`BTPROTO_HCI` accepts ``(device_id,)`` where ``device_id`` is
+    either an integer or a string with the Bluetooth address of the
+    interface. (This depends on your OS; NetBSD and DragonFlyBSD expect
+    a Bluetooth address while everything else expects an integer.)
 
     .. versionchanged:: 3.2
        NetBSD and DragonFlyBSD support added.
 
-    .. versionchanged:: 3.13.3
-       FreeBSD support added.
-
-    .. versionchanged:: 3.14
-       Added ``channel`` field.
-       ``device_id`` not packed in a tuple is now accepted.
-
-  - :const:`BTPROTO_SCO` accepts ``bdaddr`` where ``bdaddr`` is
-    the Bluetooth address as a string or a :class:`bytes` object.
-    (ex. ``'12:23:34:45:56:67'`` or ``b'12:23:34:45:56:67'``)
-
-    .. versionchanged:: 3.14
-       FreeBSD support added.
+  - :const:`BTPROTO_SCO` accepts ``bdaddr`` where ``bdaddr`` is a
+    :class:`bytes` object containing the Bluetooth address in a
+    string format. (ex. ``b'12:23:34:45:56:67'``) This protocol is not
+    supported under FreeBSD.
 
 - :const:`AF_ALG` is a Linux-only socket based interface to Kernel
   cryptography. An algorithm socket is configured with a tuple of two to four
@@ -214,10 +189,7 @@ created.  Socket addresses are represented as follows:
   ``(ifname, proto[, pkttype[, hatype[, addr]]])`` where:
 
   - *ifname* - String specifying the device name.
-  - *proto* - The Ethernet protocol number.
-    May be :data:`ETH_P_ALL` to capture all protocols,
-    one of the :ref:`ETHERTYPE_* constants <socket-ethernet-types>`
-    or any other Ethernet protocol number.
+  - *proto* - An integer specifying the Ethernet protocol number.
   - *pkttype* - Optional integer specifying the packet type:
 
     - ``PACKET_HOST`` (the default) - Packet addressed to the local host.
@@ -258,29 +230,6 @@ created.  Socket addresses are represented as follows:
   .. availability:: Linux >= 2.6.20, FreeBSD >= 10.1
 
   .. versionadded:: 3.9
-
-- :const:`AF_HYPERV` is a Windows-only socket based interface for communicating
-  with Hyper-V hosts and guests. The address family is represented as a
-  ``(vm_id, service_id)`` tuple where the ``vm_id`` and ``service_id`` are
-  UUID strings.
-
-  The ``vm_id`` is the virtual machine identifier or a set of known VMID values
-  if the target is not a specific virtual machine. Known VMID constants
-  defined on ``socket`` are:
-
-  - ``HV_GUID_ZERO``
-  - ``HV_GUID_BROADCAST``
-  - ``HV_GUID_WILDCARD`` - Used to bind on itself and accept connections from
-    all partitions.
-  - ``HV_GUID_CHILDREN`` - Used to bind on itself and accept connection from
-    child partitions.
-  - ``HV_GUID_LOOPBACK`` - Used as a target to itself.
-  - ``HV_GUID_PARENT`` - When used as a bind accepts connection from the parent
-    partition. When used as an address target it will connect to the parent partition.
-
-  The ``service_id`` is the service identifier of the registered service.
-
-  .. versionadded:: 3.12
 
 If you use a hostname in the *host* portion of IPv4/v6 socket address, the
 program may show a nondeterministic behavior, as Python uses the first address
@@ -362,10 +311,10 @@ Exceptions
 Constants
 ^^^^^^^^^
 
-The AF_* and SOCK_* constants are now :class:`AddressFamily` and
-:class:`SocketKind` :class:`.IntEnum` collections.
+   The AF_* and SOCK_* constants are now :class:`AddressFamily` and
+   :class:`SocketKind` :class:`.IntEnum` collections.
 
-.. versionadded:: 3.4
+   .. versionadded:: 3.4
 
 .. data:: AF_UNIX
           AF_INET
@@ -438,14 +387,14 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
       ``TCP_USER_TIMEOUT``, ``TCP_CONGESTION`` were added.
 
    .. versionchanged:: 3.6.5
-      Added support for ``TCP_FASTOPEN``, ``TCP_KEEPCNT`` on Windows platforms
-      when available.
+      On Windows, ``TCP_FASTOPEN``, ``TCP_KEEPCNT`` appear if run-time Windows
+      supports.
 
    .. versionchanged:: 3.7
       ``TCP_NOTSENT_LOWAT`` was added.
 
-      Added support for ``TCP_KEEPIDLE``, ``TCP_KEEPINTVL`` on Windows platforms
-      when available.
+      On Windows, ``TCP_KEEPIDLE``, ``TCP_KEEPINTVL`` appear if run-time Windows
+      supports.
 
    .. versionchanged:: 3.10
       ``IP_RECVTOS`` was added.
@@ -455,33 +404,6 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    .. versionchanged:: 3.11
       Added ``TCP_CONNECTION_INFO``. On MacOS this constant can be used in the
       same way that ``TCP_INFO`` is used on Linux and BSD.
-
-   .. versionchanged:: 3.12
-      Added ``SO_RTABLE`` and ``SO_USER_COOKIE``. On OpenBSD
-      and FreeBSD respectively those constants can be used in the same way that
-      ``SO_MARK`` is used on Linux. Also added missing TCP socket options from
-      Linux: ``TCP_MD5SIG``, ``TCP_THIN_LINEAR_TIMEOUTS``, ``TCP_THIN_DUPACK``,
-      ``TCP_REPAIR``, ``TCP_REPAIR_QUEUE``, ``TCP_QUEUE_SEQ``,
-      ``TCP_REPAIR_OPTIONS``, ``TCP_TIMESTAMP``, ``TCP_CC_INFO``,
-      ``TCP_SAVE_SYN``, ``TCP_SAVED_SYN``, ``TCP_REPAIR_WINDOW``,
-      ``TCP_FASTOPEN_CONNECT``, ``TCP_ULP``, ``TCP_MD5SIG_EXT``,
-      ``TCP_FASTOPEN_KEY``, ``TCP_FASTOPEN_NO_COOKIE``,
-      ``TCP_ZEROCOPY_RECEIVE``, ``TCP_INQ``, ``TCP_TX_DELAY``.
-      Added ``IP_PKTINFO``, ``IP_UNBLOCK_SOURCE``, ``IP_BLOCK_SOURCE``,
-      ``IP_ADD_SOURCE_MEMBERSHIP``, ``IP_DROP_SOURCE_MEMBERSHIP``.
-
-   .. versionchanged:: 3.13
-      Added ``SO_BINDTOIFINDEX``. On Linux this constant can be used in the
-      same way that ``SO_BINDTODEVICE`` is used, but with the index of a
-      network interface instead of its name.
-
-   .. versionchanged:: 3.14
-      Added missing ``IP_FREEBIND``, ``IP_RECVERR``, ``IPV6_RECVERR``,
-      ``IP_RECVTTL``, and ``IP_RECVORIGDSTADDR`` on Linux.
-
-   .. versionchanged:: 3.14
-      Added support for ``TCP_QUICKACK`` on Windows platforms when available.
-
 
 .. data:: AF_CAN
           PF_CAN
@@ -497,9 +419,6 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
 
    .. versionchanged:: 3.11
       NetBSD support was added.
-
-   .. versionchanged:: 3.14
-      Restored missing ``CAN_RAW_ERR_FILTER`` on Linux.
 
 .. data:: CAN_BCM
           CAN_BCM_*
@@ -557,17 +476,6 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    .. versionadded:: 3.9
 
 
-.. data:: AF_DIVERT
-          PF_DIVERT
-
-   These two constants, documented in the FreeBSD divert(4) manual page, are
-   also defined in the socket module.
-
-   .. availability:: FreeBSD >= 14.0.
-
-   .. versionadded:: 3.12
-
-
 .. data:: AF_PACKET
           PF_PACKET
           PACKET_*
@@ -576,19 +484,6 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    also defined in the socket module.
 
    .. availability:: Linux >= 2.2.
-
-
-.. data:: ETH_P_ALL
-
-   :data:`!ETH_P_ALL` can be used in the :class:`~socket.socket`
-   constructor as *proto* for the :const:`AF_PACKET` family in order to
-   capture every packet, regardless of protocol.
-
-   For more information, see the :manpage:`packet(7)` manpage.
-
-   .. availability:: Linux.
-
-   .. versionadded:: 3.12
 
 
 .. data:: AF_RDS
@@ -654,14 +549,6 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    This constant contains a boolean value which indicates if IPv6 is supported on
    this platform.
 
-.. data:: AF_BLUETOOTH
-          BTPROTO_L2CAP
-          BTPROTO_RFCOMM
-          BTPROTO_HCI
-          BTPROTO_SCO
-
-   Integer constants for use with Bluetooth addresses.
-
 .. data:: BDADDR_ANY
           BDADDR_LOCAL
 
@@ -670,81 +557,14 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    any address when specifying the binding socket with
    :const:`BTPROTO_RFCOMM`.
 
-.. data:: BDADDR_BREDR
-          BDADDR_LE_PUBLIC
-          BDADDR_LE_RANDOM
-
-   These constants describe the Bluetooth address type when binding or
-   connecting a :const:`BTPROTO_L2CAP` socket.
-
-   .. availability:: Linux, FreeBSD
-
-   .. versionadded:: 3.14
-
-.. data:: SOL_RFCOMM
-          SOL_L2CAP
-          SOL_HCI
-          SOL_SCO
-          SOL_BLUETOOTH
-
-   Used in the level argument to the :meth:`~socket.setsockopt` and
-   :meth:`~socket.getsockopt` methods of Bluetooth socket objects.
-
-   :const:`SOL_BLUETOOTH` is only available on Linux. Other constants
-   are available if the corresponding protocol is supported.
-
-.. data:: SO_L2CAP_*
-          L2CAP_LM
-          L2CAP_LM_*
-          SO_RFCOMM_*
-          RFCOMM_LM_*
-          SO_SCO_*
-          SO_BTH_*
-          BT_*
-
-   Used in the option name and value argument to the :meth:`~socket.setsockopt`
-   and :meth:`~socket.getsockopt` methods of Bluetooth socket objects.
-
-   :const:`!BT_*` and :const:`L2CAP_LM` are only available on Linux.
-   :const:`!SO_BTH_*` are only available on Windows.
-   Other constants may be available on Linux and various BSD platforms.
-
-   .. versionadded:: 3.14
-
 .. data:: HCI_FILTER
           HCI_TIME_STAMP
           HCI_DATA_DIR
-          SO_HCI_EVT_FILTER
-          SO_HCI_PKT_FILTER
 
-   Option names for use with :const:`BTPROTO_HCI`.
-   Availability and format of the option values depend on platform.
-
-   .. versionchanged:: 3.14
-      Added :const:`!SO_HCI_EVT_FILTER` and :const:`!SO_HCI_PKT_FILTER`
-      on NetBSD and DragonFly BSD.
-      Added :const:`!HCI_DATA_DIR` on FreeBSD, NetBSD and DragonFly BSD.
-
-.. data:: HCI_DEV_NONE
-
-   The ``device_id`` value used to create an HCI socket that isn't specific
-   to a single Bluetooth adapter.
-
-   .. availability:: Linux
-
-   .. versionadded:: 3.14
-
-.. data:: HCI_CHANNEL_RAW
-          HCI_CHANNEL_USER
-          HCI_CHANNEL_MONITOR
-          HCI_CHANNEL_CONTROL
-          HCI_CHANNEL_LOGGING
-
-   Possible values for ``channel`` field in the :const:`BTPROTO_HCI` address.
-
-   .. availability:: Linux
-
-   .. versionadded:: 3.14
+   For use with :const:`BTPROTO_HCI`. :const:`HCI_FILTER` is not
+   available for NetBSD or DragonFlyBSD. :const:`HCI_TIME_STAMP` and
+   :const:`HCI_DATA_DIR` are not available for FreeBSD, NetBSD, or
+   DragonFlyBSD.
 
 .. data:: AF_QIPCRTR
 
@@ -773,59 +593,9 @@ The AF_* and SOCK_* constants are now :class:`AddressFamily` and
    Constant to optimize CPU locality, to be used in conjunction with
    :data:`SO_REUSEPORT`.
 
-   .. versionadded:: 3.11
+  .. versionadded:: 3.11
 
-   .. availability:: Linux >= 3.9
-
-.. data:: SO_REUSEPORT_LB
-
-   Constant to enable duplicate address and port bindings with load balancing.
-
-  .. versionadded:: 3.14
-
-  .. availability:: FreeBSD >= 12.0
-
-.. data:: AF_HYPERV
-          HV_PROTOCOL_RAW
-          HVSOCKET_CONNECT_TIMEOUT
-          HVSOCKET_CONNECT_TIMEOUT_MAX
-          HVSOCKET_CONNECTED_SUSPEND
-          HVSOCKET_ADDRESS_FLAG_PASSTHRU
-          HV_GUID_ZERO
-          HV_GUID_WILDCARD
-          HV_GUID_BROADCAST
-          HV_GUID_CHILDREN
-          HV_GUID_LOOPBACK
-          HV_GUID_PARENT
-
-   Constants for Windows Hyper-V sockets for host/guest communications.
-
-   .. availability:: Windows.
-
-   .. versionadded:: 3.12
-
-.. _socket-ethernet-types:
-
-.. data:: ETHERTYPE_ARP
-          ETHERTYPE_IP
-          ETHERTYPE_IPV6
-          ETHERTYPE_VLAN
-
-   `IEEE 802.3 protocol number
-   <https://www.iana.org/assignments/ieee-802-numbers/ieee-802-numbers.txt>`_.
-   constants.
-
-   .. availability:: Linux, FreeBSD, macOS.
-
-   .. versionadded:: 3.12
-
-.. data:: SHUT_RD
-          SHUT_WR
-          SHUT_RDWR
-
-   These constants are used by the :meth:`~socket.socket.shutdown` method of socket objects.
-
-   .. availability:: not WASI.
+  .. availability:: Linux >= 3.9
 
 Functions
 ^^^^^^^^^
@@ -855,7 +625,7 @@ The following functions all create :ref:`socket objects <socket-objects>`.
    of :meth:`socket.getpeername` but not the actual OS resource.  Unlike
    :func:`socket.fromfd`, *fileno* will return the same socket and not a
    duplicate. This may help close a detached socket using
-   :meth:`socket.close`.
+   :meth:`socket.close()`.
 
    The newly created socket is :ref:`non-inheritable <fd_inheritance>`.
 
@@ -950,17 +720,17 @@ The following functions all create :ref:`socket objects <socket-objects>`.
 .. function:: create_server(address, *, family=AF_INET, backlog=None, reuse_port=False, dualstack_ipv6=False)
 
    Convenience function which creates a TCP socket bound to *address* (a 2-tuple
-   ``(host, port)``) and returns the socket object.
+   ``(host, port)``) and return the socket object.
 
    *family* should be either :data:`AF_INET` or :data:`AF_INET6`.
    *backlog* is the queue size passed to :meth:`socket.listen`; if not specified
    , a default reasonable value is chosen.
    *reuse_port* dictates whether to set the :data:`SO_REUSEPORT` socket option.
 
-   If *dualstack_ipv6* is true, *family* is :data:`AF_INET6` and the platform
-   supports it the socket will be able to accept both IPv4 and IPv6 connections,
-   else it will raise :exc:`ValueError`. Most POSIX platforms and Windows are
-   supposed to support this functionality.
+   If *dualstack_ipv6* is true and the platform supports it the socket will
+   be able to accept both IPv4 and IPv6 connections, else it will raise
+   :exc:`ValueError`. Most POSIX platforms and Windows are supposed to support
+   this functionality.
    When this functionality is enabled the address returned by
    :meth:`socket.getpeername` when an IPv4 connection occurs will be an IPv6
    address represented as an IPv4-mapped IPv6 address.
@@ -1039,9 +809,7 @@ The :mod:`socket` module also offers various network-related services:
 
    .. versionadded:: 3.7
 
-.. function:: getaddrinfo(host, port, family=AF_UNSPEC, type=0, proto=0, flags=0)
-
-   This function wraps the C function ``getaddrinfo`` of the underlying system.
+.. function:: getaddrinfo(host, port, family=0, type=0, proto=0, flags=0)
 
    Translate the *host*/*port* argument into a sequence of 5-tuples that contain
    all the necessary arguments for creating a socket connected to that service.
@@ -1051,10 +819,8 @@ The :mod:`socket` module also offers various network-related services:
    and *port*, you can pass ``NULL`` to the underlying C API.
 
    The *family*, *type* and *proto* arguments can be optionally specified
-   in order to provide options and limit the list of addresses returned.
-   Pass their default values (:data:`AF_UNSPEC`, 0, and 0, respectively)
-   to not limit the results. See the note below for details.
-
+   in order to narrow the list of addresses returned.  Passing zero as a
+   value for each of these arguments selects the full range of results.
    The *flags* argument can be one or several of the ``AI_*`` constants,
    and will influence how results are computed and returned.
    For example, :const:`AI_NUMERICHOST` will disable domain name resolution
@@ -1074,29 +840,6 @@ The :mod:`socket` module also offers various network-related services:
    :const:`AF_INET6`), and is meant to be passed to the :meth:`socket.connect`
    method.
 
-   .. note::
-
-      If you intend to use results from :func:`!getaddrinfo` to create a socket
-      (rather than, for example, retrieve *canonname*),
-      consider limiting the results by *type* (e.g. :data:`SOCK_STREAM` or
-      :data:`SOCK_DGRAM`) and/or *proto* (e.g. :data:`IPPROTO_TCP` or
-      :data:`IPPROTO_UDP`) that your application can handle.
-
-      The behavior with default values of *family*, *type*, *proto*
-      and *flags* is system-specific.
-
-      Many systems (for example, most Linux configurations) will return a sorted
-      list of all matching addresses.
-      These addresses should generally be tried in order until a connection succeeds
-      (possibly tried in parallel, for example, using a `Happy Eyeballs`_ algorithm).
-      In these cases, limiting the *type* and/or *proto* can help eliminate
-      unsuccessful or unusable connection attempts.
-
-      Some systems will, however, only return a single address.
-      (For example, this was reported on Solaris and AIX configurations.)
-      On these systems, limiting the *type* and/or *proto* helps ensure that
-      this address is usable.
-
    .. audit-event:: socket.getaddrinfo host,port,family,type,protocol socket.getaddrinfo
 
    The following example fetches address information for a hypothetical TCP
@@ -1115,8 +858,6 @@ The :mod:`socket` module also offers various network-related services:
    .. versionchanged:: 3.7
       for IPv6 multicast addresses, string representing an address will not
       contain ``%scope_id`` part.
-
-.. _Happy Eyeballs: https://en.wikipedia.org/wiki/Happy_Eyeballs
 
 .. function:: getfqdn([name])
 
@@ -1368,7 +1109,7 @@ The :mod:`socket` module also offers various network-related services:
    buffer.  Raises :exc:`OverflowError` if *length* is outside the
    permissible range of values.
 
-   .. availability:: Unix, not WASI.
+   .. availability:: Unix, not Emscripten, not WASI.
 
       Most Unix platforms.
 
@@ -1391,7 +1132,7 @@ The :mod:`socket` module also offers various network-related services:
    amount of ancillary data that can be received, since additional
    data may be able to fit into the padding area.
 
-   .. availability:: Unix, not WASI.
+   .. availability:: Unix, not Emscripten, not WASI.
 
       most Unix platforms.
 
@@ -1420,7 +1161,7 @@ The :mod:`socket` module also offers various network-related services:
 
    .. audit-event:: socket.sethostname name socket.sethostname
 
-   .. availability:: Unix, not Android.
+   .. availability:: Unix.
 
    .. versionadded:: 3.3
 
@@ -1431,7 +1172,7 @@ The :mod:`socket` module also offers various network-related services:
    (index int, name string) tuples.
    :exc:`OSError` if the system call fails.
 
-   .. availability:: Unix, Windows, not WASI.
+   .. availability:: Unix, Windows, not Emscripten, not WASI.
 
    .. versionadded:: 3.3
 
@@ -1458,7 +1199,7 @@ The :mod:`socket` module also offers various network-related services:
    interface name.
    :exc:`OSError` if no interface with the given name exists.
 
-   .. availability:: Unix, Windows, not WASI.
+   .. availability:: Unix, Windows, not Emscripten, not WASI.
 
    .. versionadded:: 3.3
 
@@ -1475,7 +1216,7 @@ The :mod:`socket` module also offers various network-related services:
    interface index number.
    :exc:`OSError` if no interface with the given index exists.
 
-   .. availability:: Unix, Windows, not WASI.
+   .. availability:: Unix, Windows, not Emscripten, not WASI.
 
    .. versionadded:: 3.3
 
@@ -1492,7 +1233,7 @@ The :mod:`socket` module also offers various network-related services:
    The *fds* parameter is a sequence of file descriptors.
    Consult :meth:`~socket.sendmsg` for the documentation of these parameters.
 
-   .. availability:: Unix, not WASI.
+   .. availability:: Unix, Windows, not Emscripten, not WASI.
 
       Unix platforms supporting :meth:`~socket.sendmsg`
       and :const:`SCM_RIGHTS` mechanism.
@@ -1506,9 +1247,9 @@ The :mod:`socket` module also offers various network-related services:
    Return ``(msg, list(fds), flags, addr)``.
    Consult :meth:`~socket.recvmsg` for the documentation of these parameters.
 
-   .. availability:: Unix, not WASI.
+   .. availability:: Unix, Windows, not Emscripten, not WASI.
 
-      Unix platforms supporting :meth:`~socket.recvmsg`
+      Unix platforms supporting :meth:`~socket.sendmsg`
       and :const:`SCM_RIGHTS` mechanism.
 
    .. versionadded:: 3.9
@@ -1563,7 +1304,7 @@ to sockets.
 .. method:: socket.close()
 
    Mark the socket closed.  The underlying system resource (e.g. a file
-   descriptor) is also closed when all file objects from :meth:`makefile`
+   descriptor) is also closed when all file objects from :meth:`makefile()`
    are closed.  Once that happens, all future operations on the socket
    object will fail. The remote end will receive no more data (after
    queued data is flushed).
@@ -1578,10 +1319,10 @@ to sockets.
 
    .. note::
 
-      :meth:`close` releases the resource associated with a connection but
+      :meth:`close()` releases the resource associated with a connection but
       does not necessarily close the connection immediately.  If you want
-      to close the connection in a timely fashion, call :meth:`shutdown`
-      before :meth:`close`.
+      to close the connection in a timely fashion, call :meth:`shutdown()`
+      before :meth:`close()`.
 
 
 .. method:: socket.connect(address)
@@ -1707,6 +1448,8 @@ to sockets.
 
 .. method:: socket.ioctl(control, option)
 
+   :platform: Windows
+
    The :meth:`ioctl` method is a limited interface to the WSAIoctl system
    interface.  Please refer to the `Win32 documentation
    <https://msdn.microsoft.com/en-us/library/ms741621%28VS.85%29.aspx>`_ for more
@@ -1718,11 +1461,8 @@ to sockets.
    Currently only the following control codes are supported:
    ``SIO_RCVALL``, ``SIO_KEEPALIVE_VALS``, and ``SIO_LOOPBACK_FAST_PATH``.
 
-   .. availability:: Windows
-
    .. versionchanged:: 3.6
       ``SIO_LOOPBACK_FAST_PATH`` was added.
-
 
 .. method:: socket.listen([backlog])
 
@@ -1745,8 +1485,7 @@ to sockets.
    Return a :term:`file object` associated with the socket.  The exact returned
    type depends on the arguments given to :meth:`makefile`.  These arguments are
    interpreted the same way as by the built-in :func:`open` function, except
-   the only supported *mode* values are ``'r'`` (default), ``'w'``, ``'b'``, or
-   a combination of those.
+   the only supported *mode* values are ``'r'`` (default), ``'w'`` and ``'b'``.
 
    The socket must be in blocking mode; it can have a timeout, but the file
    object's internal buffer may end up in an inconsistent state if a timeout
@@ -1770,6 +1509,11 @@ to sockets.
    by *bufsize*. A returned empty bytes object indicates that the client has disconnected.
    See the Unix manual page :manpage:`recv(2)` for the meaning of the optional argument
    *flags*; it defaults to zero.
+
+   .. note::
+
+      For best match with hardware and network realities, the value of  *bufsize*
+      should be a relatively small power of 2, for example, 4096.
 
    .. versionchanged:: 3.5
       If the system call is interrupted and the signal handler does not raise
@@ -2073,7 +1817,7 @@ to sockets.
 .. method:: socket.settimeout(value)
 
    Set a timeout on blocking socket operations.  The *value* argument can be a
-   nonnegative floating-point number expressing seconds, or ``None``.
+   nonnegative floating point number expressing seconds, or ``None``.
    If a non-zero value is given, subsequent socket operations will raise a
    :exc:`timeout` exception if the timeout period *value* has elapsed before
    the operation has completed.  If zero is given, the socket is put in
@@ -2086,8 +1830,11 @@ to sockets.
       :attr:`socket.type`.
 
 
-.. method:: socket.setsockopt(level, optname, value: int | Buffer)
-            socket.setsockopt(level, optname, None, optlen: int)
+.. method:: socket.setsockopt(level, optname, value: int)
+.. method:: socket.setsockopt(level, optname, value: buffer)
+   :noindex:
+.. method:: socket.setsockopt(level, optname, None, optlen: int)
+   :noindex:
 
    .. index:: pair: module; struct
 
@@ -2183,7 +1930,7 @@ can be changed by calling :func:`setdefaulttimeout`.
    in non-blocking mode.  Also, the blocking and timeout modes are shared between
    file descriptors and socket objects that refer to the same network endpoint.
    This implementation detail can have visible consequences if e.g. you decide
-   to use the :meth:`~socket.fileno` of a socket.
+   to use the :meth:`~socket.fileno()` of a socket.
 
 Timeouts and the ``connect`` method
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

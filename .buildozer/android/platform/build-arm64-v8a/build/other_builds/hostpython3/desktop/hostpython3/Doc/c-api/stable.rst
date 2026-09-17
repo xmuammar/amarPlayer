@@ -6,9 +6,9 @@
 C API Stability
 ***************
 
-Unless documented otherwise, Python's C API is covered by the Backwards
-Compatibility Policy, :pep:`387`.
-Most changes to it are source-compatible (typically by only adding new API).
+Python's C API is covered by the Backwards Compatibility Policy, :pep:`387`.
+While the C API will change with every minor release (e.g. from 3.9 to 3.10),
+most changes will be source-compatible, typically by only adding new API.
 Changing existing API or removing API is only done after a deprecation period
 or to fix serious issues.
 
@@ -18,40 +18,9 @@ way; see :ref:`stable-abi-platform` below).
 So, code compiled for Python 3.10.0 will work on 3.10.8 and vice versa,
 but will need to be compiled separately for 3.9.x and 3.11.x.
 
-There are two tiers of C API with different stability expectations:
-
-- :ref:`Unstable API <unstable-c-api>`, may change in minor versions without
-  a deprecation period. It is marked by the ``PyUnstable`` prefix in names.
-- :ref:`Limited API <limited-c-api>`, is compatible across several minor releases.
-  When :c:macro:`Py_LIMITED_API` is defined, only this subset is exposed
-  from ``Python.h``.
-
-These are discussed in more detail below.
-
 Names prefixed by an underscore, such as ``_Py_InternalState``,
 are private API that can change without notice even in patch releases.
-If you need to use this API, consider reaching out to
-`CPython developers <https://discuss.python.org/c/core-dev/c-api/30>`_
-to discuss adding public API for your use case.
 
-.. _unstable-c-api:
-
-Unstable C API
-==============
-
-.. index:: single: PyUnstable
-
-Any API named with the ``PyUnstable`` prefix exposes CPython implementation
-details, and may change in every minor release (e.g. from 3.9 to 3.10) without
-any deprecation warnings.
-However, it will not change in a bugfix release (e.g. from 3.10.0 to 3.10.1).
-
-It is generally intended for specialized, low-level tools like debuggers.
-
-Projects that use this API are expected to follow
-CPython development and spend extra effort adjusting to changes.
-
-.. _stable-application-binary-interface:
 
 Stable Application Binary Interface
 ===================================
@@ -67,7 +36,7 @@ Limited C API
 
 Python 3.2 introduced the *Limited API*, a subset of Python's C API.
 Extensions that only use the Limited API can be
-compiled once and be loaded on multiple versions of Python.
+compiled once and work with multiple versions of Python.
 Contents of the Limited API are :ref:`listed below <limited-api-list>`.
 
 .. c:macro:: Py_LIMITED_API
@@ -77,7 +46,7 @@ Contents of the Limited API are :ref:`listed below <limited-api-list>`.
 
    Define ``Py_LIMITED_API`` to the value of :c:macro:`PY_VERSION_HEX`
    corresponding to the lowest Python version your extension supports.
-   The extension will be ABI-compatible with all Python 3 releases
+   The extension will work without recompilation with all Python 3 releases
    from the specified one onward, and can use Limited API introduced up to that
    version.
 
@@ -95,15 +64,7 @@ Stable ABI
 ----------
 
 To enable this, Python provides a *Stable ABI*: a set of symbols that will
-remain ABI-compatible across Python 3.x versions.
-
-.. note::
-
-   The Stable ABI prevents ABI issues, like linker errors due to missing
-   symbols or data corruption due to changes in structure layouts or function
-   signatures.
-   However, other changes in Python can change the *behavior* of extensions.
-   See Python's Backwards Compatibility Policy (:pep:`387`) for details.
+remain compatible across Python 3.x versions.
 
 The Stable ABI contains symbols exposed in the :ref:`Limited API
 <limited-c-api>`, but also other ones – for example, functions necessary to

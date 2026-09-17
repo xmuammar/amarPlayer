@@ -1,5 +1,5 @@
-:mod:`!winreg` --- Windows registry access
-==========================================
+:mod:`winreg` --- Windows registry access
+=========================================
 
 .. module:: winreg
    :platform: Windows
@@ -13,8 +13,6 @@ These functions expose the Windows registry API to Python.  Instead of using an
 integer as the registry handle, a :ref:`handle object <handle-object>` is used
 to ensure that the handles are closed correctly, even if the programmer neglects
 to explicitly close them.
-
-.. availability:: Windows.
 
 .. _exception-changed:
 
@@ -754,6 +752,9 @@ Handle objects provide semantics for :meth:`~object.__bool__` -- thus ::
 
 will print ``Yes`` if the handle is currently valid (has not been closed or
 detached).
+
+The object also support comparison semantics, so handle objects will compare
+true if they both reference the same underlying Windows handle value.
 
 Handle objects can be converted to an integer (e.g., using the built-in
 :func:`int` function), in which case the underlying Windows handle value is

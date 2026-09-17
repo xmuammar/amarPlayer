@@ -4,13 +4,7 @@
 
 exit_with_usage ()
 {
-    local usage
-    usage="Usage: $0 --prefix|--exec-prefix|--includes|--libs|--cflags|--ldflags|--extension-suffix|--help|--abiflags|--configdir|--embed"
-    if [ "$1" -eq 0 ]; then
-        echo "$usage"
-    else
-        echo "$usage" >&2
-    fi
+    echo "Usage: $0 --prefix|--exec-prefix|--includes|--libs|--cflags|--ldflags|--extension-suffix|--help|--abiflags|--configdir|--embed"
     exit $1
 }
 
@@ -42,21 +36,21 @@ exec_prefix_real=${prefix_real}
 includedir=$(echo "${prefix}/include" | sed "s#$prefix#$prefix_real#")
 libdir=$(echo "${exec_prefix}/lib" | sed "s#$prefix#$prefix_real#")
 CFLAGS=$(echo "" | sed "s#$prefix#$prefix_real#")
-VERSION="3.14"
+VERSION="3.11"
 LIBM="-lm"
 LIBC=""
 SYSLIBS="$LIBM $LIBC"
 ABIFLAGS=""
 LIBS=" -ldl  $SYSLIBS"
 LIBS_EMBED="-lpython${VERSION}${ABIFLAGS} -ldl  $SYSLIBS"
-BASECFLAGS=" -fno-strict-overflow -Wsign-compare"
+BASECFLAGS=" -Wsign-compare"
 LDLIBRARY="libpython$(VERSION)$(ABIFLAGS).a"
-OPT="-DNDEBUG -g -O3 -Wall"
+OPT="-DNDEBUG -g -fwrapv -O3 -Wall"
 PY_ENABLE_SHARED="0"
 LDVERSION="$(VERSION)$(ABIFLAGS)"
 LIBDEST=${prefix_real}/lib/python${VERSION}
-LIBPL=$(echo "$(prefix)/lib/python3.14/config-$(VERSION)$(ABIFLAGS)-aarch64-linux-gnu" | sed "s#$prefix#$prefix_real#")
-SO=".cpython-314-aarch64-linux-gnu.so"
+LIBPL=$(echo "$(prefix)/lib/python3.11/config-$(VERSION)$(ABIFLAGS)-aarch64-linux-gnu" | sed "s#$prefix#$prefix_real#")
+SO=".cpython-311-aarch64-linux-gnu.so"
 PYTHONFRAMEWORK=""
 INCDIR="-I$includedir/python${VERSION}${ABIFLAGS}"
 PLATINCDIR="-I$includedir/python${VERSION}${ABIFLAGS}"

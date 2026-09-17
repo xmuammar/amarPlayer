@@ -1,3 +1,4 @@
+import _compression
 import array
 from io import BytesIO, UnsupportedOperation, DEFAULT_BUFFER_SIZE
 import os
@@ -6,7 +7,6 @@ import random
 import sys
 from test import support
 import unittest
-from compression._common import _streams
 
 from test.support import _4G, bigmemtest
 from test.support.import_helper import import_module
@@ -379,10 +379,6 @@ class CompressorDecompressorTestCase(unittest.TestCase):
             lzd.__init__()
         self.assertAlmostEqual(gettotalrefcount() - refs_before, 0, delta=10)
 
-    def test_uninitialized_LZMADecompressor_crash(self):
-        self.assertEqual(LZMADecompressor.__new__(LZMADecompressor).
-                         decompress(bytes()), b'')
-
 
 class CompressDecompressFunctionTestCase(unittest.TestCase):
 
@@ -538,71 +534,54 @@ class FileTestCase(unittest.TestCase):
 
     def test_init(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
-            self.assertIsInstance(f, LZMAFile)
-            self.assertEqual(f.mode, "rb")
+            pass
         with LZMAFile(BytesIO(), "w") as f:
-            self.assertIsInstance(f, LZMAFile)
-            self.assertEqual(f.mode, "wb")
+            pass
         with LZMAFile(BytesIO(), "x") as f:
-            self.assertIsInstance(f, LZMAFile)
-            self.assertEqual(f.mode, "wb")
+            pass
         with LZMAFile(BytesIO(), "a") as f:
-            self.assertIsInstance(f, LZMAFile)
-            self.assertEqual(f.mode, "wb")
+            pass
 
     def test_init_with_PathLike_filename(self):
         filename = FakePath(TESTFN)
         with TempFile(filename, COMPRESSED_XZ):
             with LZMAFile(filename) as f:
                 self.assertEqual(f.read(), INPUT)
-                self.assertEqual(f.name, TESTFN)
             with LZMAFile(filename, "a") as f:
                 f.write(INPUT)
-                self.assertEqual(f.name, TESTFN)
             with LZMAFile(filename) as f:
                 self.assertEqual(f.read(), INPUT * 2)
-                self.assertEqual(f.name, TESTFN)
 
     def test_init_with_filename(self):
         with TempFile(TESTFN, COMPRESSED_XZ):
             with LZMAFile(TESTFN) as f:
-                self.assertEqual(f.name, TESTFN)
-                self.assertEqual(f.mode, 'rb')
+                pass
             with LZMAFile(TESTFN, "w") as f:
-                self.assertEqual(f.name, TESTFN)
-                self.assertEqual(f.mode, 'wb')
+                pass
             with LZMAFile(TESTFN, "a") as f:
-                self.assertEqual(f.name, TESTFN)
-                self.assertEqual(f.mode, 'wb')
+                pass
 
     def test_init_mode(self):
         with TempFile(TESTFN):
-            with LZMAFile(TESTFN, "r") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "rb")
-            with LZMAFile(TESTFN, "rb") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "rb")
-            with LZMAFile(TESTFN, "w") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "wb")
-            with LZMAFile(TESTFN, "wb") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "wb")
-            with LZMAFile(TESTFN, "a") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "wb")
-            with LZMAFile(TESTFN, "ab") as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, "wb")
+            with LZMAFile(TESTFN, "r"):
+                pass
+            with LZMAFile(TESTFN, "rb"):
+                pass
+            with LZMAFile(TESTFN, "w"):
+                pass
+            with LZMAFile(TESTFN, "wb"):
+                pass
+            with LZMAFile(TESTFN, "a"):
+                pass
+            with LZMAFile(TESTFN, "ab"):
+                pass
 
     def test_init_with_x_mode(self):
         self.addCleanup(unlink, TESTFN)
         for mode in ("x", "xb"):
             unlink(TESTFN)
             with LZMAFile(TESTFN, mode) as f:
-                self.assertIsInstance(f, LZMAFile)
-                self.assertEqual(f.mode, 'wb')
+                pass
             with self.assertRaises(FileExistsError):
                 LZMAFile(TESTFN, mode)
 
@@ -657,12 +636,10 @@ class FileTestCase(unittest.TestCase):
             LZMAFile(BytesIO(), "w", preset=10)
         with self.assertRaises(LZMAError):
             LZMAFile(BytesIO(), "w", preset=23)
-        with self.assertRaises(ValueError):
-            LZMAFile(BytesIO(), "w", preset=-1)
-        with self.assertRaises(ValueError):
-            LZMAFile(BytesIO(), "w", preset=-7)
         with self.assertRaises(OverflowError):
-            LZMAFile(BytesIO(), "w", preset=2**1000)
+            LZMAFile(BytesIO(), "w", preset=-1)
+        with self.assertRaises(OverflowError):
+            LZMAFile(BytesIO(), "w", preset=-7)
         with self.assertRaises(TypeError):
             LZMAFile(BytesIO(), "w", preset="foo")
         # Cannot specify a preset with mode="r".
@@ -846,7 +823,10 @@ class FileTestCase(unittest.TestCase):
     def test_read_10(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
             chunks = []
-            while result := f.read(10):
+            while True:
+                result = f.read(10)
+                if not result:
+                    break
                 self.assertLessEqual(len(result), 10)
                 chunks.append(result)
             self.assertEqual(b"".join(chunks), INPUT)
@@ -863,13 +843,13 @@ class FileTestCase(unittest.TestCase):
     def test_read_multistream_buffer_size_aligned(self):
         # Test the case where a stream boundary coincides with the end
         # of the raw read buffer.
-        saved_buffer_size = _streams.BUFFER_SIZE
-        _streams.BUFFER_SIZE = len(COMPRESSED_XZ)
+        saved_buffer_size = _compression.BUFFER_SIZE
+        _compression.BUFFER_SIZE = len(COMPRESSED_XZ)
         try:
             with LZMAFile(BytesIO(COMPRESSED_XZ *  5)) as f:
                 self.assertEqual(f.read(), INPUT * 5)
         finally:
-            _streams.BUFFER_SIZE = saved_buffer_size
+            _compression.BUFFER_SIZE = saved_buffer_size
 
     def test_read_trailing_junk(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ + COMPRESSED_BOGUS)) as f:
@@ -884,18 +864,13 @@ class FileTestCase(unittest.TestCase):
             with LZMAFile(TESTFN) as f:
                 self.assertEqual(f.read(), INPUT)
                 self.assertEqual(f.read(), b"")
-                self.assertEqual(f.name, TESTFN)
                 self.assertIsInstance(f.fileno(), int)
-                self.assertEqual(f.mode, 'rb')
                 self.assertIs(f.readable(), True)
                 self.assertIs(f.writable(), False)
                 self.assertIs(f.seekable(), True)
                 self.assertIs(f.closed, False)
             self.assertIs(f.closed, True)
-            with self.assertRaises(ValueError):
-                f.name
             self.assertRaises(ValueError, f.fileno)
-            self.assertEqual(f.mode, 'rb')
             self.assertRaises(ValueError, f.readable)
             self.assertRaises(ValueError, f.writable)
             self.assertRaises(ValueError, f.seekable)
@@ -906,7 +881,6 @@ class FileTestCase(unittest.TestCase):
             with LZMAFile(bytes_filename) as f:
                 self.assertEqual(f.read(), INPUT)
                 self.assertEqual(f.read(), b"")
-                self.assertEqual(f.name, bytes_filename)
 
     def test_read_from_fileobj(self):
         with TempFile(TESTFN, COMPRESSED_XZ):
@@ -914,18 +888,13 @@ class FileTestCase(unittest.TestCase):
                 with LZMAFile(raw) as f:
                     self.assertEqual(f.read(), INPUT)
                     self.assertEqual(f.read(), b"")
-                    self.assertEqual(f.name, raw.name)
                     self.assertEqual(f.fileno(), raw.fileno())
-                    self.assertEqual(f.mode, 'rb')
                     self.assertIs(f.readable(), True)
                     self.assertIs(f.writable(), False)
                     self.assertIs(f.seekable(), True)
                     self.assertIs(f.closed, False)
                 self.assertIs(f.closed, True)
-                with self.assertRaises(ValueError):
-                    f.name
                 self.assertRaises(ValueError, f.fileno)
-                self.assertEqual(f.mode, 'rb')
                 self.assertRaises(ValueError, f.readable)
                 self.assertRaises(ValueError, f.writable)
                 self.assertRaises(ValueError, f.seekable)
@@ -937,18 +906,13 @@ class FileTestCase(unittest.TestCase):
                 with LZMAFile(raw) as f:
                     self.assertEqual(f.read(), INPUT)
                     self.assertEqual(f.read(), b"")
-                    self.assertEqual(f.name, raw.name)
                     self.assertEqual(f.fileno(), raw.fileno())
-                    self.assertEqual(f.mode, 'rb')
                     self.assertIs(f.readable(), True)
                     self.assertIs(f.writable(), False)
                     self.assertIs(f.seekable(), True)
                     self.assertIs(f.closed, False)
                 self.assertIs(f.closed, True)
-                with self.assertRaises(ValueError):
-                    f.name
                 self.assertRaises(ValueError, f.fileno)
-                self.assertEqual(f.mode, 'rb')
                 self.assertRaises(ValueError, f.readable)
                 self.assertRaises(ValueError, f.writable)
                 self.assertRaises(ValueError, f.seekable)
@@ -987,7 +951,10 @@ class FileTestCase(unittest.TestCase):
     def test_read1(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
             blocks = []
-            while result := f.read1():
+            while True:
+                result = f.read1()
+                if not result:
+                    break
                 blocks.append(result)
             self.assertEqual(b"".join(blocks), INPUT)
             self.assertEqual(f.read1(), b"")
@@ -999,7 +966,10 @@ class FileTestCase(unittest.TestCase):
     def test_read1_10(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
             blocks = []
-            while result := f.read1(10):
+            while True:
+                result = f.read1(10)
+                if not result:
+                    break
                 blocks.append(result)
             self.assertEqual(b"".join(blocks), INPUT)
             self.assertEqual(f.read1(), b"")
@@ -1007,7 +977,10 @@ class FileTestCase(unittest.TestCase):
     def test_read1_multistream(self):
         with LZMAFile(BytesIO(COMPRESSED_XZ * 5)) as f:
             blocks = []
-            while result := f.read1():
+            while True:
+                result = f.read1()
+                if not result:
+                    break
                 blocks.append(result)
             self.assertEqual(b"".join(blocks), INPUT * 5)
             self.assertEqual(f.read1(), b"")
@@ -1025,12 +998,12 @@ class FileTestCase(unittest.TestCase):
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
             result = f.peek()
             self.assertGreater(len(result), 0)
-            self.assertStartsWith(INPUT, result)
+            self.assertTrue(INPUT.startswith(result))
             self.assertEqual(f.read(), INPUT)
         with LZMAFile(BytesIO(COMPRESSED_XZ)) as f:
             result = f.peek(10)
             self.assertGreater(len(result), 0)
-            self.assertStartsWith(INPUT, result)
+            self.assertTrue(INPUT.startswith(result))
             self.assertEqual(f.read(), INPUT)
 
     def test_peek_bad_args(self):
@@ -1068,7 +1041,7 @@ class FileTestCase(unittest.TestCase):
     def test_decompress_limited(self):
         """Decompressed data buffering should be limited"""
         bomb = lzma.compress(b'\0' * int(2e6), preset=6)
-        self.assertLess(len(bomb), _streams.BUFFER_SIZE)
+        self.assertLess(len(bomb), _compression.BUFFER_SIZE)
 
         decomp = LZMAFile(BytesIO(bomb))
         self.assertEqual(decomp.read(1), b'\0')
@@ -1080,8 +1053,6 @@ class FileTestCase(unittest.TestCase):
         with BytesIO() as dst:
             with LZMAFile(dst, "w") as f:
                 f.write(INPUT)
-                with self.assertRaises(AttributeError):
-                    f.name
             expected = lzma.compress(INPUT)
             self.assertEqual(dst.getvalue(), expected)
         with BytesIO() as dst:
@@ -1118,31 +1089,23 @@ class FileTestCase(unittest.TestCase):
         with BytesIO() as dst:
             with LZMAFile(dst, "w") as f:
                 f.write(part1)
-            self.assertEqual(f.mode, 'wb')
             with LZMAFile(dst, "a") as f:
                 f.write(part2)
-            self.assertEqual(f.mode, 'wb')
             with LZMAFile(dst, "a") as f:
                 f.write(part3)
-            self.assertEqual(f.mode, 'wb')
             self.assertEqual(dst.getvalue(), expected)
 
     def test_write_to_file(self):
         try:
             with LZMAFile(TESTFN, "w") as f:
                 f.write(INPUT)
-                self.assertEqual(f.name, TESTFN)
                 self.assertIsInstance(f.fileno(), int)
-                self.assertEqual(f.mode, 'wb')
                 self.assertIs(f.readable(), False)
                 self.assertIs(f.writable(), True)
                 self.assertIs(f.seekable(), False)
                 self.assertIs(f.closed, False)
             self.assertIs(f.closed, True)
-            with self.assertRaises(ValueError):
-                f.name
             self.assertRaises(ValueError, f.fileno)
-            self.assertEqual(f.mode, 'wb')
             self.assertRaises(ValueError, f.readable)
             self.assertRaises(ValueError, f.writable)
             self.assertRaises(ValueError, f.seekable)
@@ -1158,7 +1121,6 @@ class FileTestCase(unittest.TestCase):
         try:
             with LZMAFile(bytes_filename, "w") as f:
                 f.write(INPUT)
-                self.assertEqual(f.name, bytes_filename)
             expected = lzma.compress(INPUT)
             with open(TESTFN, "rb") as f:
                 self.assertEqual(f.read(), expected)
@@ -1170,18 +1132,13 @@ class FileTestCase(unittest.TestCase):
             with open(TESTFN, "wb") as raw:
                 with LZMAFile(raw, "w") as f:
                     f.write(INPUT)
-                    self.assertEqual(f.name, raw.name)
                     self.assertEqual(f.fileno(), raw.fileno())
-                    self.assertEqual(f.mode, 'wb')
                     self.assertIs(f.readable(), False)
                     self.assertIs(f.writable(), True)
                     self.assertIs(f.seekable(), False)
                     self.assertIs(f.closed, False)
                 self.assertIs(f.closed, True)
-                with self.assertRaises(ValueError):
-                    f.name
                 self.assertRaises(ValueError, f.fileno)
-                self.assertEqual(f.mode, 'wb')
                 self.assertRaises(ValueError, f.readable)
                 self.assertRaises(ValueError, f.writable)
                 self.assertRaises(ValueError, f.seekable)
@@ -1198,18 +1155,13 @@ class FileTestCase(unittest.TestCase):
             with open(fd, 'wb') as raw:
                 with LZMAFile(raw, "w") as f:
                     f.write(INPUT)
-                    self.assertEqual(f.name, raw.name)
                     self.assertEqual(f.fileno(), raw.fileno())
-                    self.assertEqual(f.mode, 'wb')
                     self.assertIs(f.readable(), False)
                     self.assertIs(f.writable(), True)
                     self.assertIs(f.seekable(), False)
                     self.assertIs(f.closed, False)
                 self.assertIs(f.closed, True)
-                with self.assertRaises(ValueError):
-                    f.name
                 self.assertRaises(ValueError, f.fileno)
-                self.assertEqual(f.mode, 'wb')
                 self.assertRaises(ValueError, f.readable)
                 self.assertRaises(ValueError, f.writable)
                 self.assertRaises(ValueError, f.seekable)
@@ -1228,13 +1180,10 @@ class FileTestCase(unittest.TestCase):
         try:
             with LZMAFile(TESTFN, "w") as f:
                 f.write(part1)
-            self.assertEqual(f.mode, 'wb')
             with LZMAFile(TESTFN, "a") as f:
                 f.write(part2)
-            self.assertEqual(f.mode, 'wb')
             with LZMAFile(TESTFN, "a") as f:
                 f.write(part3)
-            self.assertEqual(f.mode, 'wb')
             with open(TESTFN, "rb") as f:
                 self.assertEqual(f.read(), expected)
         finally:
@@ -1432,13 +1381,11 @@ class OpenTestCase(unittest.TestCase):
         with TempFile(filename):
             with lzma.open(filename, "wb") as f:
                 f.write(INPUT)
-                self.assertEqual(f.name, TESTFN)
             with open(filename, "rb") as f:
                 file_data = lzma.decompress(f.read())
                 self.assertEqual(file_data, INPUT)
             with lzma.open(filename, "rb") as f:
                 self.assertEqual(f.read(), INPUT)
-                self.assertEqual(f.name, TESTFN)
 
     def test_bad_params(self):
         # Test invalid parameter combinations.

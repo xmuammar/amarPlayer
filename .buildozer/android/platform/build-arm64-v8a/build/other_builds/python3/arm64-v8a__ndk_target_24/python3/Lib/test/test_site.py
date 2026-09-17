@@ -7,15 +7,13 @@ executing have not been removed.
 import unittest
 import test.support
 from test import support
-from test.support.script_helper import assert_python_ok
-from test.support import import_helper
 from test.support import os_helper
 from test.support import socket_helper
 from test.support import captured_stderr
-from test.support.os_helper import TESTFN, EnvironmentVarGuard
-from test.support.script_helper import spawn_python, kill_python
+from test.support.os_helper import TESTFN, EnvironmentVarGuard, change_cwd
 import ast
 import builtins
+import encodings
 import glob
 import io
 import os
@@ -26,7 +24,6 @@ import subprocess
 import sys
 import sysconfig
 import tempfile
-from textwrap import dedent
 import urllib.error
 import urllib.request
 from unittest import mock
@@ -309,7 +306,8 @@ class HelperFunctionsTests(unittest.TestCase):
 
         with EnvironmentVarGuard() as environ:
             environ['PYTHONUSERBASE'] = 'xoxo'
-            self.assertStartsWith(site.getuserbase(), 'xoxo')
+            self.assertTrue(site.getuserbase().startswith('xoxo'),
+                            site.getuserbase())
 
     @unittest.skipUnless(HAS_USER_SITE, 'need user site')
     def test_getusersitepackages(self):
@@ -319,7 +317,7 @@ class HelperFunctionsTests(unittest.TestCase):
 
         # the call sets USER_BASE *and* USER_SITE
         self.assertEqual(site.USER_SITE, user_site)
-        self.assertStartsWith(user_site, site.USER_BASE)
+        self.assertTrue(user_site.startswith(site.USER_BASE), user_site)
         self.assertEqual(site.USER_BASE, site.getuserbase())
 
     def test_getsitepackages(self):
@@ -330,13 +328,13 @@ class HelperFunctionsTests(unittest.TestCase):
             if sys.platlibdir != "lib":
                 self.assertEqual(len(dirs), 2)
                 wanted = os.path.join('xoxo', sys.platlibdir,
-                                      f'python{sysconfig._get_python_version_abi()}',
+                                      'python%d.%d' % sys.version_info[:2],
                                       'site-packages')
                 self.assertEqual(dirs[0], wanted)
             else:
                 self.assertEqual(len(dirs), 1)
             wanted = os.path.join('xoxo', 'lib',
-                                  f'python{sysconfig._get_python_version_abi()}',
+                                  'python%d.%d' % sys.version_info[:2],
                                   'site-packages')
             self.assertEqual(dirs[-1], wanted)
         else:
@@ -357,13 +355,16 @@ class HelperFunctionsTests(unittest.TestCase):
 
         with EnvironmentVarGuard() as environ, \
              mock.patch('os.path.expanduser', lambda path: path):
-            environ.unset('PYTHONUSERBASE', 'APPDATA')
+
+            del environ['PYTHONUSERBASE']
+            del environ['APPDATA']
 
             user_base = site.getuserbase()
-            self.assertStartsWith(user_base, '~' + os.sep)
+            self.assertTrue(user_base.startswith('~' + os.sep),
+                            user_base)
 
             user_site = site.getusersitepackages()
-            self.assertStartsWith(user_site, user_base)
+            self.assertTrue(user_site.startswith(user_base), user_site)
 
         with mock.patch('os.path.isdir', return_value=False) as mock_isdir, \
              mock.patch.object(site, 'addsitedir') as mock_addsitedir, \
@@ -377,19 +378,6 @@ class HelperFunctionsTests(unittest.TestCase):
             mock_isdir.assert_called_once_with(user_site)
             mock_addsitedir.assert_not_called()
             self.assertFalse(known_paths)
-
-    def test_gethistoryfile(self):
-        filename = 'file'
-        rc, out, err = assert_python_ok('-c',
-            f'import site; assert site.gethistoryfile() == "{filename}"',
-            PYTHON_HISTORY=filename)
-        self.assertEqual(rc, 0)
-
-        # Check that PYTHON_HISTORY is ignored in isolated mode.
-        rc, out, err = assert_python_ok('-I', '-c',
-            f'import site; assert site.gethistoryfile() != "{filename}"',
-            PYTHON_HISTORY=filename)
-        self.assertEqual(rc, 0)
 
     def test_trace(self):
         message = "bla-bla-bla"
@@ -495,66 +483,28 @@ class ImportSideEffectTests(unittest.TestCase):
 
     def test_setting_quit(self):
         # 'quit' and 'exit' should be injected into builtins
-        self.assertHasAttr(builtins, "quit")
-        self.assertHasAttr(builtins, "exit")
+        self.assertTrue(hasattr(builtins, "quit"))
+        self.assertTrue(hasattr(builtins, "exit"))
 
     def test_setting_copyright(self):
         # 'copyright', 'credits', and 'license' should be in builtins
-        self.assertHasAttr(builtins, "copyright")
-        self.assertHasAttr(builtins, "credits")
-        self.assertHasAttr(builtins, "license")
+        self.assertTrue(hasattr(builtins, "copyright"))
+        self.assertTrue(hasattr(builtins, "credits"))
+        self.assertTrue(hasattr(builtins, "license"))
 
     def test_setting_help(self):
         # 'help' should be set in builtins
-        self.assertHasAttr(builtins, "help")
+        self.assertTrue(hasattr(builtins, "help"))
 
     def test_sitecustomize_executed(self):
         # If sitecustomize is available, it should have been imported.
         if "sitecustomize" not in sys.modules:
             try:
-                import sitecustomize  # noqa: F401
+                import sitecustomize
             except ImportError:
                 pass
             else:
                 self.fail("sitecustomize not imported automatically")
-
-    @support.requires_subprocess()
-    def test_customization_modules_on_startup(self):
-        mod_names = [
-            'sitecustomize'
-        ]
-
-        if site.ENABLE_USER_SITE:
-            mod_names.append('usercustomize')
-
-        temp_dir = tempfile.mkdtemp()
-        self.addCleanup(os_helper.rmtree, temp_dir)
-
-        with EnvironmentVarGuard() as environ:
-            environ['PYTHONPATH'] = temp_dir
-
-            for module_name in mod_names:
-                os_helper.rmtree(temp_dir)
-                os.mkdir(temp_dir)
-
-                customize_path = os.path.join(temp_dir, f'{module_name}.py')
-                eyecatcher = f'EXECUTED_{module_name}'
-
-                with open(customize_path, 'w') as f:
-                    f.write(f'print("{eyecatcher}")')
-
-                output = subprocess.check_output([sys.executable, '-c', '""'])
-                self.assertIn(eyecatcher, output.decode('utf-8'))
-
-                # -S blocks any site-packages
-                output = subprocess.check_output([sys.executable, '-S', '-c', '""'])
-                self.assertNotIn(eyecatcher, output.decode('utf-8'))
-
-                # -s blocks user site-packages
-                if 'usercustomize' == module_name:
-                    output = subprocess.check_output([sys.executable, '-s', '-c', '""'])
-                    self.assertNotIn(eyecatcher, output.decode('utf-8'))
-
 
     @unittest.skipUnless(hasattr(urllib.request, "HTTPSHandler"),
                          'need SSL support to download license')
@@ -574,17 +524,6 @@ class ImportSideEffectTests(unittest.TestCase):
         except urllib.error.HTTPError as e:
             code = e.code
         self.assertEqual(code, 200, msg="Can't find " + url)
-
-    @support.cpython_only
-    def test_lazy_imports(self):
-        import_helper.ensure_lazy_imports("site", [
-            "io",
-            "locale",
-            "traceback",
-            "atexit",
-            "warnings",
-            "textwrap",
-        ])
 
 
 class StartupImportTests(unittest.TestCase):
@@ -803,111 +742,6 @@ class _pthFileTests(unittest.TestCase):
                 os.path.join(sys_prefix, 'from-env'),
             )], env=env)
         self.assertTrue(rc, "sys.path is incorrect")
-
-
-class CommandLineTests(unittest.TestCase):
-    def exists(self, path):
-        if path is not None and os.path.isdir(path):
-            return "exists"
-        else:
-            return "doesn't exist"
-
-    def get_excepted_output(self, *args):
-        if len(args) == 0:
-            user_base = site.getuserbase()
-            user_site = site.getusersitepackages()
-            output = io.StringIO()
-            output.write("sys.path = [\n")
-            for dir in sys.path:
-                output.write("    %r,\n" % (dir,))
-            output.write("]\n")
-            output.write(f"USER_BASE: {user_base} ({self.exists(user_base)})\n")
-            output.write(f"USER_SITE: {user_site} ({self.exists(user_site)})\n")
-            output.write(f"ENABLE_USER_SITE: {site.ENABLE_USER_SITE}\n")
-            return 0, dedent(output.getvalue()).strip()
-
-        buffer = []
-        if '--user-base' in args:
-            buffer.append(site.getuserbase())
-        if '--user-site' in args:
-            buffer.append(site.getusersitepackages())
-
-        if buffer:
-            return_code = 3
-            if site.ENABLE_USER_SITE:
-                return_code = 0
-            elif site.ENABLE_USER_SITE is False:
-                return_code = 1
-            elif site.ENABLE_USER_SITE is None:
-                return_code = 2
-            output = os.pathsep.join(buffer)
-            return return_code, os.path.normpath(dedent(output).strip())
-        else:
-            return 10, None
-
-    def invoke_command_line(self, *args):
-        cmd_args = []
-        if sys.flags.no_user_site:
-            cmd_args.append("-s")
-        cmd_args.extend(["-m", "site", *args])
-
-        with EnvironmentVarGuard() as env:
-            env["PYTHONUTF8"] = "1"
-            env["PYTHONIOENCODING"] = "utf-8"
-            proc = spawn_python(*cmd_args, text=True, env=env,
-                                encoding='utf-8', errors='replace')
-
-        output = kill_python(proc)
-        return_code = proc.returncode
-        return return_code, os.path.normpath(dedent(output).strip())
-
-    @support.requires_subprocess()
-    def test_no_args(self):
-        return_code, output = self.invoke_command_line()
-        excepted_return_code, _ = self.get_excepted_output()
-        self.assertEqual(return_code, excepted_return_code)
-        lines = output.splitlines()
-        self.assertEqual(lines[0], "sys.path = [")
-        self.assertEqual(lines[-4], "]")
-        excepted_base = f"USER_BASE: '{site.getuserbase()}'" +\
-            f" ({self.exists(site.getuserbase())})"
-        self.assertEqual(lines[-3], excepted_base)
-        excepted_site = f"USER_SITE: '{site.getusersitepackages()}'" +\
-            f" ({self.exists(site.getusersitepackages())})"
-        self.assertEqual(lines[-2], excepted_site)
-        self.assertEqual(lines[-1], f"ENABLE_USER_SITE: {site.ENABLE_USER_SITE}")
-
-    @support.requires_subprocess()
-    def test_unknown_args(self):
-        return_code, output = self.invoke_command_line("--unknown-arg")
-        excepted_return_code, _ = self.get_excepted_output("--unknown-arg")
-        self.assertEqual(return_code, excepted_return_code)
-        self.assertIn('[--user-base] [--user-site]', output)
-
-    @support.requires_subprocess()
-    def test_base_arg(self):
-        return_code, output = self.invoke_command_line("--user-base")
-        excepted = self.get_excepted_output("--user-base")
-        excepted_return_code, excepted_output = excepted
-        self.assertEqual(return_code, excepted_return_code)
-        self.assertEqual(output, excepted_output)
-
-    @support.requires_subprocess()
-    def test_site_arg(self):
-        return_code, output = self.invoke_command_line("--user-site")
-        excepted = self.get_excepted_output("--user-site")
-        excepted_return_code, excepted_output = excepted
-        self.assertEqual(return_code, excepted_return_code)
-        self.assertEqual(output, excepted_output)
-
-    @support.requires_subprocess()
-    def test_both_args(self):
-        return_code, output = self.invoke_command_line("--user-base",
-                                                       "--user-site")
-        excepted = self.get_excepted_output("--user-base", "--user-site")
-        excepted_return_code, excepted_output = excepted
-        self.assertEqual(return_code, excepted_return_code)
-        self.assertEqual(output, excepted_output)
 
 
 if __name__ == "__main__":

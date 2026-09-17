@@ -23,6 +23,7 @@
 
 #ifndef PYSQLITE_CURSOR_H
 #define PYSQLITE_CURSOR_H
+#define PY_SSIZE_T_CLEAN
 #include "Python.h"
 
 #include "statement.h"
@@ -35,7 +36,7 @@ typedef struct
     pysqlite_Connection* connection;
     PyObject* description;
     PyObject* row_cast_map;
-    uint32_t arraysize;
+    int arraysize;
     PyObject* lastrowid;
     long rowcount;
     PyObject* row_factory;

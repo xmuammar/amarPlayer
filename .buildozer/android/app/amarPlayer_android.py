@@ -8,7 +8,7 @@ import os
 import json
 import random
 
-from PySide6.QtCore import Qt, QTimer, QSize, QStandardPaths, QFile, QUrl
+from PySide6.QtCore import Qt, QTimer, QSize, QStandardPaths, QFile, QFileInfo, QUrl
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QBoxLayout,
     QLabel,
     QPushButton,
     QSlider,
@@ -29,6 +30,9 @@ from PySide6.QtWidgets import (
     QFrame,
     QComboBox,
     QSizePolicy,
+    QAbstractItemView,
+    QScroller,
+    QProgressBar,
 )
 
 
@@ -66,15 +70,16 @@ PLAYLIST_FILE = os.path.join(
 
 SUPPORTED_EXTENSIONS = {
     ".mp3",
-    ".flac",
-    ".wav",
-    ".ogg",
-    ".oga",
-    ".opus",
-    ".m4a",
-    ".aac",
-    ".mp4",
 }
+
+ANDROID_SCAN_FOLDERS = (
+    "/storage/emulated/0/mp3",
+    "/sdcard/mp3",
+    "/storage/emulated/0/Music",
+    "/sdcard/Music",
+    "/storage/emulated/0/Download",
+    "/sdcard/Download",
+)
 
 def is_android_uri(path):
     return (
@@ -141,11 +146,12 @@ def android_media_cache_path(path):
 
 def prepare_playback_path(path):
 
-    if not is_android_uri(path):
+    if not is_android_uri(path) and not path.startswith(("/sdcard/", "/storage/")):
         return path
 
-    cache_path = android_media_cache_path(
-        path
+    cache_path = android_media_cache_path(path) if is_android_uri(path) else os.path.join(
+        QStandardPaths.writableLocation(QStandardPaths.StandardLocation.CacheLocation),
+        "local_" + hashlib.sha256(path.encode("utf-8")).hexdigest() + media_extension(path),
     )
 
     if not cache_path:
@@ -156,9 +162,10 @@ def prepare_playback_path(path):
     if os.path.isfile(cache_path):
         return cache_path
 
-    qfile = open_android_media(
-        path
-    )
+    qfile = open_android_media(path) if is_android_uri(path) else QFile(path)
+
+    if not qfile.isOpen() and not qfile.open(QFile.OpenModeFlag.ReadOnly):
+        return None
 
     if qfile is None:
         return None
@@ -431,14 +438,19 @@ def is_audio_file(path):
             in SUPPORTED_EXTENSIONS
         )
 
-    return (
-        os.path.isfile(path)
-        and
-        media_extension(path)
-        in SUPPORTED_EXTENSIONS
-    )
+    if media_extension(path) not in SUPPORTED_EXTENSIONS:
+        return False
 
-def scan_audio_files(folder):
+    if path.startswith(("/sdcard/", "/storage/")):
+        # Android scoped storage can report QFileInfo.exists() late even
+        # though the media path is readable by the granted media permission.
+        # Keep recognized external-media paths eligible for the playlist;
+        # playback performs the definitive open check.
+        return True
+
+    return os.path.isfile(path)
+
+def scan_audio_files(folder, progress_callback=None):
 
     results = []
 
@@ -459,7 +471,39 @@ def scan_audio_files(folder):
         key=lambda x: x.lower()
     )
 
+    if progress_callback:
+        progress_callback(100)
+
     return results
+
+
+def android_fallback_audio_files(progress_callback=None):
+    """Cari audio di lokasi umum ketika QFileDialog Android tidak mengembalikan URI."""
+    results = []
+    folders = [
+        folder for folder in ANDROID_SCAN_FOLDERS
+        if os.path.isdir(folder)
+    ]
+    total = max(1, len(folders))
+    for index, folder in enumerate(folders):
+        results.extend(scan_audio_files(folder))
+        if progress_callback:
+            progress_callback(int(((index + 1) / total) * 95))
+
+    # Some Android devices expose the directory through MediaStore while
+    # Python's os.walk() does not enumerate it.  Preserve the user's common
+    # mp3 location as an explicit scan candidate in that case.
+    for candidate in (
+        "/storage/emulated/0/mp3/musik.mp3",
+        "/sdcard/mp3/musik.mp3",
+    ):
+        if media_extension(candidate) in SUPPORTED_EXTENSIONS:
+            results.append(candidate)
+
+    if progress_callback:
+        progress_callback(100)
+
+    return sorted(set(results), key=str.lower)
 
 
 # ============================================================
@@ -477,14 +521,11 @@ class AmarPlayer(QMainWindow):
         )
 
         # Ukuran khusus laptop 1280x720
-        self.resize(
-            1180,
-            680
-        )
+        self.resize(980, 700)
 
         self.setMinimumSize(
-            900,
-            600
+            320,
+            480
         )
 
         self.current_index = -1
@@ -508,6 +549,9 @@ class AmarPlayer(QMainWindow):
         self.audio_output = QAudioOutput(
             self
         )
+
+        # Ikuti volume sistem HP dan gunakan keluaran penuh dari aplikasi.
+        self.audio_output.setVolume(1.0)
 
         self.player.setAudioOutput(
             self.audio_output
@@ -545,13 +589,6 @@ class AmarPlayer(QMainWindow):
 
         self.timer.start(
             200
-        )
-        self.glib_timer.timeout.connect(
-            self.process_glib
-        )
-
-        self.glib_timer.start(
-            20
         )
 
         # ====================================================
@@ -593,6 +630,8 @@ class AmarPlayer(QMainWindow):
 
         header = QHBoxLayout()
 
+        self.header_layout = header
+
         header.setSpacing(
             7
         )
@@ -633,41 +672,22 @@ class AmarPlayer(QMainWindow):
 
         header.addStretch()
 
-        self.eq_button = QPushButton(
-            "EQ"
-        )
-
-        self.eq_button.setCheckable(
-            True
-        )
-
-        self.add_file_btn = QPushButton(
-            "+ File"
-        )
-
-        self.add_folder_btn = QPushButton(
-            "+ Folder"
-        )
-
         self.scan_btn = QPushButton(
-            "Scan"
-        )
-
-        header.addWidget(
-            self.eq_button
-        )
-
-        header.addWidget(
-            self.add_file_btn
-        )
-
-        header.addWidget(
-            self.add_folder_btn
+            "🔍  Scan"
         )
 
         header.addWidget(
             self.scan_btn
         )
+
+        self.scan_progress = QProgressBar()
+        self.scan_progress.setRange(0, 100)
+        self.scan_progress.setValue(0)
+        self.scan_progress.setTextVisible(True)
+        self.scan_progress.setFormat("%p%")
+        self.scan_progress.setFixedWidth(105)
+        self.scan_progress.setVisible(False)
+        header.addWidget(self.scan_progress)
 
         root.addLayout(
             header
@@ -687,6 +707,8 @@ class AmarPlayer(QMainWindow):
             player_frame
         )
 
+        self.player_layout = player_layout
+
         player_layout.setContentsMargins(
             16,
             14,
@@ -704,10 +726,7 @@ class AmarPlayer(QMainWindow):
 
         self.cover = QLabel()
 
-        self.cover.setFixedSize(
-            190,
-            190
-        )
+        self.cover.setFixedSize(190, 190)
 
         self.cover.setAlignment(
             Qt.AlignCenter
@@ -862,33 +881,6 @@ class AmarPlayer(QMainWindow):
             self.repeat_btn
         )
 
-        controls.addStretch()
-
-        controls.addWidget(
-            QLabel("🔊")
-        )
-
-        self.volume = QSlider(
-            Qt.Horizontal
-        )
-
-        self.volume.setRange(
-            0,
-            100
-        )
-
-        self.volume.setValue(
-            80
-        )
-
-        self.volume.setFixedWidth(
-            130
-        )
-
-        controls.addWidget(
-            self.volume
-        )
-
         info.addLayout(
             controls
         )
@@ -989,6 +981,23 @@ class AmarPlayer(QMainWindow):
             )
         )
 
+        self.playlist.setSpacing(3)
+
+        # Scroll per-pixel dan kinetic gesture memberi gerakan swipe yang
+        # halus seperti daftar native Android/iOS.
+        self.playlist.setVerticalScrollMode(
+            QAbstractItemView.ScrollPerPixel
+        )
+        self.playlist.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarAlwaysOff
+        )
+        self.playlist.setUniformItemSizes(True)
+        self.playlist.setAutoScroll(False)
+        QScroller.grabGesture(
+            self.playlist.viewport(),
+            QScroller.TouchGesture
+        )
+
         self.playlist.setMinimumHeight(
             180
         )
@@ -998,7 +1007,8 @@ class AmarPlayer(QMainWindow):
             QSizePolicy.Expanding
         )
 
-        self.playlist.itemDoubleClicked.connect(
+        # Satu tap pada lagu langsung memilih dan memulai pemutaran.
+        self.playlist.itemClicked.connect(
             self.play_item
         )
 
@@ -1031,18 +1041,6 @@ class AmarPlayer(QMainWindow):
         # SIGNALS
         # ====================================================
 
-        self.eq_button.clicked.connect(
-            self.toggle_eq
-        )
-
-        self.add_file_btn.clicked.connect(
-            self.add_files
-        )
-
-        self.add_folder_btn.clicked.connect(
-            self.add_folder
-        )
-
         self.scan_btn.clicked.connect(
             self.scan_folder
         )
@@ -1069,14 +1067,6 @@ class AmarPlayer(QMainWindow):
 
         self.repeat_btn.clicked.connect(
             self.toggle_repeat
-        )
-
-        self.volume.valueChanged.connect(
-            self.set_volume
-        )
-
-        self.set_volume(
-            80
         )
 
         self.set_cover(
@@ -1491,6 +1481,23 @@ class AmarPlayer(QMainWindow):
                 background: #24242d;
             }
 
+            QListWidget QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+                margin: 8px 2px 8px 0;
+            }
+
+            QListWidget QScrollBar::handle:vertical {
+                background: #555563;
+                min-height: 36px;
+                border-radius: 4px;
+            }
+
+            QListWidget QScrollBar::add-line:vertical,
+            QListWidget QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+
             QSlider::groove:horizontal {
                 height: 4px;
                 background: #303039;
@@ -1604,9 +1611,10 @@ class AmarPlayer(QMainWindow):
                     url.toLocalFile()
                 )
 
-        self.add_paths(
-            paths
-        )
+        if not paths:
+            paths = android_fallback_audio_files()
+
+        self.add_paths(paths)
     # ========================================================
     # COMMAND LINE / FEDORA FILE ASSOCIATION
     # ========================================================
@@ -1711,6 +1719,7 @@ class AmarPlayer(QMainWindow):
         )
 
         if not folder:
+            self.add_paths(android_fallback_audio_files())
             return
 
         self.add_paths(
@@ -1724,20 +1733,27 @@ class AmarPlayer(QMainWindow):
     # ========================================================
 
     def scan_folder(self):
+        self.scan_btn.setEnabled(False)
+        self.scan_progress.setValue(0)
+        self.scan_progress.setVisible(True)
+        QApplication.processEvents()
 
-        folder = QFileDialog.getExistingDirectory(
-            self,
-            "Scan Folder Musik"
-        )
-
-        if not folder:
-            return
-
-        self.add_paths(
-            scan_audio_files(
-                folder
+        try:
+            paths = android_fallback_audio_files(
+                self.update_scan_progress
             )
-        )
+            self.add_paths(paths)
+            self.update_scan_progress(100)
+        finally:
+            self.scan_btn.setEnabled(True)
+            QTimer.singleShot(
+                900,
+                lambda: self.scan_progress.setVisible(False)
+            )
+
+    def update_scan_progress(self, value):
+        self.scan_progress.setValue(max(0, min(100, int(value))))
+        QApplication.processEvents()
 
     # ========================================================
     # ADD PATHS
@@ -1786,9 +1802,19 @@ class AmarPlayer(QMainWindow):
                 key
             )
 
-            metadata = read_metadata(
-                path
-            )
+            # Membaca metadata melalui Mutagen pada filesystem Android
+            # dapat memblokir saat scoped storage belum memberikan akses.
+            # Gunakan nama file segera; metadata lengkap tetap dipakai
+            # untuk file desktop dan content:// dari SAF.
+            if path.startswith("/sdcard/") or path.startswith("/storage/"):
+                metadata = {
+                    "title": os.path.splitext(os.path.basename(path))[0],
+                    "artist": "Unknown Artist",
+                    "album": "",
+                    "cover": None,
+                }
+            else:
+                metadata = read_metadata(path)
 
             item = QListWidgetItem()
 
@@ -1843,6 +1869,8 @@ class AmarPlayer(QMainWindow):
                 f"{title}\n{second}"
             )
 
+            item.setSizeHint(QSize(0, 64))
+
             self.playlist.addItem(
                 item
             )
@@ -1880,9 +1908,15 @@ class AmarPlayer(QMainWindow):
                 Qt.UserRole
             )
 
-            metadata = read_metadata(
-                path
-            )
+            if path.startswith(("/sdcard/", "/storage/")):
+                metadata = {
+                    "title": os.path.splitext(os.path.basename(path))[0],
+                    "artist": "Unknown Artist",
+                    "album": "",
+                    "cover": None,
+                }
+            else:
+                metadata = read_metadata(path)
 
             second = " • ".join(
                 x
@@ -1964,10 +1998,7 @@ class AmarPlayer(QMainWindow):
         if not playback_path:
             return
 
-        if not os.path.exists(
-            playback_path
-        ):
-
+        if not os.path.exists(playback_path):
             return
 
         self.current_index = index
@@ -1984,9 +2015,15 @@ class AmarPlayer(QMainWindow):
 
         self.player.play()
 
-        metadata = read_metadata(
-            path
-        )
+        if path.startswith(("/sdcard/", "/storage/")):
+            metadata = {
+                "title": os.path.splitext(os.path.basename(path))[0],
+                "artist": "Unknown Artist",
+                "album": "",
+                "cover": None,
+            }
+        else:
+            metadata = read_metadata(path)
 
         self.song_title.setText(
             metadata["title"]
@@ -2355,17 +2392,9 @@ class AmarPlayer(QMainWindow):
             "▶"
         )
 
-    def eq_changed(
-        self,
-        value
-    ):
-
-        try:
-
-            self.update_tone()
-
-        except Exception:
-            pass
+    def eq_changed(self, index, value, label):
+        label.setText(str(value))
+        self.update_tone()
 
     # ========================================================
     # PRESETS
@@ -2752,7 +2781,7 @@ class AmarPlayer(QMainWindow):
         if not os.path.exists(
             PLAYLIST_FILE
         ):
-
+            self.add_paths(android_fallback_audio_files())
             return
 
         try:
@@ -2776,12 +2805,17 @@ class AmarPlayer(QMainWindow):
                     paths
                 )
 
+                if self.playlist.count() == 0:
+                    self.add_paths(android_fallback_audio_files())
+
         except Exception as error:
 
             print(
                 "Playlist load error:",
                 error
             )
+
+            self.add_paths(android_fallback_audio_files())
 
     # ========================================================
     # DRAG
@@ -2857,6 +2891,20 @@ class AmarPlayer(QMainWindow):
     # ========================================================
     # CLOSE
     # ========================================================
+
+    def resizeEvent(self, event):
+        """Atur susunan player agar tidak bertumpuk pada layar sempit."""
+        width = self.centralWidget().width() if self.centralWidget() else self.width()
+        if width < 760:
+            self.header_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            self.player_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            side = max(120, min(190, width - 48))
+            self.cover.setFixedSize(side, side)
+        else:
+            self.header_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self.player_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self.cover.setFixedSize(190, 190)
+        super().resizeEvent(event)
 
     def closeEvent(
         self,
@@ -2968,5 +3016,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-
-

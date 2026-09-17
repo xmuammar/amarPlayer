@@ -1,5 +1,5 @@
-:mod:`!unittest.mock` --- getting started
-=========================================
+:mod:`unittest.mock` --- getting started
+========================================
 
 .. moduleauthor:: Michael Foord <michael@python.org>
 .. currentmodule:: unittest.mock
@@ -339,7 +339,7 @@ instantiate the class in those tests.
     >>> mock.old_method()
     Traceback (most recent call last):
        ...
-    AttributeError: Mock object has no attribute 'old_method'. Did you mean: 'class_method'?
+    AttributeError: object has no attribute 'old_method'
 
 Using a specification also enables a smarter matching of calls made to the
 mock, regardless of whether some parameters were passed as positional or
@@ -600,13 +600,13 @@ this list of calls for us::
 Partial mocking
 ~~~~~~~~~~~~~~~
 
-For some tests, you may want to mock out a call to :meth:`datetime.date.today`
-to return a known date, but don't want to prevent the code under test from
-creating new date objects. Unfortunately :class:`datetime.date` is written in C,
-so you cannot just monkey-patch out the static :meth:`datetime.date.today` method.
+In some tests I wanted to mock out a call to :meth:`datetime.date.today`
+to return a known date, but I didn't want to prevent the code under test from
+creating new date objects. Unfortunately :class:`datetime.date` is written in C, and
+so I couldn't just monkey-patch out the static :meth:`datetime.date.today` method.
 
-Instead, you can effectively wrap the date
-class with a mock, while passing through calls to the constructor to the real
+I found a simple way of doing this that involved effectively wrapping the date
+class with a mock, but passing through calls to the constructor to the real
 class (and returning real instances).
 
 The :func:`patch decorator <patch>` is used here to
@@ -743,15 +743,16 @@ exception is raised in the setUp then tearDown is not called.
 Mocking Unbound Methods
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Sometimes a test needs to patch an *unbound method*, which means patching the
-method on the class rather than on the instance. In order to make assertions
-about which objects were calling this particular method, you need to pass
-``self`` as the first argument. The issue is that you can't patch with a mock for
-this, because if you replace an unbound method with a mock it doesn't become
-a bound method when fetched from the instance, and so it doesn't get ``self``
-passed in. The workaround is to patch the unbound method with a real function
-instead. The :func:`patch` decorator makes it so simple to patch out methods
-with a mock that having to create a real function becomes a nuisance.
+Whilst writing tests today I needed to patch an *unbound method* (patching the
+method on the class rather than on the instance). I needed self to be passed
+in as the first argument because I want to make asserts about which objects
+were calling this particular method. The issue is that you can't patch with a
+mock for this, because if you replace an unbound method with a mock it doesn't
+become a bound method when fetched from the instance, and so it doesn't get
+self passed in. The workaround is to patch the unbound method with a real
+function instead. The :func:`patch` decorator makes it so simple to
+patch out methods with a mock that having to create a real function becomes a
+nuisance.
 
 If you pass ``autospec=True`` to patch then it does the patching with a
 *real* function object. This function object has the same signature as the one
@@ -759,8 +760,8 @@ it is replacing, but delegates to a mock under the hood. You still get your
 mock auto-created in exactly the same way as before. What it means though, is
 that if you use it to patch out an unbound method on a class the mocked
 function will be turned into a bound method if it is fetched from an instance.
-It will have ``self`` passed in as the first argument, which is exactly what
-was needed:
+It will have ``self`` passed in as the first argument, which is exactly what I
+wanted:
 
     >>> class Foo:
     ...   def foo(self):
@@ -797,8 +798,7 @@ If your mock is only being called once you can use the
     >>> mock.foo_bar.assert_called_once_with('baz', spam='eggs')
     Traceback (most recent call last):
         ...
-    AssertionError: Expected 'foo_bar' to be called once. Called 2 times.
-    Calls: [call('baz', spam='eggs'), call()].
+    AssertionError: Expected to be called once. Called 2 times.
 
 Both ``assert_called_with`` and ``assert_called_once_with`` make assertions about
 the *most recent* call. If your mock is going to be called several times, and
@@ -927,9 +927,8 @@ Here's an example implementation:
     >>> c.assert_called_with(arg)
     Traceback (most recent call last):
         ...
-    AssertionError: expected call not found.
-    Expected: mock({1})
-    Actual: mock(set())
+    AssertionError: Expected call: mock({1})
+    Actual call: mock(set())
     >>> c.foo
     <CopyingMock name='mock.foo' id='...'>
 
@@ -1293,9 +1292,8 @@ sufficient:
     >>> mock.assert_called_with(Foo(1, 2))
     Traceback (most recent call last):
         ...
-    AssertionError: expected call not found.
-    Expected: mock(<__main__.Foo object at 0x...>)
-    Actual: mock(<__main__.Foo object at 0x...>)
+    AssertionError: Expected: call(<__main__.Foo object at 0x...>)
+    Actual call: call(<__main__.Foo object at 0x...>)
 
 A comparison function for our ``Foo`` class might look something like this:
 

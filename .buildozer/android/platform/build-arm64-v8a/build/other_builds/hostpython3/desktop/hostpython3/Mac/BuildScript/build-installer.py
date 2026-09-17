@@ -203,7 +203,7 @@ def internalTk():
 
 # Do we use 8.6.8 when building our own copy
 # of Tcl/Tk or a modern version.
-#   We use the old version when building on
+#   We use the old version when buildin on
 #   old versions of macOS due to build issues.
 def useOldTk():
     return getBuildTuple() < (10, 15)
@@ -246,9 +246,9 @@ def library_recipes():
 
     result.extend([
           dict(
-              name="OpenSSL 3.0.18",
-              url="https://github.com/openssl/openssl/releases/download/openssl-3.0.18/openssl-3.0.18.tar.gz",
-              checksum='d80c34f5cf902dccf1f1b5df5ebb86d0392e37049e5d73df1b3abae72e4ffe8b',
+              name="OpenSSL 3.0.13",
+              url="https://www.openssl.org/source/openssl-3.0.13.tar.gz",
+              checksum='88525753f79d3bec27d2fa7c66aa0b92b3aa9498dafd93d7cfa4b3780cdae313',
               buildrecipe=build_universal_openssl,
               configure=None,
               install=None,
@@ -264,18 +264,17 @@ def library_recipes():
             tk_patches = ['backport_gh71383_fix.patch', 'tk868_on_10_8_10_9.patch', 'backport_gh110950_fix.patch']
 
         else:
-            tcl_tk_ver='8.6.17'
-            tcl_checksum='a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31'
+            tcl_tk_ver='8.6.13'
+            tcl_checksum='43a1fae7412f61ff11de2cfd05d28cfc3a73762f354a417c62370a54e2caf066'
 
-            tk_checksum='e4982df6f969c08bf9dd858a6891059b4a3f50dc6c87c10abadbbe2fc4838946'
-            tk_patches = []
+            tk_checksum='2e65fa069a23365440a3c56c556b8673b5e32a283800d8d9b257e3f584ce0675'
+            tk_patches = ['backport_gh92603_fix.patch', 'backport_gh71383_fix.patch', 'backport_gh110950_fix.patch']
 
 
-        base_url = "https://prdownloads.sourceforge.net/tcl/{what}{version}-src.tar.gz"
         result.extend([
           dict(
               name="Tcl %s"%(tcl_tk_ver,),
-              url=base_url.format(what="tcl", version=tcl_tk_ver),
+              url="ftp://ftp.tcl.tk/pub/tcl//tcl8_6/tcl%s-src.tar.gz"%(tcl_tk_ver,),
               checksum=tcl_checksum,
               buildDir="unix",
               configure_pre=[
@@ -292,7 +291,7 @@ def library_recipes():
               ),
           dict(
               name="Tk %s"%(tcl_tk_ver,),
-              url=base_url.format(what="tk", version=tcl_tk_ver),
+              url="ftp://ftp.tcl.tk/pub/tcl//tcl8_6/tk%s-src.tar.gz"%(tcl_tk_ver,),
               checksum=tk_checksum,
               patches=tk_patches,
               buildDir="unix",
@@ -325,32 +324,32 @@ def library_recipes():
 
     result.extend([
           dict(
-              name="NCurses 6.5",
-              url="https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz",
-              checksum="136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6",
+              name="NCurses 5.9",
+              url="http://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.9.tar.gz",
+              checksum='8cb9c412e5f2d96bc6f459aa8c6282a1',
               configure_pre=[
-                  "--datadir=/usr/share",
-                  "--disable-lib-suffixes",
-                  "--disable-db-install",
-                  "--disable-mixed-case",
-                  "--enable-overwrite",
                   "--enable-widec",
-                  f"--libdir=/Library/Frameworks/Python.framework/Versions/{getVersion()}/lib",
-                  "--sharedstatedir=/usr/com",
-                  "--sysconfdir=/etc",
-                  "--with-default-terminfo-dir=/usr/share/terminfo",
-                  "--with-shared",
-                  "--with-terminfo-dirs=/usr/share/terminfo",
-                  "--without-ada",
                   "--without-cxx",
                   "--without-cxx-binding",
-                  "--without-cxx-shared",
+                  "--without-ada",
+                  "--without-curses-h",
+                  "--enable-shared",
+                  "--with-shared",
                   "--without-debug",
-                  "--without-manpages",
                   "--without-normal",
-                  "--without-progs",
                   "--without-tests",
+                  "--without-manpages",
+                  "--datadir=/usr/share",
+                  "--sysconfdir=/etc",
+                  "--sharedstatedir=/usr/com",
+                  "--with-terminfo-dirs=/usr/share/terminfo",
+                  "--with-default-terminfo-dir=/usr/share/terminfo",
+                  "--libdir=/Library/Frameworks/Python.framework/Versions/%s/lib"%(getVersion(),),
               ],
+              patchscripts=[
+                  ("ftp://ftp.invisible-island.net/ncurses//5.9/ncurses-5.9-20120616-patch.sh.bz2",
+                   "f54bf02a349f96a7c4f0d00922f3a0d4"),
+                   ],
               useLDFlags=False,
               install='make && make install DESTDIR=%s && cd %s/usr/local/lib && ln -fs ../../../Library/Frameworks/Python.framework/Versions/%s/lib/lib* .'%(
                   shellQuote(os.path.join(WORKDIR, 'libraries')),
@@ -359,9 +358,9 @@ def library_recipes():
                   ),
           ),
           dict(
-              name="SQLite 3.50.4",
-              url="https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz",
-              checksum="a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+              name="SQLite 3.45.1",
+              url="https://sqlite.org/2024/sqlite-autoconf-3450100.tar.gz",
+              checksum="cd9c27841b7a5932c9897651e20b86c701dd740556989b01ca596fcfa3d49a0a",
               extra_cflags=('-Os '
                             '-DSQLITE_ENABLE_FTS5 '
                             '-DSQLITE_ENABLE_FTS4 '
@@ -372,18 +371,10 @@ def library_recipes():
                             ),
               configure_pre=[
                   '--enable-threadsafe',
+                  '--enable-shared=no',
+                  '--enable-static=yes',
                   '--disable-readline',
                   '--disable-dependency-tracking',
-              ],
-              install=f"make && ranlib libsqlite3.a && make install DESTDIR={shellQuote(os.path.join(WORKDIR, 'libraries'))}",
-          ),
-          dict(
-              name="libmpdec 4.0.0",
-              url="https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-4.0.0.tar.gz",
-              checksum="942445c3245b22730fd41a67a7c5c231d11cb1b9936b9c0f76334fb7d0b4468c",
-              configure_pre=[
-                  "--disable-cxx",
-                  "MACHINE=universal",
               ]
           ),
         ])
@@ -1155,10 +1146,7 @@ def buildPython():
     # will find them during its extension import sanity checks.
 
     print("Running configure...")
-    print(" NOTE: --with-mimalloc=no pending resolution of weak linking issues")
     runCommand("%s -C --enable-framework --enable-universalsdk=/ "
-               "--with-mimalloc=no "
-               "--with-system-libmpdec "
                "--with-universal-archs=%s "
                "%s "
                "%s "
@@ -1369,7 +1357,7 @@ def buildPython():
         build_time_vars = l_dict['build_time_vars']
     vars = {}
     for k, v in build_time_vars.items():
-        if isinstance(v, str):
+        if type(v) == type(''):
             for p in (include_path, lib_path):
                 v = v.replace(' ' + p, '')
                 v = v.replace(p + ' ', '')
@@ -1501,7 +1489,7 @@ def packageFromRecipe(targetDir, recipe):
                 IFPkgFlagRelocatable=False,
                 IFPkgFlagRestartAction="NoRestart",
                 IFPkgFlagRootVolumeOnly=True,
-                IFPkgFlagUpdateInstalledLanguages=False,
+                IFPkgFlagUpdateInstalledLangauges=False,
             )
         writePlist(pl, os.path.join(packageContents, 'Info.plist'))
 
@@ -1747,7 +1735,7 @@ def main():
     fn = os.path.join(folder, "ReadMe.rtf")
     patchFile("resources/ReadMe.rtf",  fn)
     fn = os.path.join(folder, "Update Shell Profile.command")
-    patchScript("resources/update_shell_profile.command",  fn)
+    patchScript("scripts/postflight.patch-profile",  fn)
     fn = os.path.join(folder, "Install Certificates.command")
     patchScript("resources/install_certificates.command",  fn)
     os.chmod(folder, STAT_0o755)

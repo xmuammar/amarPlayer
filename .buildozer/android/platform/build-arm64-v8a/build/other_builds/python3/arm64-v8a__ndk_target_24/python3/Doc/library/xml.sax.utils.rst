@@ -1,5 +1,5 @@
-:mod:`!xml.sax.saxutils` --- SAX Utilities
-==========================================
+:mod:`xml.sax.saxutils` --- SAX Utilities
+=========================================
 
 .. module:: xml.sax.saxutils
    :synopsis: Convenience functions and classes for use with SAX.
@@ -25,11 +25,6 @@ or as base classes.
    replaced with its corresponding value.  The characters ``'&'``, ``'<'`` and
    ``'>'`` are always escaped, even if *entities* is provided.
 
-   .. note::
-
-      This function should only be used to escape characters that
-      can't be used directly in XML. Do not use this function as a general
-      string translation function.
 
 .. function:: unescape(data, entities={})
 
@@ -37,7 +32,7 @@ or as base classes.
 
    You can unescape other strings of data by passing a dictionary as the optional
    *entities* parameter.  The keys and values must all be strings; each key will be
-   replaced with its corresponding value.  ``'&amp;'``, ``'&lt;'``, and ``'&gt;'``
+   replaced with its corresponding value.  ``'&amp'``, ``'&lt;'``, and ``'&gt;'``
    are always unescaped, even if *entities* is provided.
 
 

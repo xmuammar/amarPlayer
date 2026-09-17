@@ -21,21 +21,22 @@ from . import context
 from . import process
 from . import util
 
-# TODO: Do any platforms still lack a functioning sem_open?
+# Try to import the mp.synchronize module cleanly, if it fails
+# raise ImportError for platforms lacking a working sem_open implementation.
+# See issue 3770
 try:
     from _multiprocessing import SemLock, sem_unlink
-except ImportError:
+except (ImportError):
     raise ImportError("This platform lacks a functioning sem_open" +
-                      " implementation. https://github.com/python/cpython/issues/48020.")
+                      " implementation, therefore, the required" +
+                      " synchronization primitives needed will not" +
+                      " function, see issue 3770.")
 
 #
 # Constants
 #
 
-# These match the enum in Modules/_multiprocessing/semaphore.c
-RECURSIVE_MUTEX = 0
-SEMAPHORE = 1
-
+RECURSIVE_MUTEX, SEMAPHORE = list(range(2))
 SEM_VALUE_MAX = _multiprocessing.SemLock.SEM_VALUE_MAX
 
 #
@@ -90,9 +91,6 @@ class SemLock(object):
         self.acquire = self._semlock.acquire
         self.release = self._semlock.release
 
-    def locked(self):
-        return self._semlock._is_zero()
-
     def __enter__(self):
         return self._semlock.__enter__()
 
@@ -135,16 +133,11 @@ class Semaphore(SemLock):
         SemLock.__init__(self, SEMAPHORE, value, SEM_VALUE_MAX, ctx=ctx)
 
     def get_value(self):
-        '''Returns current value of Semaphore.
-
-        Raises NotImplementedError on Mac OSX
-        because of broken sem_getvalue().
-        '''
         return self._semlock._get_value()
 
     def __repr__(self):
         try:
-            value = self.get_value()
+            value = self._semlock._get_value()
         except Exception:
             value = 'unknown'
         return '<%s(value=%s)>' % (self.__class__.__name__, value)
@@ -160,7 +153,7 @@ class BoundedSemaphore(Semaphore):
 
     def __repr__(self):
         try:
-            value = self.get_value()
+            value = self._semlock._get_value()
         except Exception:
             value = 'unknown'
         return '<%s(value=%s, maxvalue=%s)>' % \
@@ -181,7 +174,7 @@ class Lock(SemLock):
                 name = process.current_process().name
                 if threading.current_thread().name != 'MainThread':
                     name += '|' + threading.current_thread().name
-            elif not self._semlock._is_zero():
+            elif self._semlock._get_value() == 1:
                 name = 'None'
             elif self._semlock._count() > 0:
                 name = 'SomeOtherThread'
@@ -207,7 +200,7 @@ class RLock(SemLock):
                 if threading.current_thread().name != 'MainThread':
                     name += '|' + threading.current_thread().name
                 count = self._semlock._count()
-            elif not self._semlock._is_zero():
+            elif self._semlock._get_value() == 1:
                 name, count = 'None', 0
             elif self._semlock._count() > 0:
                 name, count = 'SomeOtherThread', 'nonzero'
@@ -252,8 +245,8 @@ class Condition(object):
 
     def __repr__(self):
         try:
-            num_waiters = (self._sleeping_count.get_value() -
-                           self._woken_count.get_value())
+            num_waiters = (self._sleeping_count._semlock._get_value() -
+                           self._woken_count._semlock._get_value())
         except Exception:
             num_waiters = 'unknown'
         return '<%s(%s, %s)>' % (self.__class__.__name__, self._lock, num_waiters)
@@ -367,7 +360,7 @@ class Event(object):
                 return True
             return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         set_status = 'set' if self.is_set() else 'unset'
         return f"<{type(self).__qualname__} at {id(self):#x} {set_status}>"
 #

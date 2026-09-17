@@ -1,5 +1,5 @@
-:mod:`!numbers` --- Numeric abstract base classes
-=================================================
+:mod:`numbers` --- Numeric abstract base classes
+================================================
 
 .. module:: numbers
    :synopsis: Numeric abstract base classes (Complex, Real, Integral, etc.).
@@ -38,8 +38,7 @@ The numeric tower
 
       Abstract. Retrieves the imaginary component of this number.
 
-   .. method:: conjugate()
-      :abstractmethod:
+   .. abstractmethod:: conjugate()
 
       Abstract. Returns the complex conjugate. For example, ``(1+3j).conjugate()
       == (1-3j)``.
@@ -69,11 +68,11 @@ The numeric tower
 
    .. attribute:: numerator
 
-      Abstract.  The numerator of this rational number.
+      Abstract.
 
    .. attribute:: denominator
 
-      Abstract.  The denominator of this rational number.
+      Abstract.
 
 
 .. class:: Integral
@@ -85,10 +84,10 @@ The numeric tower
    ``~``.
 
 
-Notes for type implementers
+Notes for type implementors
 ---------------------------
 
-Implementers should be careful to make equal numbers equal and hash
+Implementors should be careful to make equal numbers equal and hash
 them to the same values. This may be subtle if there are two different
 extensions of the real numbers. For example, :class:`fractions.Fraction`
 implements :func:`hash` as follows::

@@ -1,5 +1,5 @@
-:mod:`!platform` ---  Access to underlying platform's identifying data
-======================================================================
+:mod:`platform` ---  Access to underlying platform's identifying data
+=====================================================================
 
 .. module:: platform
    :synopsis: Retrieves as much platform identifying data as possible.
@@ -17,7 +17,7 @@
    section.
 
 
-Cross platform
+Cross Platform
 --------------
 
 
@@ -56,8 +56,6 @@ Cross platform
    Returns the machine type, e.g. ``'AMD64'``. An empty string is returned if the
    value cannot be determined.
 
-   The output is platform-dependent and may differ in casing and naming conventions.
-
 
 .. function:: node()
 
@@ -65,7 +63,7 @@ Cross platform
    string is returned if the value cannot be determined.
 
 
-.. function:: platform(aliased=False, terse=False)
+.. function:: platform(aliased=0, terse=0)
 
    Returns a single string identifying the underlying platform with as much useful
    information as possible.
@@ -150,9 +148,6 @@ Cross platform
    Returns the system/OS name, such as ``'Linux'``, ``'Darwin'``, ``'Java'``,
    ``'Windows'``. An empty string is returned if the value cannot be determined.
 
-   On iOS and Android, this returns the user-facing OS name (i.e, ``'iOS``,
-   ``'iPadOS'`` or ``'Android'``). To obtain the kernel name (``'Darwin'`` or
-   ``'Linux'``), use :func:`os.uname`.
 
 .. function:: system_alias(system, release, version)
 
@@ -166,8 +161,6 @@ Cross platform
    Returns the system's release version, e.g. ``'#3 on degas'``. An empty string is
    returned if the value cannot be determined.
 
-   On iOS and Android, this is the user-facing OS version. To obtain the
-   Darwin or Linux kernel version, use :func:`os.uname`.
 
 .. function:: uname()
 
@@ -175,30 +168,18 @@ Cross platform
    containing six attributes: :attr:`system`, :attr:`node`, :attr:`release`,
    :attr:`version`, :attr:`machine`, and :attr:`processor`.
 
-   :attr:`processor` is resolved late, on demand.
-
-   Note: the first two attribute names differ from the names presented by
-   :func:`os.uname`, where they are named :attr:`!sysname` and
-   :attr:`!nodename`.
+   Note that this adds a sixth attribute (:attr:`processor`) not present
+   in the :func:`os.uname` result.  Also, the attribute names are different
+   for the first two attributes; :func:`os.uname` names them
+   :attr:`sysname` and :attr:`nodename`.
 
    Entries which cannot be determined are set to ``''``.
 
    .. versionchanged:: 3.3
       Result changed from a tuple to a :func:`~collections.namedtuple`.
 
-   .. versionchanged:: 3.9
-      :attr:`processor` is resolved late instead of immediately.
 
-.. function:: invalidate_caches()
-
-   Clear out the internal cache of information, such as the :func:`uname`.
-   This is typically useful when the platform's :func:`node` is changed
-   by an external process and one needs to retrieve the updated value.
-
-   .. versionadded:: 3.14
-
-
-Java platform
+Java Platform
 -------------
 
 
@@ -211,12 +192,8 @@ Java platform
    ``(os_name, os_version, os_arch)``. Values which cannot be determined are set to
    the defaults given as parameters (which all default to ``''``).
 
-   .. deprecated-removed:: 3.13 3.15
-      It was largely untested, had a confusing API,
-      and was only useful for Jython support.
 
-
-Windows platform
+Windows Platform
 ----------------
 
 
@@ -229,8 +206,8 @@ Windows platform
    default to an empty string).
 
    As a hint: *ptype* is ``'Uniprocessor Free'`` on single processor NT machines
-   and ``'Multiprocessor Free'`` on multi processor machines. The ``'Free'`` refers
-   to the OS version being free of debugging code. It could also state ``'Checked'``
+   and ``'Multiprocessor Free'`` on multi processor machines. The *'Free'* refers
+   to the OS version being free of debugging code. It could also state *'Checked'*
    which means the OS version uses debugging code, i.e. code that checks arguments,
    ranges, etc.
 
@@ -250,8 +227,9 @@ Windows platform
    .. versionadded:: 3.8
 
 
-macOS platform
+macOS Platform
 --------------
+
 
 .. function:: mac_ver(release='', versioninfo=('','',''), machine='')
 
@@ -262,26 +240,8 @@ macOS platform
    Entries which cannot be determined are set to ``''``.  All tuple entries are
    strings.
 
-iOS platform
-------------
 
-.. function:: ios_ver(system='', release='', model='', is_simulator=False)
-
-   Get iOS version information and return it as a
-   :func:`~collections.namedtuple` with the following attributes:
-
-   * ``system`` is the OS name; either ``'iOS'`` or ``'iPadOS'``.
-   * ``release`` is the iOS version number as a string (e.g., ``'17.2'``).
-   * ``model`` is the device model identifier; this will be a string like
-     ``'iPhone13,2'`` for a physical device, or ``'iPhone'`` on a simulator.
-   * ``is_simulator`` is a boolean describing if the app is running on a
-     simulator or a physical device.
-
-   Entries which cannot be determined are set to the defaults given as
-   parameters.
-
-
-Unix platforms
+Unix Platforms
 --------------
 
 .. function:: libc_ver(executable=sys.executable, lib='', version='', chunksize=16384)
@@ -297,7 +257,7 @@ Unix platforms
    The file is read and scanned in chunks of *chunksize* bytes.
 
 
-Linux platforms
+Linux Platforms
 ---------------
 
 .. function:: freedesktop_os_release()
@@ -333,68 +293,3 @@ Linux platforms
           return ids
 
    .. versionadded:: 3.10
-
-
-Android platform
-----------------
-
-.. function:: android_ver(release="", api_level=0, manufacturer="", \
-                          model="", device="", is_emulator=False)
-
-   Get Android device information. Returns a :func:`~collections.namedtuple`
-   with the following attributes. Values which cannot be determined are set to
-   the defaults given as parameters.
-
-   * ``release`` - Android version, as a string (e.g. ``"14"``).
-
-   * ``api_level`` - API level of the running device, as an integer (e.g. ``34``
-     for Android 14). To get the API level which Python was built against, see
-     :func:`sys.getandroidapilevel`.
-
-   * ``manufacturer`` - `Manufacturer name
-     <https://developer.android.com/reference/android/os/Build#MANUFACTURER>`__.
-
-   * ``model`` - `Model name
-     <https://developer.android.com/reference/android/os/Build#MODEL>`__ –
-     typically the marketing name or model number.
-
-   * ``device`` - `Device name
-     <https://developer.android.com/reference/android/os/Build#DEVICE>`__ –
-     typically the model number or a codename.
-
-   * ``is_emulator`` - ``True`` if the device is an emulator; ``False`` if it's
-     a physical device.
-
-   Google maintains a `list of known model and device names
-   <https://storage.googleapis.com/play_public/supported_devices.html>`__.
-
-   .. versionadded:: 3.13
-
-.. _platform-cli:
-
-Command-line usage
-------------------
-
-:mod:`platform` can also be invoked directly using the :option:`-m`
-switch of the interpreter::
-
-   python -m platform [--terse] [--nonaliased] [{nonaliased,terse} ...]
-
-The following options are accepted:
-
-.. program:: platform
-
-.. option:: --terse
-
-   Print terse information about the platform. This is equivalent to
-   calling :func:`platform.platform` with the *terse* argument set to ``True``.
-
-.. option:: --nonaliased
-
-   Print platform information without system/OS name aliasing. This is
-   equivalent to calling :func:`platform.platform` with the *aliased* argument
-   set to ``True``.
-
-You can also pass one or more positional arguments (``terse``, ``nonaliased``)
-to explicitly control the output format. These behave similarly to their
-corresponding options.

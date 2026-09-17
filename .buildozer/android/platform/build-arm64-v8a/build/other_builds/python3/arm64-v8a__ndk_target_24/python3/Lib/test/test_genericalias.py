@@ -2,7 +2,6 @@
 
 import unittest
 import pickle
-from array import array
 import copy
 from collections import (
     defaultdict, deque, OrderedDict, Counter, UserDict, UserList
@@ -12,7 +11,6 @@ from concurrent.futures import Future
 from concurrent.futures.thread import _WorkItem
 from contextlib import AbstractContextManager, AbstractAsyncContextManager
 from contextvars import ContextVar, Token
-from csv import DictReader, DictWriter
 from dataclasses import Field
 from functools import partial, partialmethod, cached_property
 from graphlib import TopologicalSorter
@@ -28,20 +26,14 @@ from fileinput import FileInput
 from itertools import chain
 from http.cookies import Morsel
 try:
-    from multiprocessing.managers import ValueProxy, DictProxy, ListProxy
+    from multiprocessing.managers import ValueProxy
     from multiprocessing.pool import ApplyResult
     from multiprocessing.queues import SimpleQueue as MPSimpleQueue
-    from multiprocessing.queues import Queue as MPQueue
-    from multiprocessing.queues import JoinableQueue as MPJoinableQueue
 except ImportError:
     # _multiprocessing module is optional
     ValueProxy = None
-    DictProxy = None
-    ListProxy = None
     ApplyResult = None
     MPSimpleQueue = None
-    MPQueue = None
-    MPJoinableQueue = None
 try:
     from multiprocessing.shared_memory import ShareableList
 except ImportError:
@@ -49,7 +41,7 @@ except ImportError:
     ShareableList = None
 from os import DirEntry
 from re import Pattern, Match
-from types import GenericAlias, MappingProxyType, AsyncGeneratorType, CoroutineType, GeneratorType
+from types import GenericAlias, MappingProxyType, AsyncGeneratorType
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
 from urllib.parse import SplitResult, ParseResult
 from unittest.case import _AssertRaisesContext
@@ -57,11 +49,6 @@ from queue import Queue, SimpleQueue
 from weakref import WeakSet, ReferenceType, ref
 import typing
 from typing import Unpack
-try:
-    from tkinter import Event
-except ImportError:
-    Event = None
-from string.templatelib import Template, Interpolation
 
 from typing import TypeVar
 T = TypeVar('T')
@@ -101,7 +88,7 @@ _UNPACKED_TUPLES = [
 
 class BaseTest(unittest.TestCase):
     """Test basics."""
-    generic_types = [type, tuple, list, dict, set, frozenset, enumerate, memoryview,
+    generic_types = [type, tuple, list, dict, set, frozenset, enumerate,
                      defaultdict, deque,
                      SequenceMatcher,
                      dircmp,
@@ -125,7 +112,6 @@ class BaseTest(unittest.TestCase):
                      KeysView, ItemsView, ValuesView,
                      Sequence, MutableSequence,
                      MappingProxyType, AsyncGeneratorType,
-                     GeneratorType, CoroutineType,
                      DirEntry,
                      chain,
                      LoggerAdapter, StreamHandler,
@@ -136,21 +122,11 @@ class BaseTest(unittest.TestCase):
                      WeakSet, ReferenceType, ref,
                      ShareableList,
                      Future, _WorkItem,
-                     Morsel,
-                     DictReader, DictWriter,
-                     array,
-                     staticmethod,
-                     classmethod,
-                     Template,
-                     Interpolation,
-                    ]
+                     Morsel]
     if ctypes is not None:
-        generic_types.extend((ctypes.Array, ctypes.LibraryLoader, ctypes.py_object))
+        generic_types.extend((ctypes.Array, ctypes.LibraryLoader))
     if ValueProxy is not None:
-        generic_types.extend((ValueProxy, DictProxy, ListProxy, ApplyResult,
-                              MPSimpleQueue, MPQueue, MPJoinableQueue))
-    if Event is not None:
-        generic_types.append(Event)
+        generic_types.extend((ValueProxy, ApplyResult, MPSimpleQueue))
 
     def test_subscriptable(self):
         for t in self.generic_types:
@@ -224,9 +200,6 @@ class BaseTest(unittest.TestCase):
     def test_repr(self):
         class MyList(list):
             pass
-        class MyGeneric:
-            __class_getitem__ = classmethod(GenericAlias)
-
         self.assertEqual(repr(list[str]), 'list[str]')
         self.assertEqual(repr(list[()]), 'list[()]')
         self.assertEqual(repr(tuple[int, ...]), 'tuple[int, ...]')
@@ -236,13 +209,8 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(x2), 'tuple[*tuple[int, str]]')
         x3 = tuple[*tuple[int, ...]]
         self.assertEqual(repr(x3), 'tuple[*tuple[int, ...]]')
-        self.assertEndsWith(repr(MyList[int]), '.BaseTest.test_repr.<locals>.MyList[int]')
+        self.assertTrue(repr(MyList[int]).endswith('.BaseTest.test_repr.<locals>.MyList[int]'))
         self.assertEqual(repr(list[str]()), '[]')  # instances should keep their normal repr
-
-        # gh-105488
-        self.assertEndsWith(repr(MyGeneric[int]), 'MyGeneric[int]')
-        self.assertEndsWith(repr(MyGeneric[[]]), 'MyGeneric[[]]')
-        self.assertEndsWith(repr(MyGeneric[[int, str]]), 'MyGeneric[[int, str]]')
 
     def test_exposed_type(self):
         import types
@@ -362,7 +330,7 @@ class BaseTest(unittest.TestCase):
 
     def test_issubclass(self):
         class L(list): ...
-        self.assertIsSubclass(L, list)
+        self.assertTrue(issubclass(L, list))
         with self.assertRaises(TypeError):
             issubclass(L, list[str])
 
@@ -402,10 +370,7 @@ class BaseTest(unittest.TestCase):
         aliases = [
             GenericAlias(list, T),
             GenericAlias(deque, T),
-            GenericAlias(X, T),
-            X[T],
-            list[T],
-            deque[T],
+            GenericAlias(X, T)
         ] + _UNPACKED_TUPLES
         for alias in aliases:
             with self.subTest(alias=alias):
@@ -435,26 +400,10 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(a.__parameters__, (T,))
 
     def test_dir(self):
-        ga = list[int]
-        dir_of_gen_alias = set(dir(ga))
+        dir_of_gen_alias = set(dir(list[int]))
         self.assertTrue(dir_of_gen_alias.issuperset(dir(list)))
-        for generic_alias_property in (
-            "__origin__", "__args__", "__parameters__",
-            "__unpacked__",
-        ):
-            with self.subTest(generic_alias_property=generic_alias_property):
-                self.assertIn(generic_alias_property, dir_of_gen_alias)
-        for blocked in (
-            "__bases__",
-            "__copy__",
-            "__deepcopy__",
-        ):
-            with self.subTest(blocked=blocked):
-                self.assertNotIn(blocked, dir_of_gen_alias)
-
-        for entry in dir_of_gen_alias:
-            with self.subTest(entry=entry):
-                getattr(ga, entry)  # must not raise `AttributeError`
+        for generic_alias_property in ("__origin__", "__args__", "__parameters__"):
+            self.assertIn(generic_alias_property, dir_of_gen_alias)
 
     def test_weakref(self):
         for t in self.generic_types:
@@ -498,76 +447,6 @@ class BaseTest(unittest.TestCase):
         t = tuple[int, str]
         iter_x = iter(t)
         del iter_x
-
-    def test_paramspec_specialization(self):
-        # gh-124445
-        T = TypeVar("T")
-        U = TypeVar("U")
-        type X[**P] = Callable[P, int]
-
-        generic = X[[T]]
-        self.assertEqual(generic.__args__, ([T],))
-        self.assertEqual(generic.__parameters__, (T,))
-        specialized = generic[str]
-        self.assertEqual(specialized.__args__, ([str],))
-        self.assertEqual(specialized.__parameters__, ())
-
-        generic = X[(T,)]
-        self.assertEqual(generic.__args__, (T,))
-        self.assertEqual(generic.__parameters__, (T,))
-        specialized = generic[str]
-        self.assertEqual(specialized.__args__, (str,))
-        self.assertEqual(specialized.__parameters__, ())
-
-        generic = X[[T, U]]
-        self.assertEqual(generic.__args__, ([T, U],))
-        self.assertEqual(generic.__parameters__, (T, U))
-        specialized = generic[str, int]
-        self.assertEqual(specialized.__args__, ([str, int],))
-        self.assertEqual(specialized.__parameters__, ())
-
-        generic = X[(T, U)]
-        self.assertEqual(generic.__args__, (T, U))
-        self.assertEqual(generic.__parameters__, (T, U))
-        specialized = generic[str, int]
-        self.assertEqual(specialized.__args__, (str, int))
-        self.assertEqual(specialized.__parameters__, ())
-
-    def test_nested_paramspec_specialization(self):
-        # gh-124445
-        type X[**P, T] = Callable[P, T]
-
-        x_list = X[[int, str], float]
-        self.assertEqual(x_list.__args__, ([int, str], float))
-        self.assertEqual(x_list.__parameters__, ())
-
-        x_tuple = X[(int, str), float]
-        self.assertEqual(x_tuple.__args__, ((int, str), float))
-        self.assertEqual(x_tuple.__parameters__, ())
-
-        U = TypeVar("U")
-        V = TypeVar("V")
-
-        multiple_params_list = X[[int, U], V]
-        self.assertEqual(multiple_params_list.__args__, ([int, U], V))
-        self.assertEqual(multiple_params_list.__parameters__, (U, V))
-        multiple_params_list_specialized = multiple_params_list[str, float]
-        self.assertEqual(multiple_params_list_specialized.__args__, ([int, str], float))
-        self.assertEqual(multiple_params_list_specialized.__parameters__, ())
-
-        multiple_params_tuple = X[(int, U), V]
-        self.assertEqual(multiple_params_tuple.__args__, ((int, U), V))
-        self.assertEqual(multiple_params_tuple.__parameters__, (U, V))
-        multiple_params_tuple_specialized = multiple_params_tuple[str, float]
-        self.assertEqual(multiple_params_tuple_specialized.__args__, ((int, str), float))
-        self.assertEqual(multiple_params_tuple_specialized.__parameters__, ())
-
-        deeply_nested = X[[U, [V], int], V]
-        self.assertEqual(deeply_nested.__args__, ([U, [V], int], V))
-        self.assertEqual(deeply_nested.__parameters__, (U, V))
-        deeply_nested_specialized = deeply_nested[str, float]
-        self.assertEqual(deeply_nested_specialized.__args__, ([str, [float], int], float))
-        self.assertEqual(deeply_nested_specialized.__parameters__, ())
 
 
 class TypeIterationTests(unittest.TestCase):

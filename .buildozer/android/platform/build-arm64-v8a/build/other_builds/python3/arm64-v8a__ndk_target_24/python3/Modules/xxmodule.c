@@ -9,7 +9,8 @@
    You will probably want to delete all references to 'x_attr' and add
    your own types of attributes instead.  Maybe you want to name your
    local variables other than 'self'.  If your object type is needed in
-   other files, you'll have to create a separate header file for it. */
+   other files, you'll have to create a file "foobarobject.h"; see
+   floatobject.h for an example. */
 
 /* Xxo objects */
 
@@ -24,16 +25,15 @@ typedef struct {
 
 static PyTypeObject Xxo_Type;
 
-#define XxoObject_CAST(op)  ((XxoObject *)(op))
-#define XxoObject_Check(v)  Py_IS_TYPE(v, &Xxo_Type)
+#define XxoObject_Check(v)      Py_IS_TYPE(v, &Xxo_Type)
 
 static XxoObject *
 newXxoObject(PyObject *arg)
 {
-    XxoObject *self = PyObject_New(XxoObject, &Xxo_Type);
-    if (self == NULL) {
+    XxoObject *self;
+    self = PyObject_New(XxoObject, &Xxo_Type);
+    if (self == NULL)
         return NULL;
-    }
     self->x_attr = NULL;
     return self;
 }
@@ -41,62 +41,60 @@ newXxoObject(PyObject *arg)
 /* Xxo methods */
 
 static void
-Xxo_dealloc(PyObject *op)
+Xxo_dealloc(XxoObject *self)
 {
-    XxoObject *self = XxoObject_CAST(op);
     Py_XDECREF(self->x_attr);
     PyObject_Free(self);
 }
 
 static PyObject *
-Xxo_demo(PyObject *Py_UNUSED(op), PyObject *args)
+Xxo_demo(XxoObject *self, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, ":demo")) {
+    if (!PyArg_ParseTuple(args, ":demo"))
         return NULL;
-    }
-    return Py_NewRef(Py_None);
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 static PyMethodDef Xxo_methods[] = {
-    {"demo", Xxo_demo,  METH_VARARGS, PyDoc_STR("demo() -> None")},
-    {NULL, NULL}  /* sentinel */
+    {"demo",            (PyCFunction)Xxo_demo,  METH_VARARGS,
+        PyDoc_STR("demo() -> None")},
+    {NULL,              NULL}           /* sentinel */
 };
 
 static PyObject *
-Xxo_getattro(PyObject *op, PyObject *name)
+Xxo_getattro(XxoObject *self, PyObject *name)
 {
-    XxoObject *self = XxoObject_CAST(op);
     if (self->x_attr != NULL) {
         PyObject *v = PyDict_GetItemWithError(self->x_attr, name);
         if (v != NULL) {
-            return Py_NewRef(v);
+            Py_INCREF(v);
+            return v;
         }
         else if (PyErr_Occurred()) {
             return NULL;
         }
     }
-    return PyObject_GenericGetAttr(op, name);
+    return PyObject_GenericGetAttr((PyObject *)self, name);
 }
 
 static int
-Xxo_setattr(PyObject *op, const char *name, PyObject *v)
+Xxo_setattr(XxoObject *self, const char *name, PyObject *v)
 {
-    XxoObject *self = XxoObject_CAST(op);
     if (self->x_attr == NULL) {
         self->x_attr = PyDict_New();
-        if (self->x_attr == NULL) {
+        if (self->x_attr == NULL)
             return -1;
-        }
     }
     if (v == NULL) {
         int rv = PyDict_DelItemString(self->x_attr, name);
-        if (rv < 0 && PyErr_ExceptionMatches(PyExc_KeyError)) {
+        if (rv < 0 && PyErr_ExceptionMatches(PyExc_KeyError))
             PyErr_SetString(PyExc_AttributeError,
-                            "delete non-existing Xxo attribute");
-        }
+                "delete non-existing Xxo attribute");
         return rv;
     }
-    return PyDict_SetItemString(self->x_attr, name, v);
+    else
+        return PyDict_SetItemString(self->x_attr, name, v);
 }
 
 static PyTypeObject Xxo_Type = {
@@ -107,10 +105,10 @@ static PyTypeObject Xxo_Type = {
     sizeof(XxoObject),          /*tp_basicsize*/
     0,                          /*tp_itemsize*/
     /* methods */
-    Xxo_dealloc,                /*tp_dealloc*/
+    (destructor)Xxo_dealloc,    /*tp_dealloc*/
     0,                          /*tp_vectorcall_offset*/
-    0,                          /*tp_getattr*/
-    Xxo_setattr,                /*tp_setattr*/
+    (getattrfunc)0,             /*tp_getattr*/
+    (setattrfunc)Xxo_setattr,   /*tp_setattr*/
     0,                          /*tp_as_async*/
     0,                          /*tp_repr*/
     0,                          /*tp_as_number*/
@@ -119,7 +117,7 @@ static PyTypeObject Xxo_Type = {
     0,                          /*tp_hash*/
     0,                          /*tp_call*/
     0,                          /*tp_str*/
-    Xxo_getattro,               /*tp_getattro*/
+    (getattrofunc)Xxo_getattro, /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,         /*tp_flags*/
@@ -197,7 +195,8 @@ xx_bug(PyObject *self, PyObject *args)
     printf("\n");
     /* Py_DECREF(item); */
 
-    return Py_NewRef(Py_None);
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 /* Test bad format character */
@@ -209,7 +208,8 @@ xx_roj(PyObject *self, PyObject *args)
     long b;
     if (!PyArg_ParseTuple(args, "O#:roj", &a, &b))
         return NULL;
-    return Py_NewRef(Py_None);
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 
@@ -266,7 +266,8 @@ static PyTypeObject Str_Type = {
 static PyObject *
 null_richcompare(PyObject *self, PyObject *other, int op)
 {
-    return Py_NewRef(Py_NotImplemented);
+    Py_INCREF(Py_NotImplemented);
+    return Py_NotImplemented;
 }
 
 static PyTypeObject Null_Type = {
@@ -387,8 +388,6 @@ xx_exec(PyObject *m)
 
 static struct PyModuleDef_Slot xx_slots[] = {
     {Py_mod_exec, xx_exec},
-    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
-    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 

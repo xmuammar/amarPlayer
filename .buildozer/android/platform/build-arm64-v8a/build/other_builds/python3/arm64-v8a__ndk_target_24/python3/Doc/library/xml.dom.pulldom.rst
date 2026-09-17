@@ -1,5 +1,5 @@
-:mod:`!xml.dom.pulldom` --- Support for building partial DOM trees
-==================================================================
+:mod:`xml.dom.pulldom` --- Support for building partial DOM trees
+=================================================================
 
 .. module:: xml.dom.pulldom
    :synopsis: Support for building partial DOM trees from SAX events.
@@ -19,10 +19,11 @@ responsible for explicitly pulling events from the stream, looping over those
 events until either processing is finished or an error condition occurs.
 
 
-.. note::
+.. warning::
 
-   If you need to parse untrusted or unauthenticated data, see
-   :ref:`xml-security`.
+   The :mod:`xml.dom.pulldom` module is not secure against
+   maliciously constructed data.  If you need to parse untrusted or
+   unauthenticated data see :ref:`xml-vulnerabilities`.
 
 .. versionchanged:: 3.7.1
 
@@ -74,7 +75,7 @@ given point) or to make use of the :func:`DOMEventStream.expandNode` method
 and switch to DOM-related processing.
 
 
-.. class:: PullDOM(documentFactory=None)
+.. class:: PullDom(documentFactory=None)
 
    Subclass of :class:`xml.sax.handler.ContentHandler`.
 

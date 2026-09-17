@@ -29,9 +29,6 @@ __all__ = [
 import _collections_abc
 import sys as _sys
 
-_sys.modules['collections.abc'] = _collections_abc
-abc = _collections_abc
-
 from itertools import chain as _chain
 from itertools import repeat as _repeat
 from itertools import starmap as _starmap
@@ -49,17 +46,9 @@ else:
     _collections_abc.MutableSequence.register(deque)
 
 try:
-    # Expose _deque_iterator to support pickling deque iterators
-    from _collections import _deque_iterator  # noqa: F401
-except ImportError:
-    pass
-
-try:
     from _collections import defaultdict
 except ImportError:
     pass
-
-heapq = None  # Lazily imported
 
 
 ################################################################################
@@ -280,7 +269,7 @@ class OrderedDict(dict):
         'od.__repr__() <==> repr(od)'
         if not self:
             return '%s()' % (self.__class__.__name__,)
-        return '%s(%r)' % (self.__class__.__name__, dict(self.items()))
+        return '%s(%r)' % (self.__class__.__name__, list(self.items()))
 
     def __reduce__(self):
         'Return state information for pickling'
@@ -463,7 +452,7 @@ def namedtuple(typename, field_names, *, rename=False, defaults=None, module=Non
     def _replace(self, /, **kwds):
         result = self._make(_map(kwds.pop, field_names, self))
         if kwds:
-            raise TypeError(f'Got unexpected field names: {list(kwds)!r}')
+            raise ValueError(f'Got unexpected field names: {list(kwds)!r}')
         return result
 
     _replace.__doc__ = (f'Return a new {typename} object replacing specified '
@@ -501,7 +490,6 @@ def namedtuple(typename, field_names, *, rename=False, defaults=None, module=Non
         '_field_defaults': field_defaults,
         '__new__': __new__,
         '_make': _make,
-        '__replace__': _replace,
         '_replace': _replace,
         '__repr__': __repr__,
         '_asdict': _asdict,
@@ -521,12 +509,9 @@ def namedtuple(typename, field_names, *, rename=False, defaults=None, module=Non
     # specified a particular module.
     if module is None:
         try:
-            module = _sys._getframemodulename(1) or '__main__'
-        except AttributeError:
-            try:
-                module = _sys._getframe(1).f_globals.get('__name__', '__main__')
-            except (AttributeError, ValueError):
-                pass
+            module = _sys._getframe(1).f_globals.get('__name__', '__main__')
+        except (AttributeError, ValueError):
+            pass
     if module is not None:
         result.__module__ = module
 
@@ -595,7 +580,7 @@ class Counter(dict):
     # References:
     #   http://en.wikipedia.org/wiki/Multiset
     #   http://www.gnu.org/software/smalltalk/manual-base/html_node/Bag.html
-    #   http://www.java2s.com/Tutorial/Cpp/0380__set-multiset/Catalog0380__set-multiset.htm
+    #   http://www.demo2s.com/Tutorial/Cpp/0380__set-multiset/Catalog0380__set-multiset.htm
     #   http://code.activestate.com/recipes/259174/
     #   Knuth, TAOCP Vol. II section 4.6.3
 
@@ -635,10 +620,7 @@ class Counter(dict):
             return sorted(self.items(), key=_itemgetter(1), reverse=True)
 
         # Lazy import to speedup Python startup time
-        global heapq
-        if heapq is None:
-            import heapq
-
+        import heapq
         return heapq.nlargest(n, self.items(), key=_itemgetter(1))
 
     def elements(self):
@@ -648,8 +630,7 @@ class Counter(dict):
         >>> sorted(c.elements())
         ['A', 'A', 'B', 'B', 'C', 'C']
 
-        Knuth's example for prime factors of 1836:  2**2 * 3**3 * 17**1
-
+        # Knuth's example for prime factors of 1836:  2**2 * 3**3 * 17**1
         >>> import math
         >>> prime_factors = Counter({2: 2, 3: 3, 17: 1})
         >>> math.prod(prime_factors.elements())
@@ -1025,22 +1006,19 @@ class ChainMap(_collections_abc.MutableMapping):
         return self.__missing__(key)            # support subclasses that define __missing__
 
     def get(self, key, default=None):
-        return self[key] if key in self else default    # needs to make use of __contains__
+        return self[key] if key in self else default
 
     def __len__(self):
         return len(set().union(*self.maps))     # reuses stored hash values if possible
 
     def __iter__(self):
         d = {}
-        for mapping in map(dict.fromkeys, reversed(self.maps)):
-            d |= mapping                        # reuses stored hash values if possible
+        for mapping in reversed(self.maps):
+            d.update(dict.fromkeys(mapping))    # reuses stored hash values if possible
         return iter(d)
 
     def __contains__(self, key):
-        for mapping in self.maps:
-            if key in mapping:
-                return True
-        return False
+        return any(key in m for m in self.maps)
 
     def __bool__(self):
         return any(self.maps)
@@ -1050,9 +1028,9 @@ class ChainMap(_collections_abc.MutableMapping):
         return f'{self.__class__.__name__}({", ".join(map(repr, self.maps))})'
 
     @classmethod
-    def fromkeys(cls, iterable, value=None, /):
-        'Create a new ChainMap with keys from iterable and values set to value.'
-        return cls(dict.fromkeys(iterable, value))
+    def fromkeys(cls, iterable, *args):
+        'Create a ChainMap with a single dict created from the iterable.'
+        return cls(dict.fromkeys(iterable, *args))
 
     def copy(self):
         'New ChainMap or subclass with a new copy of maps[0] and refs to maps[1:]'
@@ -1156,16 +1134,9 @@ class UserDict(_collections_abc.MutableMapping):
     def __iter__(self):
         return iter(self.data)
 
-    # Modify __contains__ and get() to work like dict
-    # does when __missing__ is present.
+    # Modify __contains__ to work correctly when __missing__ is present
     def __contains__(self, key):
         return key in self.data
-
-    def get(self, key, default=None):
-        if key in self:
-            return self[key]
-        return default
-
 
     # Now, add the methods in dicts but not in MutableMapping
     def __repr__(self):
@@ -1495,8 +1466,6 @@ class UserString(_collections_abc.Sequence):
         return self.data.format_map(mapping)
 
     def index(self, sub, start=0, end=_sys.maxsize):
-        if isinstance(sub, UserString):
-            sub = sub.data
         return self.data.index(sub, start, end)
 
     def isalpha(self):
@@ -1565,8 +1534,6 @@ class UserString(_collections_abc.Sequence):
         return self.data.rfind(sub, start, end)
 
     def rindex(self, sub, start=0, end=_sys.maxsize):
-        if isinstance(sub, UserString):
-            sub = sub.data
         return self.data.rindex(sub, start, end)
 
     def rjust(self, width, *args):

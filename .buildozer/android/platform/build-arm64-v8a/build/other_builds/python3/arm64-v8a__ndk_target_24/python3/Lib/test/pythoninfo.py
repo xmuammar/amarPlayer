@@ -105,13 +105,9 @@ def collect_sys(info_add):
     )
     copy_attributes(info_add, sys, 'sys.%s', attributes)
 
-    for func in (
-        '_is_gil_enabled',
-        'getandroidapilevel',
-        'getrecursionlimit',
-        'getwindowsversion',
-    ):
-        call_func(info_add, f'sys.{func}', sys, func)
+    call_func(info_add, 'sys.androidapilevel', sys, 'getandroidapilevel')
+    call_func(info_add, 'sys.windowsversion', sys, 'getwindowsversion')
+    call_func(info_add, 'sys.getrecursionlimit', sys, 'getrecursionlimit')
 
     encoding = sys.getfilesystemencoding()
     if hasattr(sys, 'getfilesystemencodeerrors'):
@@ -145,8 +141,6 @@ def collect_sys(info_add):
     else:
         text = 'No (sys.getobjects() missing)'
     info_add('build.Py_TRACE_REFS', text)
-
-    info_add('sys.is_remote_debug_enabled', sys.is_remote_debug_enabled())
 
 
 def collect_platform(info_add):
@@ -184,9 +178,6 @@ def collect_platform(info_add):
                 continue
             info_add(f'platform.freedesktop_os_release[{key}]',
                      os_release[key])
-
-    if sys.platform == 'android':
-        call_func(info_add, 'platform.android_ver', platform, 'android_ver')
 
 
 def collect_locale(info_add):
@@ -291,14 +282,11 @@ def collect_os(info_add):
         "DISTUTILS_USE_SDK",
         "DYLD_LIBRARY_PATH",
         "ENSUREPIP_OPTIONS",
-        "FORCE_COLOR",
-        "GITHUB_ACTIONS",
         "HISTORY_FILE",
         "HOME",
         "HOMEDRIVE",
         "HOMEPATH",
         "IDLESTARTUP",
-        "IPHONEOS_DEPLOYMENT_TARGET",
         "LANG",
         "LDFLAGS",
         "LDSHARED",
@@ -309,13 +297,11 @@ def collect_os(info_add):
         "MAKEFLAGS",
         "MIXERDEV",
         "MSSDK",
-        "NO_COLOR",
         "PATH",
         "PATHEXT",
         "PIP_CONFIG_FILE",
         "PLAT",
         "POSIXLY_CORRECT",
-        "PYTHON_COLORS",
         "PY_SAX_PARSER",
         "ProgramFiles",
         "ProgramFiles(x86)",
@@ -340,7 +326,6 @@ def collect_os(info_add):
         "_PYTHON_HOST_PLATFORM",
         "_PYTHON_PROJECT_BASE",
         "_PYTHON_SYSCONFIGDATA_NAME",
-        "_PYTHON_SYSCONFIGDATA_PATH",
         "__PYVENV_LAUNCHER__",
 
         # Sanitizer options
@@ -524,7 +509,6 @@ def collect_sysconfig(info_add):
         'MACHDEP',
         'MULTIARCH',
         'OPT',
-        'PGO_PROF_USE_FLAG',
         'PY_CFLAGS',
         'PY_CFLAGS_NODIST',
         'PY_CORE_LDFLAGS',
@@ -533,11 +517,9 @@ def collect_sysconfig(info_add):
         'PY_STDMODULE_CFLAGS',
         'Py_DEBUG',
         'Py_ENABLE_SHARED',
-        'Py_GIL_DISABLED',
-        'Py_REMOTE_DEBUG',
+        'Py_NOGIL',
         'SHELL',
         'SOABI',
-        'TEST_MODULES',
         'abs_builddir',
         'abs_srcdir',
         'prefix',
@@ -561,7 +543,7 @@ def collect_sysconfig(info_add):
     for name in (
         'WITH_DOC_STRINGS',
         'WITH_DTRACE',
-        'WITH_MIMALLOC',
+        'WITH_FREELISTS',
         'WITH_PYMALLOC',
         'WITH_VALGRIND',
     ):
@@ -658,7 +640,7 @@ def collect_zlib(info_add):
     except ImportError:
         return
 
-    attributes = ('ZLIB_VERSION', 'ZLIB_RUNTIME_VERSION', 'ZLIBNG_VERSION')
+    attributes = ('ZLIB_VERSION', 'ZLIB_RUNTIME_VERSION')
     copy_attributes(info_add, zlib, 'zlib.%s', attributes)
 
 
@@ -691,6 +673,7 @@ def collect_testcapi(info_add):
     for name in (
         'LONG_MAX',         # always 32-bit on Windows, 64-bit on 64-bit Unix
         'PY_SSIZE_T_MAX',
+        'Py_C_RECURSION_LIMIT',
         'SIZEOF_TIME_T',    # 32-bit or 64-bit depending on the platform
         'SIZEOF_WCHAR_T',   # 16-bit or 32-bit depending on the platform
     ):
@@ -756,7 +739,6 @@ def collect_support(info_add):
         'is_emscripten',
         'is_jython',
         'is_wasi',
-        'is_wasm32',
     )
     copy_attributes(info_add, support, 'support.%s', attributes)
 

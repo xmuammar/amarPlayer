@@ -34,7 +34,7 @@ class InitCloseTest(unittest.TestCase):
         redir.register('insert', Func)
         redir.close()
         self.assertEqual(redir._operations, {})
-        self.assertNotHasAttr(self.text, 'widget')
+        self.assertFalse(hasattr(self.text, 'widget'))
 
 
 class WidgetRedirectorTest(unittest.TestCase):

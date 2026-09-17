@@ -1,7 +1,5 @@
 .. highlight:: c
 
-.. _isolating-extensions-howto:
-
 ***************************
 Isolating Extension Modules
 ***************************
@@ -64,7 +62,7 @@ Enter Per-Module State
 
 Instead of focusing on per-interpreter state, Python's C API is evolving
 to better support the more granular *per-module* state.
-This means that C-level data should be attached to a *module object*.
+This means that C-level data is be attached to a *module object*.
 Each interpreter creates its own module object, keeping the data separate.
 For testing the isolation, multiple module objects corresponding to a single
 extension can even be loaded in a single interpreter.
@@ -168,7 +166,7 @@ possible, consider explicit locking.
 If it is necessary to use process-global state, the simplest way to
 avoid issues with multiple interpreters is to explicitly prevent a
 module from being loaded more than once per process—see
-:ref:`isolating-extensions-optout`.
+`Opt-Out: Limiting to One Module Object per Process`_.
 
 
 Managing Per-Module State
@@ -207,8 +205,6 @@ An example of a module with per-module state is currently available as
 example module initialization shown at the bottom of the file.
 
 
-.. _isolating-extensions-optout:
-
 Opt-Out: Limiting to One Module Object per Process
 --------------------------------------------------
 
@@ -217,34 +213,19 @@ multiple interpreters correctly. If this is not yet the case for your
 module, you can explicitly make your module loadable only once per
 process. For example::
 
-   // A process-wide flag
    static int loaded = 0;
-
-   // Mutex to provide thread safety (only needed for free-threaded Python)
-   static PyMutex modinit_mutex = {0};
 
    static int
    exec_module(PyObject* module)
    {
-       PyMutex_Lock(&modinit_mutex);
        if (loaded) {
-           PyMutex_Unlock(&modinit_mutex);
            PyErr_SetString(PyExc_ImportError,
                            "cannot load module more than once per process");
            return -1;
        }
        loaded = 1;
-       PyMutex_Unlock(&modinit_mutex);
        // ... rest of initialization
    }
-
-
-If your module's :c:member:`PyModuleDef.m_clear` function is able to prepare
-for future re-initialization, it should clear the ``loaded`` flag.
-In this case, your module won't support multiple instances existing
-*concurrently*, but it will, for example, support being loaded after
-Python runtime shutdown (:c:func:`Py_FinalizeEx`) and re-initialization
-(:c:func:`Py_Initialize`).
 
 
 Module State Access from Functions
@@ -353,10 +334,10 @@ garbage collection protocol.
 That is, heap types should:
 
 - Have the :c:macro:`Py_TPFLAGS_HAVE_GC` flag.
-- Define a traverse function using :c:data:`Py_tp_traverse`, which
+- Define a traverse function using ``Py_tp_traverse``, which
   visits the type (e.g. using ``Py_VISIT(Py_TYPE(self))``).
 
-Please refer to the documentation of
+Please refer to the the documentation of
 :c:macro:`Py_TPFLAGS_HAVE_GC` and :c:member:`~PyTypeObject.tp_traverse`
 for additional considerations.
 
@@ -453,7 +434,7 @@ Avoiding ``PyObject_New``
 
 GC-tracked objects need to be allocated using GC-aware functions.
 
-If you use :c:func:`PyObject_New` or :c:func:`PyObject_NewVar`:
+If you use use :c:func:`PyObject_New` or :c:func:`PyObject_NewVar`:
 
 - Get and call type's :c:member:`~PyTypeObject.tp_alloc` slot, if possible.
   That is, replace ``TYPE *o = PyObject_New(TYPE, typeobj)`` with::
@@ -482,7 +463,7 @@ To save a some tedious error-handling boilerplate code, you can combine
 these two steps with :c:func:`PyType_GetModuleState`, resulting in::
 
    my_struct *state = (my_struct*)PyType_GetModuleState(type);
-   if (state == NULL) {
+   if (state === NULL) {
        return NULL;
    }
 
@@ -545,7 +526,7 @@ For example::
            PyObject *kwnames)
    {
        my_struct *state = (my_struct*)PyType_GetModuleState(defining_class);
-       if (state == NULL) {
+       if (state === NULL) {
            return NULL;
        }
        ... // rest of logic
@@ -589,7 +570,7 @@ to get the state::
 
     PyObject *module = PyType_GetModuleByDef(Py_TYPE(self), &module_def);
     my_struct *state = (my_struct*)PyModule_GetState(module);
-    if (state == NULL) {
+    if (state === NULL) {
         return NULL;
     }
 
@@ -626,7 +607,8 @@ Open Issues
 
 Several issues around per-module state and heap types are still open.
 
-Discussions about improving the situation are best held on the `discuss forum under c-api tag <https://discuss.python.org/c/core-dev/c-api/30>`__.
+Discussions about improving the situation are best held on the `capi-sig
+mailing list <https://mail.python.org/mailman3/lists/capi-sig.python.org/>`__.
 
 
 Per-Class Scope

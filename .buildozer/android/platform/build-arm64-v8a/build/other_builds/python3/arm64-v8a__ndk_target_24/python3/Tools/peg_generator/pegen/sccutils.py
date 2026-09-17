@@ -1,11 +1,11 @@
 # Adapted from mypy (mypy/build.py) under the MIT license.
 
-from collections.abc import Iterable, Iterator, Set
+from typing import *
 
 
 def strongly_connected_components(
-    vertices: Set[str], edges: dict[str, Set[str]]
-) -> Iterator[Set[str]]:
+    vertices: AbstractSet[str], edges: Dict[str, AbstractSet[str]]
+) -> Iterator[AbstractSet[str]]:
     """Compute Strongly Connected Components of a directed graph.
 
     Args:
@@ -18,14 +18,14 @@ def strongly_connected_components(
       exactly once; vertices not part of a SCC are returned as
       singleton sets.
 
-    From https://code.activestate.com/recipes/578507-strongly-connected-components-of-a-directed-graph/.
+    From http://code.activestate.com/recipes/578507/.
     """
-    identified: set[str] = set()
-    stack: list[str] = []
-    index: dict[str, int] = {}
-    boundaries: list[int] = []
+    identified: Set[str] = set()
+    stack: List[str] = []
+    index: Dict[str, int] = {}
+    boundaries: List[int] = []
 
-    def dfs(v: str) -> Iterator[set[str]]:
+    def dfs(v: str) -> Iterator[Set[str]]:
         index[v] = len(stack)
         stack.append(v)
         boundaries.append(index[v])
@@ -50,8 +50,8 @@ def strongly_connected_components(
 
 
 def topsort(
-    data: dict[Set[str], set[Set[str]]]
-) -> Iterable[Set[Set[str]]]:
+    data: Dict[AbstractSet[str], Set[AbstractSet[str]]]
+) -> Iterable[AbstractSet[AbstractSet[str]]]:
     """Topological sort.
 
     Args:
@@ -81,7 +81,7 @@ def topsort(
         {B, C}
         {A}
 
-    From https://code.activestate.com/recipes/577413-topological-sort/history/1/.
+    From http://code.activestate.com/recipes/577413/.
     """
     # TODO: Use a faster algorithm?
     for k, v in data.items():
@@ -94,12 +94,12 @@ def topsort(
             break
         yield ready
         data = {item: (dep - ready) for item, dep in data.items() if item not in ready}
-    assert not data, f"A cyclic dependency exists amongst {data}"
+    assert not data, "A cyclic dependency exists amongst %r" % data
 
 
 def find_cycles_in_scc(
-    graph: dict[str, Set[str]], scc: Set[str], start: str
-) -> Iterable[list[str]]:
+    graph: Dict[str, AbstractSet[str]], scc: AbstractSet[str], start: str
+) -> Iterable[List[str]]:
     """Find cycles in SCC emanating from start.
 
     Yields lists of the form ['A', 'B', 'C', 'A'], which means there's
@@ -117,7 +117,7 @@ def find_cycles_in_scc(
     assert start in graph
 
     # Recursive helper that yields cycles.
-    def dfs(node: str, path: list[str]) -> Iterator[list[str]]:
+    def dfs(node: str, path: List[str]) -> Iterator[List[str]]:
         if node in path:
             yield path + [node]
             return

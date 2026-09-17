@@ -6,12 +6,10 @@ BytesIO -- for bytes
 import unittest
 from test import support
 
-import gc
 import io
 import _pyio as pyio
 import pickle
 import sys
-import weakref
 
 class IntLike:
     def __init__(self, num):
@@ -53,12 +51,6 @@ class MemorySeekTestMixin:
         bytesIo.seek(3)
         self.assertEqual(buf[3:], bytesIo.read())
         self.assertRaises(TypeError, bytesIo.seek, 0.0)
-
-        self.assertEqual(sys.maxsize, bytesIo.seek(sys.maxsize))
-        self.assertEqual(self.EOF, bytesIo.read(4))
-
-        self.assertEqual(sys.maxsize - 2, bytesIo.seek(sys.maxsize - 2))
-        self.assertEqual(self.EOF, bytesIo.read(4))
 
     def testTell(self):
         buf = self.buftype("1234567890")
@@ -271,8 +263,8 @@ class MemoryTestMixin:
         memio = self.ioclass(buf * 10)
 
         self.assertEqual(iter(memio), memio)
-        self.assertHasAttr(memio, '__iter__')
-        self.assertHasAttr(memio, '__next__')
+        self.assertTrue(hasattr(memio, '__iter__'))
+        self.assertTrue(hasattr(memio, '__next__'))
         i = 0
         for line in memio:
             self.assertEqual(line, buf)
@@ -485,25 +477,6 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         buf2.release()
         memio.write(b'x')
 
-    def test_getbuffer_gc_collect(self):
-        memio = self.ioclass(b"1234567890")
-        buf = memio.getbuffer()
-        memiowr = weakref.ref(memio)
-        bufwr = weakref.ref(buf)
-        # Create a reference loop.
-        a = [buf]
-        a.append(a)
-        # The Python implementation emits an unraisable exception.
-        with support.catch_unraisable_exception():
-            del memio
-        del buf
-        del a
-        # The C implementation emits an unraisable exception.
-        with support.catch_unraisable_exception():
-            gc.collect()
-        self.assertIsNone(memiowr())
-        self.assertIsNone(bufwr())
-
     def test_read1(self):
         buf = self.buftype("1234567890")
         self.assertEqual(self.ioclass(buf).read1(), buf)
@@ -557,14 +530,6 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         memio.seek(0)
         memio.seek(1, 1)
         self.assertEqual(memio.read(), buf[1:])
-
-    def test_issue141311(self):
-        memio = self.ioclass()
-        # Seek allows PY_SSIZE_T_MAX, read should handle that.
-        # Past end of buffer read should always return 0 (EOF).
-        self.assertEqual(sys.maxsize, memio.seek(sys.maxsize))
-        buf = bytearray(2)
-        self.assertEqual(0, memio.readinto(buf))
 
     def test_unicode(self):
         memio = self.ioclass()
@@ -815,7 +780,7 @@ class CBytesIOTest(PyBytesIOTest):
 
     def _test_cow_mutation(self, mutation):
         # Common code for all BytesIO copy-on-write mutation tests.
-        imm = (' ' * 1024).encode("ascii")
+        imm = b' ' * 1024
         old_rc = sys.getrefcount(imm)
         memio = self.ioclass(imm)
         self.assertEqual(sys.getrefcount(imm), old_rc + 1)

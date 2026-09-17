@@ -1,5 +1,5 @@
-:mod:`!xml.parsers.expat` --- Fast XML parsing using Expat
-==========================================================
+:mod:`xml.parsers.expat` --- Fast XML parsing using Expat
+=========================================================
 
 .. module:: xml.parsers.expat
    :synopsis: An interface to the Expat non-validating XML parser.
@@ -16,10 +16,11 @@
    references to these attributes should be marked using the :member: role.
 
 
-.. note::
+.. warning::
 
-   If you need to parse untrusted or unauthenticated data, see
-   :ref:`xml-security`.
+   The :mod:`pyexpat` module is not secure against maliciously
+   constructed data.  If you need to parse untrusted or unauthenticated data see
+   :ref:`xml-vulnerabilities`.
 
 
 .. index:: single: Expat
@@ -71,13 +72,6 @@ The :mod:`xml.parsers.expat` module contains two functions:
    be extended; it supports UTF-8, UTF-16, ISO-8859-1 (Latin1), and ASCII.  If
    *encoding* [1]_ is given it will override the implicit or explicit encoding of the
    document.
-
-   .. _xmlparser-non-root:
-
-   Parsers created through :func:`!ParserCreate` are called "root" parsers,
-   in the sense that they do not have any parent parser attached. Non-root
-   parsers are created by :meth:`parser.ExternalEntityParserCreate
-   <xmlparser.ExternalEntityParserCreate>`.
 
    Expat can optionally do XML namespace processing for you, enabled by providing a
    value for *namespace_separator*.  The value must be a one-character string; a
@@ -216,7 +210,7 @@ XMLParser Objects
    by default until a sufficient amount of input is reached.
    Due to this delay, registered handlers may — depending of the sizing of
    input chunks pushed to Expat — no longer be called right after pushing new
-   input to the parser.  Where immediate feedback and taking over responsibility
+   input to the parser.  Where immediate feedback and taking over responsiblity
    of protecting against denial of service from large tokens are both wanted,
    calling ``SetReparseDeferralEnabled(False)`` disables reparse deferral
    for the current Expat parser instance, temporarily or altogether.
@@ -228,63 +222,14 @@ XMLParser Objects
    :meth:`SetReparseDeferralEnabled` using :func:`hasattr` if used in code
    running across a variety of Python versions.
 
-   .. versionadded:: 3.13
+   .. versionadded:: 3.11.9
 
 .. method:: xmlparser.GetReparseDeferralEnabled()
 
    Returns whether reparse deferral is currently enabled for the given
    Expat parser instance.
 
-   .. versionadded:: 3.13
-
-
-:class:`!xmlparser` objects have the following methods to mitigate some
-common XML vulnerabilities.
-
-.. method:: xmlparser.SetAllocTrackerActivationThreshold(threshold, /)
-
-   Sets the number of allocated bytes of dynamic memory needed to activate
-   protection against disproportionate use of RAM.
-
-   By default, parser objects have an allocation activation threshold of 64 MiB,
-   or equivalently 67,108,864 bytes.
-
-   An :exc:`ExpatError` is raised if this method is called on a
-   |xml-non-root-parser| parser.
-   The corresponding :attr:`~ExpatError.lineno` and :attr:`~ExpatError.offset`
-   should not be used as they may have no special meaning.
-
-   .. versionadded:: 3.14.1
-
-.. method:: xmlparser.SetAllocTrackerMaximumAmplification(max_factor, /)
-
-   Sets the maximum amplification factor between direct input and bytes
-   of dynamic memory allocated.
-
-   The amplification factor is calculated as ``allocated / direct``
-   while parsing, where ``direct`` is the number of bytes read from
-   the primary document in parsing and ``allocated`` is the number
-   of bytes of dynamic memory allocated in the parser hierarchy.
-
-   The *max_factor* value must be a non-NaN :class:`float` value greater than
-   or equal to 1.0. Amplification factors greater than 100.0 can be observed
-   near the start of parsing even with benign files in practice. In particular,
-   the activation threshold should be carefully chosen to avoid false positives.
-
-   By default, parser objects have a maximum amplification factor of 100.0.
-
-   An :exc:`ExpatError` is raised if this method is called on a
-   |xml-non-root-parser| parser or if *max_factor* is outside the valid range.
-   The corresponding :attr:`~ExpatError.lineno` and :attr:`~ExpatError.offset`
-   should not be used as they may have no special meaning.
-
-   .. note::
-
-      The maximum amplification factor is only considered if the threshold
-      that can be adjusted by :meth:`.SetAllocTrackerActivationThreshold`
-      is exceeded.
-
-   .. versionadded:: 3.14.1
+   .. versionadded:: 3.11.9
 
 
 :class:`xmlparser` objects have the following attributes:
@@ -557,15 +502,6 @@ otherwise stated.
 
 
 .. method:: xmlparser.ExternalEntityRefHandler(context, base, systemId, publicId)
-
-   .. warning::
-
-      Implementing a handler that accesses local files and/or the network
-      may create a vulnerability to
-      `external entity attacks <https://en.wikipedia.org/wiki/XML_external_entity_attack>`_
-      if :class:`xmlparser` is used with user-provided XML content.
-      Please reflect on your `threat model <https://en.wikipedia.org/wiki/Threat_model>`_
-      before implementing this handler.
 
    Called for references to external entities.  *base* is the current base, as set
    by a previous call to :meth:`SetBase`.  The public and system identifiers,
@@ -1005,13 +941,6 @@ The ``errors`` module has the following attributes:
    has been breached.
 
 
-.. data:: XML_ERROR_NOT_STARTED
-
-   The parser was tried to be stopped or suspended before it started.
-
-   .. versionadded:: 3.14
-
-
 .. rubric:: Footnotes
 
 .. [1] The encoding string included in XML output should conform to the
@@ -1019,4 +948,3 @@ The ``errors`` module has the following attributes:
    not. See https://www.w3.org/TR/2006/REC-xml11-20060816/#NT-EncodingDecl
    and https://www.iana.org/assignments/character-sets/character-sets.xhtml.
 
-.. |xml-non-root-parser| replace:: :ref:`non-root <xmlparser-non-root>`

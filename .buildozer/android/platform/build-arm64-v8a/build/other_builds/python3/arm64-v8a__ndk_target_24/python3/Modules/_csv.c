@@ -8,15 +8,10 @@ module instead.
 
 */
 
-// clinic/_csv.c.h uses internal pycore_modsupport.h API
-#ifndef Py_BUILD_CORE_BUILTIN
-#  define Py_BUILD_CORE_MODULE 1
-#endif
+#define MODULE_VERSION "1.0"
 
 #include "Python.h"
-#include "pycore_pyatomic_ft_wrappers.h"
-
-#include <stddef.h>               // offsetof()
+#include "structmember.h"         // PyMemberDef
 #include <stdbool.h>
 
 /*[clinic input]
@@ -35,7 +30,7 @@ typedef struct {
     PyTypeObject *dialect_type;
     PyTypeObject *reader_type;
     PyTypeObject *writer_type;
-    Py_ssize_t field_limit;   /* max parsed field size */
+    long field_limit;   /* max parsed field size */
     PyObject *str_write;
 } _csvstate;
 
@@ -77,7 +72,7 @@ _csv_traverse(PyObject *module, visitproc visit, void *arg)
 static void
 _csv_free(void *module)
 {
-    (void)_csv_clear((PyObject *)module);
+   _csv_clear((PyObject *)module);
 }
 
 typedef enum {
@@ -87,8 +82,7 @@ typedef enum {
 } ParserState;
 
 typedef enum {
-    QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE,
-    QUOTE_STRINGS, QUOTE_NOTNULL
+    QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE
 } QuoteStyle;
 
 typedef struct {
@@ -101,8 +95,6 @@ static const StyleDesc quote_styles[] = {
     { QUOTE_ALL,        "QUOTE_ALL" },
     { QUOTE_NONNUMERIC, "QUOTE_NONNUMERIC" },
     { QUOTE_NONE,       "QUOTE_NONE" },
-    { QUOTE_STRINGS,    "QUOTE_STRINGS" },
-    { QUOTE_NOTNULL,    "QUOTE_NOTNULL" },
     { 0 }
 };
 
@@ -132,7 +124,7 @@ typedef struct {
     Py_UCS4 *field;             /* temporary buffer */
     Py_ssize_t field_size;      /* size of allocated buffer */
     Py_ssize_t field_len;       /* length of current field */
-    bool unquoted_field;        /* true if no quotes around the current field */
+    int numeric_field;          /* treat field as numeric */
     unsigned long line_num;     /* Source-file line number */
 } ReaderObj;
 
@@ -151,10 +143,6 @@ typedef struct {
     PyObject *error_obj;       /* cached error object */
 } WriterObj;
 
-#define _DialectObj_CAST(op)    ((DialectObj *)(op))
-#define _ReaderObj_CAST(op)     ((ReaderObj *)(op))
-#define _WriterObj_CAST(op)     ((WriterObj *)(op))
-
 /*
  * DIALECT class
  */
@@ -163,9 +151,15 @@ static PyObject *
 get_dialect_from_registry(PyObject *name_obj, _csvstate *module_state)
 {
     PyObject *dialect_obj;
-    if (PyDict_GetItemRef(module_state->dialects, name_obj, &dialect_obj) == 0) {
-        PyErr_SetString(module_state->error_obj, "unknown dialect");
+
+    dialect_obj = PyDict_GetItemWithError(module_state->dialects, name_obj);
+    if (dialect_obj == NULL) {
+        if (!PyErr_Occurred())
+            PyErr_Format(module_state->error_obj, "unknown dialect");
     }
+    else
+        Py_INCREF(dialect_obj);
+
     return dialect_obj;
 }
 
@@ -180,37 +174,33 @@ get_char_or_None(Py_UCS4 c)
 }
 
 static PyObject *
-Dialect_get_lineterminator(PyObject *op, void *Py_UNUSED(ignored))
+Dialect_get_lineterminator(DialectObj *self, void *Py_UNUSED(ignored))
 {
-    DialectObj *self = _DialectObj_CAST(op);
-    return Py_XNewRef(self->lineterminator);
+    Py_XINCREF(self->lineterminator);
+    return self->lineterminator;
 }
 
 static PyObject *
-Dialect_get_delimiter(PyObject *op, void *Py_UNUSED(ignored))
+Dialect_get_delimiter(DialectObj *self, void *Py_UNUSED(ignored))
 {
-    DialectObj *self = _DialectObj_CAST(op);
     return get_char_or_None(self->delimiter);
 }
 
 static PyObject *
-Dialect_get_escapechar(PyObject *op, void *Py_UNUSED(ignored))
+Dialect_get_escapechar(DialectObj *self, void *Py_UNUSED(ignored))
 {
-    DialectObj *self = _DialectObj_CAST(op);
     return get_char_or_None(self->escapechar);
 }
 
 static PyObject *
-Dialect_get_quotechar(PyObject *op, void *Py_UNUSED(ignored))
+Dialect_get_quotechar(DialectObj *self, void *Py_UNUSED(ignored))
 {
-    DialectObj *self = _DialectObj_CAST(op);
     return get_char_or_None(self->quotechar);
 }
 
 static PyObject *
-Dialect_get_quoting(PyObject *op, void *Py_UNUSED(ignored))
+Dialect_get_quoting(DialectObj *self, void *Py_UNUSED(ignored))
 {
-    DialectObj *self = _DialectObj_CAST(op);
     return PyLong_FromLong(self->quoting);
 }
 
@@ -237,10 +227,10 @@ _set_int(const char *name, int *target, PyObject *src, int dflt)
         int value;
         if (!PyLong_CheckExact(src)) {
             PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be an integer, not %T", name, src);
+                         "\"%s\" must be an integer", name);
             return -1;
         }
-        value = PyLong_AsInt(src);
+        value = _PyLong_AsInt(src);
         if (value == -1 && PyErr_Occurred()) {
             return -1;
         }
@@ -255,29 +245,28 @@ _set_char_or_none(const char *name, Py_UCS4 *target, PyObject *src, Py_UCS4 dflt
     if (src == NULL) {
         *target = dflt;
     }
-    else if (src == Py_None) {
-        *target = NOT_SET;
-    }
     else {
-        // similar to PyArg_Parse("C?")
-        if (!PyUnicode_Check(src)) {
-            PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be a unicode character or None, not %T",
-                         name, src);
-            return -1;
+        *target = NOT_SET;
+        if (src != Py_None) {
+            if (!PyUnicode_Check(src)) {
+                PyErr_Format(PyExc_TypeError,
+                    "\"%s\" must be string or None, not %.200s", name,
+                    Py_TYPE(src)->tp_name);
+                return -1;
+            }
+            Py_ssize_t len = PyUnicode_GetLength(src);
+            if (len < 0) {
+                return -1;
+            }
+            if (len != 1) {
+                PyErr_Format(PyExc_TypeError,
+                    "\"%s\" must be a 1-character string",
+                    name);
+                return -1;
+            }
+            /* PyUnicode_READY() is called in PyUnicode_GetLength() */
+            *target = PyUnicode_READ_CHAR(src, 0);
         }
-        Py_ssize_t len = PyUnicode_GetLength(src);
-        if (len < 0) {
-            return -1;
-        }
-        if (len != 1) {
-            PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be a unicode character or None, "
-                         "not a string of length %zd",
-                         name, len);
-            return -1;
-        }
-        *target = PyUnicode_READ_CHAR(src, 0);
     }
     return 0;
 }
@@ -289,12 +278,11 @@ _set_char(const char *name, Py_UCS4 *target, PyObject *src, Py_UCS4 dflt)
         *target = dflt;
     }
     else {
-        // similar to PyArg_Parse("C")
         if (!PyUnicode_Check(src)) {
             PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be a unicode character, not %T",
-                         name, src);
-            return -1;
+                         "\"%s\" must be string, not %.200s", name,
+                         Py_TYPE(src)->tp_name);
+                return -1;
         }
         Py_ssize_t len = PyUnicode_GetLength(src);
         if (len < 0) {
@@ -302,11 +290,11 @@ _set_char(const char *name, Py_UCS4 *target, PyObject *src, Py_UCS4 dflt)
         }
         if (len != 1) {
             PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be a unicode character, "
-                         "not a string of length %zd",
-                         name, len);
+                         "\"%s\" must be a 1-character string",
+                         name);
             return -1;
         }
+        /* PyUnicode_READY() is called in PyUnicode_GetLength() */
         *target = PyUnicode_READ_CHAR(src, 0);
     }
     return 0;
@@ -318,12 +306,19 @@ _set_str(const char *name, PyObject **target, PyObject *src, const char *dflt)
     if (src == NULL)
         *target = PyUnicode_DecodeASCII(dflt, strlen(dflt), NULL);
     else {
-        if (!PyUnicode_Check(src)) {
+        if (src == Py_None)
+            *target = NULL;
+        else if (!PyUnicode_Check(src)) {
             PyErr_Format(PyExc_TypeError,
-                         "\"%s\" must be a string, not %T", name, src);
+                         "\"%s\" must be a string", name);
             return -1;
         }
-        Py_XSETREF(*target, Py_NewRef(src));
+        else {
+            if (PyUnicode_READY(src) == -1)
+                return -1;
+            Py_INCREF(src);
+            Py_XSETREF(*target, src);
+        }
     }
     return 0;
 }
@@ -341,55 +336,26 @@ dialect_check_quoting(int quoting)
     return -1;
 }
 
-static int
-dialect_check_char(const char *name, Py_UCS4 c, DialectObj *dialect, bool allowspace)
-{
-    if (c == '\r' || c == '\n' || (c == ' ' && !allowspace)) {
-        PyErr_Format(PyExc_ValueError, "bad %s value", name);
-        return -1;
-    }
-    if (PyUnicode_FindChar(
-        dialect->lineterminator, c, 0,
-        PyUnicode_GET_LENGTH(dialect->lineterminator), 1) >= 0)
-    {
-        PyErr_Format(PyExc_ValueError, "bad %s or lineterminator value", name);
-        return -1;
-    }
-    return 0;
-}
-
- static int
-dialect_check_chars(const char *name1, const char *name2, Py_UCS4 c1, Py_UCS4 c2)
-{
-    if (c1 == c2 && c1 != NOT_SET) {
-        PyErr_Format(PyExc_ValueError, "bad %s or %s value", name1, name2);
-        return -1;
-    }
-    return 0;
-}
-
 #define D_OFF(x) offsetof(DialectObj, x)
 
 static struct PyMemberDef Dialect_memberlist[] = {
-    { "skipinitialspace",   Py_T_BOOL, D_OFF(skipinitialspace), Py_READONLY },
-    { "doublequote",        Py_T_BOOL, D_OFF(doublequote), Py_READONLY },
-    { "strict",             Py_T_BOOL, D_OFF(strict), Py_READONLY },
+    { "skipinitialspace",   T_BOOL, D_OFF(skipinitialspace), READONLY },
+    { "doublequote",        T_BOOL, D_OFF(doublequote), READONLY },
+    { "strict",             T_BOOL, D_OFF(strict), READONLY },
     { NULL }
 };
 
-#undef D_OFF
-
 static PyGetSetDef Dialect_getsetlist[] = {
-    {"delimiter",          Dialect_get_delimiter},
-    {"escapechar",         Dialect_get_escapechar},
-    {"lineterminator",     Dialect_get_lineterminator},
-    {"quotechar",          Dialect_get_quotechar},
-    {"quoting",            Dialect_get_quoting},
+    { "delimiter",          (getter)Dialect_get_delimiter},
+    { "escapechar",             (getter)Dialect_get_escapechar},
+    { "lineterminator",         (getter)Dialect_get_lineterminator},
+    { "quotechar",              (getter)Dialect_get_quotechar},
+    { "quoting",                (getter)Dialect_get_quoting},
     {NULL},
 };
 
 static void
-Dialect_dealloc(PyObject *self)
+Dialect_dealloc(DialectObj *self)
 {
     PyTypeObject *tp = Py_TYPE(self);
     PyObject_GC_UnTrack(self);
@@ -514,7 +480,6 @@ dialect_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
         DIALECT_GETATTR(skipinitialspace, "skipinitialspace");
         DIALECT_GETATTR(strict, "strict");
     }
-#undef DIALECT_GETATTR
 
     /* check types and convert to C values */
 #define DIASET(meth, name, target, src, dflt) \
@@ -528,11 +493,15 @@ dialect_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     DIASET(_set_int, "quoting", &self->quoting, quoting, QUOTE_MINIMAL);
     DIASET(_set_bool, "skipinitialspace", &self->skipinitialspace, skipinitialspace, false);
     DIASET(_set_bool, "strict", &self->strict, strict, false);
-#undef DIASET
 
     /* validate options */
     if (dialect_check_quoting(self->quoting))
         goto err;
+    if (self->delimiter == NOT_SET) {
+        PyErr_SetString(PyExc_TypeError,
+                        "\"delimiter\" must be a 1-character string");
+        goto err;
+    }
     if (quotechar == Py_None && quoting == NULL)
         self->quoting = QUOTE_NONE;
     if (self->quoting != QUOTE_NONE && self->quotechar == NOT_SET) {
@@ -540,22 +509,13 @@ dialect_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
                         "quotechar must be set if quoting enabled");
         goto err;
     }
-    if (dialect_check_char("delimiter", self->delimiter, self, true) ||
-        dialect_check_char("escapechar", self->escapechar, self,
-                           !self->skipinitialspace) ||
-        dialect_check_char("quotechar", self->quotechar, self,
-                           !self->skipinitialspace) ||
-        dialect_check_chars("delimiter", "escapechar",
-                            self->delimiter, self->escapechar) ||
-        dialect_check_chars("delimiter", "quotechar",
-                            self->delimiter, self->quotechar) ||
-        dialect_check_chars("escapechar", "quotechar",
-                            self->escapechar, self->quotechar))
-    {
+    if (self->lineterminator == NULL) {
+        PyErr_SetString(PyExc_TypeError, "lineterminator must be set");
         goto err;
     }
 
-    ret = Py_NewRef(self);
+    ret = (PyObject *)self;
+    Py_INCREF(self);
 err:
     Py_CLEAR(self);
     Py_CLEAR(dialect);
@@ -594,17 +554,15 @@ PyDoc_STRVAR(Dialect_Type_doc,
 "The Dialect type records CSV parsing and generation options.\n");
 
 static int
-Dialect_clear(PyObject *op)
+Dialect_clear(DialectObj *self)
 {
-    DialectObj *self = _DialectObj_CAST(op);
     Py_CLEAR(self->lineterminator);
     return 0;
 }
 
 static int
-Dialect_traverse(PyObject *op, visitproc visit, void *arg)
+Dialect_traverse(DialectObj *self, visitproc visit, void *arg)
 {
-    DialectObj *self = _DialectObj_CAST(op);
     Py_VISIT(self->lineterminator);
     Py_VISIT(Py_TYPE(self));
     return 0;
@@ -653,33 +611,22 @@ _call_dialect(_csvstate *module_state, PyObject *dialect_inst, PyObject *kwargs)
 static int
 parse_save_field(ReaderObj *self)
 {
-    int quoting = self->dialect->quoting;
     PyObject *field;
 
-    if (self->unquoted_field &&
-        self->field_len == 0 &&
-        (quoting == QUOTE_NOTNULL || quoting == QUOTE_STRINGS))
-    {
-        field = Py_NewRef(Py_None);
-    }
-    else {
-        field = PyUnicode_FromKindAndData(PyUnicode_4BYTE_KIND,
-                                        (void *) self->field, self->field_len);
-        if (field == NULL) {
+    field = PyUnicode_FromKindAndData(PyUnicode_4BYTE_KIND,
+                                      (void *) self->field, self->field_len);
+    if (field == NULL)
+        return -1;
+    self->field_len = 0;
+    if (self->numeric_field) {
+        PyObject *tmp;
+
+        self->numeric_field = 0;
+        tmp = PyNumber_Float(field);
+        Py_DECREF(field);
+        if (tmp == NULL)
             return -1;
-        }
-        if (self->unquoted_field &&
-            self->field_len != 0 &&
-            (quoting == QUOTE_NONNUMERIC || quoting == QUOTE_STRINGS))
-        {
-            PyObject *tmp = PyNumber_Float(field);
-            Py_DECREF(field);
-            if (tmp == NULL) {
-                return -1;
-            }
-            field = tmp;
-        }
-        self->field_len = 0;
+        field = tmp;
     }
     if (PyList_Append(self->fields, field) < 0) {
         Py_DECREF(field);
@@ -709,11 +656,10 @@ parse_grow_buff(ReaderObj *self)
 static int
 parse_add_char(ReaderObj *self, _csvstate *module_state, Py_UCS4 c)
 {
-    Py_ssize_t field_limit = FT_ATOMIC_LOAD_SSIZE_RELAXED(module_state->field_limit);
-    if (self->field_len >= field_limit) {
+    if (self->field_len >= module_state->field_limit) {
         PyErr_Format(module_state->error_obj,
-                     "field larger than field limit (%zd)",
-                     field_limit);
+                     "field larger than field limit (%ld)",
+                     module_state->field_limit);
         return -1;
     }
     if (self->field_len == self->field_size && !parse_grow_buff(self))
@@ -739,10 +685,9 @@ parse_process_char(ReaderObj *self, _csvstate *module_state, Py_UCS4 c)
         }
         /* normal character - handle as START_FIELD */
         self->state = START_FIELD;
-        _Py_FALLTHROUGH;
+        /* fallthru */
     case START_FIELD:
         /* expecting field */
-        self->unquoted_field = true;
         if (c == '\n' || c == '\r' || c == EOL) {
             /* save empty field - return [fields] */
             if (parse_save_field(self) < 0)
@@ -752,7 +697,6 @@ parse_process_char(ReaderObj *self, _csvstate *module_state, Py_UCS4 c)
         else if (c == dialect->quotechar &&
                  dialect->quoting != QUOTE_NONE) {
             /* start quoted field */
-            self->unquoted_field = false;
             self->state = IN_QUOTED_FIELD;
         }
         else if (c == dialect->escapechar) {
@@ -769,6 +713,8 @@ parse_process_char(ReaderObj *self, _csvstate *module_state, Py_UCS4 c)
         }
         else {
             /* begin new unquoted field */
+            if (dialect->quoting == QUOTE_NONNUMERIC)
+                self->numeric_field = 1;
             if (parse_add_char(self, module_state, c) < 0)
                 return -1;
             self->state = IN_FIELD;
@@ -792,7 +738,7 @@ parse_process_char(ReaderObj *self, _csvstate *module_state, Py_UCS4 c)
     case AFTER_ESCAPED_CRNL:
         if (c == EOL)
             break;
-        _Py_FALLTHROUGH;
+        /*fallthru*/
 
     case IN_FIELD:
         /* in unquoted field */
@@ -913,19 +859,17 @@ parse_reset(ReaderObj *self)
         return -1;
     self->field_len = 0;
     self->state = START_RECORD;
-    self->unquoted_field = false;
+    self->numeric_field = 0;
     return 0;
 }
 
 static PyObject *
-Reader_iternext_lock_held(PyObject *op)
+Reader_iternext(ReaderObj *self)
 {
-    ReaderObj *self = _ReaderObj_CAST(op);
-
     PyObject *fields = NULL;
     Py_UCS4 c;
     Py_ssize_t pos, linelen;
-    int kind;
+    unsigned int kind;
     const void *data;
     PyObject *lineobj;
 
@@ -961,6 +905,10 @@ Reader_iternext_lock_held(PyObject *op)
             Py_DECREF(lineobj);
             return NULL;
         }
+        if (PyUnicode_READY(lineobj) == -1) {
+            Py_DECREF(lineobj);
+            return NULL;
+        }
         ++self->line_num;
         kind = PyUnicode_KIND(lineobj);
         data = PyUnicode_DATA(lineobj);
@@ -985,23 +933,12 @@ err:
     return fields;
 }
 
-static PyObject *
-Reader_iternext(PyObject *op)
-{
-    PyObject *result;
-    Py_BEGIN_CRITICAL_SECTION(op);
-    result = Reader_iternext_lock_held(op);
-    Py_END_CRITICAL_SECTION();
-    return result;
-}
-
 static void
-Reader_dealloc(PyObject *op)
+Reader_dealloc(ReaderObj *self)
 {
-    ReaderObj *self = _ReaderObj_CAST(op);
     PyTypeObject *tp = Py_TYPE(self);
     PyObject_GC_UnTrack(self);
-    (void)tp->tp_clear(op);
+    tp->tp_clear((PyObject *)self);
     if (self->field != NULL) {
         PyMem_Free(self->field);
         self->field = NULL;
@@ -1011,9 +948,8 @@ Reader_dealloc(PyObject *op)
 }
 
 static int
-Reader_traverse(PyObject *op, visitproc visit, void *arg)
+Reader_traverse(ReaderObj *self, visitproc visit, void *arg)
 {
-    ReaderObj *self = _ReaderObj_CAST(op);
     Py_VISIT(self->dialect);
     Py_VISIT(self->input_iter);
     Py_VISIT(self->fields);
@@ -1022,9 +958,8 @@ Reader_traverse(PyObject *op, visitproc visit, void *arg)
 }
 
 static int
-Reader_clear(PyObject *op)
+Reader_clear(ReaderObj *self)
 {
-    ReaderObj *self = _ReaderObj_CAST(op);
     Py_CLEAR(self->dialect);
     Py_CLEAR(self->input_iter);
     Py_CLEAR(self->fields);
@@ -1044,12 +979,10 @@ static struct PyMethodDef Reader_methods[] = {
 #define R_OFF(x) offsetof(ReaderObj, x)
 
 static struct PyMemberDef Reader_memberlist[] = {
-    { "dialect", _Py_T_OBJECT, R_OFF(dialect), Py_READONLY },
-    { "line_num", Py_T_ULONG, R_OFF(line_num), Py_READONLY },
+    { "dialect", T_OBJECT, R_OFF(dialect), READONLY },
+    { "line_num", T_ULONG, R_OFF(line_num), READONLY },
     { NULL }
 };
-
-#undef R_OFF
 
 
 static PyType_Slot Reader_Type_slots[] = {
@@ -1097,7 +1030,7 @@ csv_reader(PyObject *module, PyObject *args, PyObject *keyword_args)
         return NULL;
     }
 
-    if (!PyArg_UnpackTuple(args, "reader", 1, 2, &iterator, &dialect)) {
+    if (!PyArg_UnpackTuple(args, "", 1, 2, &iterator, &dialect)) {
         Py_DECREF(self);
         return NULL;
     }
@@ -1134,12 +1067,12 @@ join_reset(WriterObj *self)
  * record length.
  */
 static Py_ssize_t
-join_append_data(WriterObj *self, int field_kind, const void *field_data,
+join_append_data(WriterObj *self, unsigned int field_kind, const void *field_data,
                  Py_ssize_t field_len, int *quoted,
                  int copy_phase)
 {
     DialectObj *dialect = self->dialect;
-    Py_ssize_t i;
+    int i;
     Py_ssize_t rec_len;
 
 #define INCLEN \
@@ -1250,22 +1183,20 @@ static int
 join_append(WriterObj *self, PyObject *field, int quoted)
 {
     DialectObj *dialect = self->dialect;
-    int field_kind = -1;
+    unsigned int field_kind = -1;
     const void *field_data = NULL;
     Py_ssize_t field_len = 0;
     Py_ssize_t rec_len;
 
     if (field != NULL) {
+        if (PyUnicode_READY(field) == -1)
+            return 0;
         field_kind = PyUnicode_KIND(field);
         field_data = PyUnicode_DATA(field);
         field_len = PyUnicode_GET_LENGTH(field);
     }
     if (!field_len && dialect->delimiter == ' ' && dialect->skipinitialspace) {
-        if (dialect->quoting == QUOTE_NONE ||
-            (field == NULL &&
-             (dialect->quoting == QUOTE_STRINGS ||
-              dialect->quoting == QUOTE_NOTNULL)))
-        {
+        if (dialect->quoting == QUOTE_NONE) {
             PyErr_Format(self->error_obj,
                          "empty field must be quoted if delimiter is a space "
                          "and skipinitialspace is true");
@@ -1293,7 +1224,7 @@ static int
 join_append_lineterminator(WriterObj *self)
 {
     Py_ssize_t terminator_len, i;
-    int term_kind;
+    unsigned int term_kind;
     const void *term_data;
 
     terminator_len = PyUnicode_GET_LENGTH(self->dialect->lineterminator);
@@ -1313,13 +1244,17 @@ join_append_lineterminator(WriterObj *self)
     return 1;
 }
 
+PyDoc_STRVAR(csv_writerow_doc,
+"writerow(iterable)\n"
+"\n"
+"Construct and write a CSV record from an iterable of fields.  Non-string\n"
+"elements will be converted to string.");
+
 static PyObject *
-csv_writerow_lock_held(PyObject *op, PyObject *seq)
+csv_writerow(WriterObj *self, PyObject *seq)
 {
-    WriterObj *self = _WriterObj_CAST(op);
     DialectObj *dialect = self->dialect;
     PyObject *iter, *field, *line, *result;
-    bool null_field = false;
 
     iter = PyObject_GetIter(seq);
     if (iter == NULL) {
@@ -1345,23 +1280,16 @@ csv_writerow_lock_held(PyObject *op, PyObject *seq)
         case QUOTE_ALL:
             quoted = 1;
             break;
-        case QUOTE_STRINGS:
-            quoted = PyUnicode_Check(field);
-            break;
-        case QUOTE_NOTNULL:
-            quoted = field != Py_None;
-            break;
         default:
             quoted = 0;
             break;
         }
 
-        null_field = (field == Py_None);
         if (PyUnicode_Check(field)) {
             append_ok = join_append(self, field, quoted);
             Py_DECREF(field);
         }
-        else if (null_field) {
+        else if (field == Py_None) {
             append_ok = join_append(self, NULL, quoted);
             Py_DECREF(field);
         }
@@ -1387,11 +1315,7 @@ csv_writerow_lock_held(PyObject *op, PyObject *seq)
         return NULL;
 
     if (self->num_fields > 0 && self->rec_len == 0) {
-        if (dialect->quoting == QUOTE_NONE ||
-            (null_field &&
-             (dialect->quoting == QUOTE_STRINGS ||
-              dialect->quoting == QUOTE_NOTNULL)))
-        {
+        if (dialect->quoting == QUOTE_NONE) {
             PyErr_Format(self->error_obj,
                 "single empty field record must be quoted");
             return NULL;
@@ -1417,32 +1341,14 @@ csv_writerow_lock_held(PyObject *op, PyObject *seq)
     return result;
 }
 
-PyDoc_STRVAR(csv_writerow_doc,
-"writerow($self, row, /)\n"
-"--\n\n"
-"Construct and write a CSV record from an iterable of fields.\n"
-"\n"
-"Non-string elements will be converted to string.");
-
-static PyObject *
-csv_writerow(PyObject *op, PyObject *seq)
-{
-    PyObject *result;
-    Py_BEGIN_CRITICAL_SECTION(op);
-    result = csv_writerow_lock_held(op, seq);
-    Py_END_CRITICAL_SECTION();
-    return result;
-}
-
 PyDoc_STRVAR(csv_writerows_doc,
-"writerows($self, rows, /)\n"
-"--\n\n"
-"Construct and write a series of iterables to a csv file.\n"
+"writerows(iterable of iterables)\n"
 "\n"
-"Non-string elements will be converted to string.");
+"Construct and write a series of iterables to a csv file.  Non-string\n"
+"elements will be converted to string.");
 
 static PyObject *
-csv_writerows(PyObject *self, PyObject *seqseq)
+csv_writerows(WriterObj *self, PyObject *seqseq)
 {
     PyObject *row_iter, *row_obj, *result;
 
@@ -1467,24 +1373,21 @@ csv_writerows(PyObject *self, PyObject *seqseq)
 }
 
 static struct PyMethodDef Writer_methods[] = {
-    {"writerow", csv_writerow, METH_O, csv_writerow_doc},
-    {"writerows", csv_writerows, METH_O, csv_writerows_doc},
-    {NULL, NULL, 0, NULL}  /* sentinel */
+    { "writerow", (PyCFunction)csv_writerow, METH_O, csv_writerow_doc},
+    { "writerows", (PyCFunction)csv_writerows, METH_O, csv_writerows_doc},
+    { NULL, NULL }
 };
 
 #define W_OFF(x) offsetof(WriterObj, x)
 
 static struct PyMemberDef Writer_memberlist[] = {
-    { "dialect", _Py_T_OBJECT, W_OFF(dialect), Py_READONLY },
+    { "dialect", T_OBJECT, W_OFF(dialect), READONLY },
     { NULL }
 };
 
-#undef W_OFF
-
 static int
-Writer_traverse(PyObject *op, visitproc visit, void *arg)
+Writer_traverse(WriterObj *self, visitproc visit, void *arg)
 {
-    WriterObj *self = _WriterObj_CAST(op);
     Py_VISIT(self->dialect);
     Py_VISIT(self->write);
     Py_VISIT(self->error_obj);
@@ -1493,9 +1396,8 @@ Writer_traverse(PyObject *op, visitproc visit, void *arg)
 }
 
 static int
-Writer_clear(PyObject *op)
+Writer_clear(WriterObj *self)
 {
-    WriterObj *self = _WriterObj_CAST(op);
     Py_CLEAR(self->dialect);
     Py_CLEAR(self->write);
     Py_CLEAR(self->error_obj);
@@ -1503,12 +1405,11 @@ Writer_clear(PyObject *op)
 }
 
 static void
-Writer_dealloc(PyObject *op)
+Writer_dealloc(WriterObj *self)
 {
-    WriterObj *self = _WriterObj_CAST(op);
     PyTypeObject *tp = Py_TYPE(self);
     PyObject_GC_UnTrack(self);
-    tp->tp_clear(op);
+    tp->tp_clear((PyObject *)self);
     if (self->rec != NULL) {
         PyMem_Free(self->rec);
     }
@@ -1562,11 +1463,11 @@ csv_writer(PyObject *module, PyObject *args, PyObject *keyword_args)
 
     self->error_obj = Py_NewRef(module_state->error_obj);
 
-    if (!PyArg_UnpackTuple(args, "writer", 1, 2, &output_file, &dialect)) {
+    if (!PyArg_UnpackTuple(args, "", 1, 2, &output_file, &dialect)) {
         Py_DECREF(self);
         return NULL;
     }
-    if (PyObject_GetOptionalAttr(output_file,
+    if (_PyObject_LookupAttr(output_file,
                              module_state->str_write,
                              &self->write) < 0) {
         Py_DECREF(self);
@@ -1596,11 +1497,13 @@ csv_writer(PyObject *module, PyObject *args, PyObject *keyword_args)
 _csv.list_dialects
 
 Return a list of all known dialect names.
+
+    names = csv.list_dialects()
 [clinic start generated code]*/
 
 static PyObject *
 _csv_list_dialects_impl(PyObject *module)
-/*[clinic end generated code: output=a5b92b215b006a6d input=ec58040aafd6a20a]*/
+/*[clinic end generated code: output=a5b92b215b006a6d input=8953943eb17d98ab]*/
 {
     return PyDict_Keys(get_csv_state(module)->dialects);
 }
@@ -1612,13 +1515,15 @@ csv_register_dialect(PyObject *module, PyObject *args, PyObject *kwargs)
     _csvstate *module_state = get_csv_state(module);
     PyObject *dialect;
 
-    if (!PyArg_UnpackTuple(args, "register_dialect", 1, 2, &name_obj, &dialect_obj))
+    if (!PyArg_UnpackTuple(args, "", 1, 2, &name_obj, &dialect_obj))
         return NULL;
     if (!PyUnicode_Check(name_obj)) {
         PyErr_SetString(PyExc_TypeError,
                         "dialect name must be a string");
         return NULL;
     }
+    if (PyUnicode_READY(name_obj) == -1)
+        return NULL;
     dialect = _call_dialect(module_state, dialect_obj, kwargs);
     if (dialect == NULL)
         return NULL;
@@ -1637,19 +1542,19 @@ _csv.unregister_dialect
     name: object
 
 Delete the name/dialect mapping associated with a string name.
+
+    csv.unregister_dialect(name)
 [clinic start generated code]*/
 
 static PyObject *
 _csv_unregister_dialect_impl(PyObject *module, PyObject *name)
-/*[clinic end generated code: output=0813ebca6c058df4 input=e1cf81bfe3ba0f62]*/
+/*[clinic end generated code: output=0813ebca6c058df4 input=6b5c1557bf60c7e7]*/
 {
     _csvstate *module_state = get_csv_state(module);
-    int rc = PyDict_Pop(module_state->dialects, name, NULL);
-    if (rc < 0) {
-        return NULL;
-    }
-    if (rc == 0) {
-        PyErr_Format(module_state->error_obj, "unknown dialect");
+    if (PyDict_DelItem(module_state->dialects, name) < 0) {
+        if (PyErr_ExceptionMatches(PyExc_KeyError)) {
+            PyErr_Format(module_state->error_obj, "unknown dialect");
+        }
         return NULL;
     }
     Py_RETURN_NONE;
@@ -1661,11 +1566,13 @@ _csv.get_dialect
     name: object
 
 Return the dialect instance associated with name.
+
+    dialect = csv.get_dialect(name)
 [clinic start generated code]*/
 
 static PyObject *
 _csv_get_dialect_impl(PyObject *module, PyObject *name)
-/*[clinic end generated code: output=aa988cd573bebebb input=74865c659dcb441f]*/
+/*[clinic end generated code: output=aa988cd573bebebb input=edf9ddab32e448fb]*/
 {
     return get_dialect_from_registry(name, get_csv_state(module));
 }
@@ -1677,29 +1584,31 @@ _csv.field_size_limit
 
 Sets an upper limit on parsed fields.
 
+    csv.field_size_limit([limit])
+
 Returns old limit. If limit is not given, no new limit is set and
 the old limit is returned
 [clinic start generated code]*/
 
 static PyObject *
 _csv_field_size_limit_impl(PyObject *module, PyObject *new_limit)
-/*[clinic end generated code: output=f2799ecd908e250b input=77db7485ee3ae90a]*/
+/*[clinic end generated code: output=f2799ecd908e250b input=cec70e9226406435]*/
 {
     _csvstate *module_state = get_csv_state(module);
-    Py_ssize_t old_limit = FT_ATOMIC_LOAD_SSIZE_RELAXED(module_state->field_limit);
+    long old_limit = module_state->field_limit;
     if (new_limit != NULL) {
         if (!PyLong_CheckExact(new_limit)) {
             PyErr_Format(PyExc_TypeError,
                          "limit must be an integer");
             return NULL;
         }
-        Py_ssize_t new_limit_value = PyLong_AsSsize_t(new_limit);
-        if (new_limit_value == -1 && PyErr_Occurred()) {
+        module_state->field_limit = PyLong_AsLong(new_limit);
+        if (module_state->field_limit == -1 && PyErr_Occurred()) {
+            module_state->field_limit = old_limit;
             return NULL;
         }
-        FT_ATOMIC_STORE_SSIZE_RELAXED(module_state->field_limit, new_limit_value);
     }
-    return PyLong_FromSsize_t(old_limit);
+    return PyLong_FromLong(old_limit);
 }
 
 static PyType_Slot error_slots[] = {
@@ -1716,16 +1625,73 @@ PyType_Spec error_spec = {
  * MODULE
  */
 
-PyDoc_STRVAR(csv_module_doc, "CSV parsing and writing.\n");
+PyDoc_STRVAR(csv_module_doc,
+"CSV parsing and writing.\n"
+"\n"
+"This module provides classes that assist in the reading and writing\n"
+"of Comma Separated Value (CSV) files, and implements the interface\n"
+"described by PEP 305.  Although many CSV files are simple to parse,\n"
+"the format is not formally defined by a stable specification and\n"
+"is subtle enough that parsing lines of a CSV file with something\n"
+"like line.split(\",\") is bound to fail.  The module supports three\n"
+"basic APIs: reading, writing, and registration of dialects.\n"
+"\n"
+"\n"
+"DIALECT REGISTRATION:\n"
+"\n"
+"Readers and writers support a dialect argument, which is a convenient\n"
+"handle on a group of settings.  When the dialect argument is a string,\n"
+"it identifies one of the dialects previously registered with the module.\n"
+"If it is a class or instance, the attributes of the argument are used as\n"
+"the settings for the reader or writer:\n"
+"\n"
+"    class excel:\n"
+"        delimiter = ','\n"
+"        quotechar = '\"'\n"
+"        escapechar = None\n"
+"        doublequote = True\n"
+"        skipinitialspace = False\n"
+"        lineterminator = '\\r\\n'\n"
+"        quoting = QUOTE_MINIMAL\n"
+"\n"
+"SETTINGS:\n"
+"\n"
+"    * quotechar - specifies a one-character string to use as the\n"
+"        quoting character.  It defaults to '\"'.\n"
+"    * delimiter - specifies a one-character string to use as the\n"
+"        field separator.  It defaults to ','.\n"
+"    * skipinitialspace - specifies how to interpret spaces which\n"
+"        immediately follow a delimiter.  It defaults to False, which\n"
+"        means that spaces immediately following a delimiter is part\n"
+"        of the following field.\n"
+"    * lineterminator -  specifies the character sequence which should\n"
+"        terminate rows.\n"
+"    * quoting - controls when quotes should be generated by the writer.\n"
+"        It can take on any of the following module constants:\n"
+"\n"
+"        csv.QUOTE_MINIMAL means only when required, for example, when a\n"
+"            field contains either the quotechar or the delimiter\n"
+"        csv.QUOTE_ALL means that quotes are always placed around fields.\n"
+"        csv.QUOTE_NONNUMERIC means that quotes are always placed around\n"
+"            fields which do not parse as integers or floating point\n"
+"            numbers.\n"
+"        csv.QUOTE_NONE means that quotes are never placed around fields.\n"
+"    * escapechar - specifies a one-character string used to escape\n"
+"        the delimiter when quoting is set to QUOTE_NONE.\n"
+"    * doublequote - controls the handling of quotes inside fields.  When\n"
+"        True, two consecutive quotes are interpreted as one during read,\n"
+"        and when writing, each quote character embedded in the data is\n"
+"        written as two quotes\n");
 
 PyDoc_STRVAR(csv_reader_doc,
-"reader($module, iterable, /, dialect='excel', **fmtparams)\n"
-"--\n\n"
-"Return a reader object that will process lines from the given iterable.\n"
+"    csv_reader = reader(iterable [, dialect='excel']\n"
+"                        [optional keyword args])\n"
+"    for row in csv_reader:\n"
+"        process(row)\n"
 "\n"
 "The \"iterable\" argument can be any object that returns a line\n"
 "of input for each iteration, such as a file object or a list.  The\n"
-"optional \"dialect\" argument defines a CSV dialect.  The function\n"
+"optional \"dialect\" parameter is discussed below.  The function\n"
 "also accepts optional keyword arguments which override settings\n"
 "provided by the dialect.\n"
 "\n"
@@ -1733,24 +1699,22 @@ PyDoc_STRVAR(csv_reader_doc,
 "of the CSV file (which can span multiple input lines).\n");
 
 PyDoc_STRVAR(csv_writer_doc,
-"writer($module, fileobj, /, dialect='excel', **fmtparams)\n"
-"--\n\n"
-"Return a writer object that will write user data on the given file object.\n"
+"    csv_writer = csv.writer(fileobj [, dialect='excel']\n"
+"                            [optional keyword args])\n"
+"    for row in sequence:\n"
+"        csv_writer.writerow(row)\n"
 "\n"
-"The \"fileobj\" argument can be any object that supports the file API.\n"
-"The optional \"dialect\" argument defines a CSV dialect.  The function\n"
-"also accepts optional keyword arguments which override settings\n"
-"provided by the dialect.\n");
+"    [or]\n"
+"\n"
+"    csv_writer = csv.writer(fileobj [, dialect='excel']\n"
+"                            [optional keyword args])\n"
+"    csv_writer.writerows(rows)\n"
+"\n"
+"The \"fileobj\" argument can be any object that supports the file API.\n");
 
 PyDoc_STRVAR(csv_register_dialect_doc,
-"register_dialect($module, name, /, dialect='excel', **fmtparams)\n"
-"--\n\n"
-"Create a mapping from a string name to a CVS dialect.\n"
-"\n"
-"The optional \"dialect\" argument specifies the base dialect instance\n"
-"or the name of the registered dialect.  The function also accepts\n"
-"optional keyword arguments which override settings provided by the\n"
-"dialect.\n");
+"Create a mapping from a string name to a dialect class.\n"
+"    dialect = csv.register_dialect(name[, dialect[, **fmtparams]])");
 
 static struct PyMethodDef csv_methods[] = {
     { "reader", _PyCFunction_CAST(csv_reader),
@@ -1787,6 +1751,12 @@ csv_exec(PyObject *module) {
     temp = PyType_FromModuleAndSpec(module, &Writer_Type_spec, NULL);
     module_state->writer_type = (PyTypeObject *)temp;
     if (PyModule_AddObjectRef(module, "Writer", temp) < 0) {
+        return -1;
+    }
+
+    /* Add version to the module. */
+    if (PyModule_AddStringConstant(module, "__version__",
+                                   MODULE_VERSION) == -1) {
         return -1;
     }
 
@@ -1830,8 +1800,6 @@ csv_exec(PyObject *module) {
 
 static PyModuleDef_Slot csv_slots[] = {
     {Py_mod_exec, csv_exec},
-    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
-    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL}
 };
 

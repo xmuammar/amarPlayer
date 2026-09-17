@@ -13,9 +13,8 @@ the interpreter.
 
 Several of these functions accept a start symbol from the grammar as a
 parameter.  The available start symbols are :c:data:`Py_eval_input`,
-:c:data:`Py_file_input`, :c:data:`Py_single_input`, and
-:c:data:`Py_func_type_input`.  These are described following the functions
-which accept them as parameters.
+:c:data:`Py_file_input`, and :c:data:`Py_single_input`.  These are described
+following the functions which accept them as parameters.
 
 Note also that several of these functions take :c:expr:`FILE*` parameters.  One
 particular issue which needs to be handled carefully is that the :c:type:`FILE`
@@ -24,6 +23,30 @@ Windows (at least), it is possible for dynamically linked extensions to actually
 use different libraries, so care should be taken that :c:expr:`FILE*` parameters
 are only passed to these functions if it is certain that they were created by
 the same library that the Python runtime is using.
+
+
+.. c:function:: int Py_Main(int argc, wchar_t **argv)
+
+   The main program for the standard interpreter.  This is made available for
+   programs which embed Python.  The *argc* and *argv* parameters should be
+   prepared exactly as those which are passed to a C program's :c:func:`main`
+   function (converted to wchar_t according to the user's locale).  It is
+   important to note that the argument list may be modified (but the contents of
+   the strings pointed to by the argument list are not). The return value will
+   be ``0`` if the interpreter exits normally (i.e., without an exception),
+   ``1`` if the interpreter exits due to an exception, or ``2`` if the parameter
+   list does not represent a valid Python command line.
+
+   Note that if an otherwise unhandled :exc:`SystemExit` is raised, this
+   function will not return ``1``, but exit the process, as long as
+   ``Py_InspectFlag`` is not set.
+
+
+.. c:function:: int Py_BytesMain(int argc, char **argv)
+
+   Similar to :c:func:`Py_Main` but *argv* is an array of bytes strings.
+
+   .. versionadded:: 3.8
 
 
 .. c:function:: int PyRun_AnyFile(FILE *fp, const char *filename)
@@ -72,7 +95,7 @@ the same library that the Python runtime is using.
 
    Note that if an otherwise unhandled :exc:`SystemExit` is raised, this
    function will not return ``-1``, but exit the process, as long as
-   :c:member:`PyConfig.inspect` is zero.
+   ``Py_InspectFlag`` is not set.
 
 
 .. c:function:: int PyRun_SimpleFile(FILE *fp, const char *filename)
@@ -100,20 +123,6 @@ the same library that the Python runtime is using.
       Otherwise, Python may not handle script file with LF line ending correctly.
 
 
-.. c:function:: int PyRun_InteractiveOneObject(FILE *fp, PyObject *filename, PyCompilerFlags *flags)
-
-   Read and execute a single statement from a file associated with an
-   interactive device according to the *flags* argument.  The user will be
-   prompted using ``sys.ps1`` and ``sys.ps2``. *filename* must be a Python
-   :class:`str` object.
-
-   Returns ``0`` when the input was
-   executed successfully, ``-1`` if there was an exception, or an error code
-   from the :file:`errcode.h` include file distributed as part of Python if
-   there was a parse error.  (Note that :file:`errcode.h` is not included by
-   :file:`Python.h`, so must be included specifically if needed.)
-
-
 .. c:function:: int PyRun_InteractiveOne(FILE *fp, const char *filename)
 
    This is a simplified interface to :c:func:`PyRun_InteractiveOneFlags` below,
@@ -122,9 +131,16 @@ the same library that the Python runtime is using.
 
 .. c:function:: int PyRun_InteractiveOneFlags(FILE *fp, const char *filename, PyCompilerFlags *flags)
 
-   Similar to :c:func:`PyRun_InteractiveOneObject`, but *filename* is a
-   :c:expr:`const char*`, which is decoded from the
+   Read and execute a single statement from a file associated with an
+   interactive device according to the *flags* argument.  The user will be
+   prompted using ``sys.ps1`` and ``sys.ps2``.  *filename* is decoded from the
    :term:`filesystem encoding and error handler`.
+
+   Returns ``0`` when the input was
+   executed successfully, ``-1`` if there was an exception, or an error code
+   from the :file:`errcode.h` include file distributed as part of Python if
+   there was a parse error.  (Note that :file:`errcode.h` is not included by
+   :file:`Python.h`, so must be included specifically if needed.)
 
 
 .. c:function:: int PyRun_InteractiveLoop(FILE *fp, const char *filename)
@@ -148,12 +164,8 @@ the same library that the Python runtime is using.
    interpreter prompt is about to become idle and wait for user input
    from the terminal.  The return value is ignored.  Overriding this
    hook can be used to integrate the interpreter's prompt with other
-   event loops, as done in :file:`Modules/_tkinter.c` in the
+   event loops, as done in the :file:`Modules/_tkinter.c` in the
    Python source code.
-
-   .. versionchanged:: 3.12
-      This function is only called from the
-      :ref:`main interpreter <sub-interpreter-support>`.
 
 
 .. c:var:: char* (*PyOS_ReadlineFunctionPointer)(FILE *, FILE *, const char *)
@@ -175,10 +187,6 @@ the same library that the Python runtime is using.
       :c:func:`PyMem_RawRealloc`, instead of being allocated by
       :c:func:`PyMem_Malloc` or :c:func:`PyMem_Realloc`.
 
-   .. versionchanged:: 3.12
-      This function is only called from the
-      :ref:`main interpreter <sub-interpreter-support>`.
-
 .. c:function:: PyObject* PyRun_String(const char *str, int start, PyObject *globals, PyObject *locals)
 
    This is a simplified interface to :c:func:`PyRun_StringFlags` below, leaving
@@ -191,7 +199,7 @@ the same library that the Python runtime is using.
    objects *globals* and *locals* with the compiler flags specified by
    *flags*.  *globals* must be a dictionary; *locals* can be any object
    that implements the mapping protocol.  The parameter *start* specifies
-   the start symbol and must one of the :ref:`available start symbols <start-symbols>`.
+   the start token that should be used to parse the source code.
 
    Returns the result of executing the code as a Python object, or ``NULL`` if an
    exception was raised.
@@ -239,9 +247,9 @@ the same library that the Python runtime is using.
 .. c:function:: PyObject* Py_CompileStringObject(const char *str, PyObject *filename, int start, PyCompilerFlags *flags, int optimize)
 
    Parse and compile the Python source code in *str*, returning the resulting code
-   object.  The start symbol is given by *start*; this can be used to constrain the
-   code which can be compiled and should be :ref:`available start symbols
-   <start-symbols>`.  The filename specified by
+   object.  The start token is given by *start*; this can be used to constrain the
+   code which can be compiled and should be :c:data:`Py_eval_input`,
+   :c:data:`Py_file_input`, or :c:data:`Py_single_input`.  The filename specified by
    *filename* is used to construct the code object and may appear in tracebacks or
    :exc:`SyntaxError` exception messages.  This returns ``NULL`` if the code
    cannot be parsed or compiled.
@@ -304,57 +312,6 @@ the same library that the Python runtime is using.
    true on success, false on failure.
 
 
-.. c:struct:: PyCompilerFlags
-
-   This is the structure used to hold compiler flags.  In cases where code is only
-   being compiled, it is passed as ``int flags``, and in cases where code is being
-   executed, it is passed as ``PyCompilerFlags *flags``.  In this case, ``from
-   __future__ import`` can modify *flags*.
-
-   Whenever ``PyCompilerFlags *flags`` is ``NULL``, :c:member:`~PyCompilerFlags.cf_flags` is treated as
-   equal to ``0``, and any modification due to ``from __future__ import`` is
-   discarded.
-
-   .. c:member:: int cf_flags
-
-      Compiler flags.
-
-   .. c:member:: int cf_feature_version
-
-      *cf_feature_version* is the minor Python version. It should be
-      initialized to ``PY_MINOR_VERSION``.
-
-      The field is ignored by default, it is used if and only if
-      ``PyCF_ONLY_AST`` flag is set in :c:member:`~PyCompilerFlags.cf_flags`.
-
-   .. versionchanged:: 3.8
-      Added *cf_feature_version* field.
-
-   The available compiler flags are accessible as macros:
-
-   .. c:namespace:: NULL
-
-   .. c:macro:: PyCF_ALLOW_TOP_LEVEL_AWAIT
-                PyCF_ONLY_AST
-                PyCF_OPTIMIZED_AST
-                PyCF_TYPE_COMMENTS
-
-      See :ref:`compiler flags <ast-compiler-flags>` in documentation of the
-      :py:mod:`!ast` Python module, which exports these constants under
-      the same names.
-
-   The "``PyCF``" flags above can be combined with "``CO_FUTURE``" flags such
-   as :c:macro:`CO_FUTURE_ANNOTATIONS` to enable features normally
-   selectable using :ref:`future statements <future>`.
-   See :ref:`c_codeobject_flags` for a complete list.
-
-
-.. _start-symbols:
-
-Available start symbols
-^^^^^^^^^^^^^^^^^^^^^^^
-
-
 .. c:var:: int Py_eval_input
 
    .. index:: single: Py_CompileString (C function)
@@ -381,58 +338,34 @@ Available start symbols
    interpreter loop.
 
 
-.. c:var:: int Py_func_type_input
+.. c:struct:: PyCompilerFlags
 
-   .. index:: single: Py_CompileString (C function)
+   This is the structure used to hold compiler flags.  In cases where code is only
+   being compiled, it is passed as ``int flags``, and in cases where code is being
+   executed, it is passed as ``PyCompilerFlags *flags``.  In this case, ``from
+   __future__ import`` can modify *flags*.
 
-   The start symbol from the Python grammar for a function type; for use with
-   :c:func:`Py_CompileString`. This is used to parse "signature type comments"
-   from :pep:`484`.
+   Whenever ``PyCompilerFlags *flags`` is ``NULL``, :c:member:`~PyCompilerFlags.cf_flags` is treated as
+   equal to ``0``, and any modification due to ``from __future__ import`` is
+   discarded.
 
-   This requires the :c:macro:`PyCF_ONLY_AST` flag to be set.
+   .. c:member:: int cf_flags
 
-   .. seealso::
-      * :py:class:`ast.FunctionType`
-      * :pep:`484`
+      Compiler flags.
 
-   .. versionadded:: 3.8
+   .. c:member:: int cf_feature_version
 
+      *cf_feature_version* is the minor Python version. It should be
+      initialized to ``PY_MINOR_VERSION``.
 
-Stack Effects
-^^^^^^^^^^^^^
+      The field is ignored by default, it is used if and only if
+      ``PyCF_ONLY_AST`` flag is set in :c:member:`~PyCompilerFlags.cf_flags`.
 
-.. seealso::
-   :py:func:`dis.stack_effect`
-
-
-.. c:macro:: PY_INVALID_STACK_EFFECT
-
-   Sentinel value representing an invalid stack effect.
-
-   This is currently equivalent to ``INT_MAX``.
-
-   .. versionadded:: 3.8
+   .. versionchanged:: 3.8
+      Added *cf_feature_version* field.
 
 
-.. c:function:: int PyCompile_OpcodeStackEffect(int opcode, int oparg)
+.. c:var:: int CO_FUTURE_DIVISION
 
-   Compute the stack effect of *opcode* with argument *oparg*.
-
-   On success, this function returns the stack effect; on failure, this
-   returns :c:macro:`PY_INVALID_STACK_EFFECT`.
-
-   .. versionadded:: 3.4
-
-
-.. c:function:: int PyCompile_OpcodeStackEffectWithJump(int opcode, int oparg, int jump)
-
-   Similar to :c:func:`PyCompile_OpcodeStackEffect`, but don't include the
-   stack effect of jumping if *jump* is zero.
-
-   If *jump* is ``0``, this will not include the stack effect of jumping, but
-   if *jump* is ``1`` or ``-1``, this will include it.
-
-   On success, this function returns the stack effect; on failure, this
-   returns :c:macro:`PY_INVALID_STACK_EFFECT`.
-
-   .. versionadded:: 3.8
+   This bit can be set in *flags* to cause division operator ``/`` to be
+   interpreted as "true division" according to :pep:`238`.

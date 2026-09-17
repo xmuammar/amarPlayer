@@ -1,5 +1,5 @@
-:mod:`!ssl` --- TLS/SSL wrapper for socket objects
-==================================================
+:mod:`ssl` --- TLS/SSL wrapper for socket objects
+=================================================
 
 .. module:: ssl
    :synopsis: TLS/SSL wrapper for socket objects
@@ -18,9 +18,8 @@
 This module provides access to Transport Layer Security (often known as "Secure
 Sockets Layer") encryption and peer authentication facilities for network
 sockets, both client-side and server-side.  This module uses the OpenSSL
-library.
-
-.. include:: ../includes/optional-module.rst
+library. It is available on all modern Unix systems, Windows, macOS, and
+probably additional platforms, as long as OpenSSL is installed on that platform.
 
 .. note::
 
@@ -44,10 +43,8 @@ This module provides a class, :class:`ssl.SSLSocket`, which is derived from the
 :class:`socket.socket` type, and provides a socket-like wrapper that also
 encrypts and decrypts the data going over the socket with SSL.  It supports
 additional methods such as :meth:`getpeercert`, which retrieves the
-certificate of the other side of the connection, :meth:`cipher`, which
-retrieves the cipher being used for the secure connection or
-:meth:`get_verified_chain`, :meth:`get_unverified_chain` which retrieves
-certificate chain.
+certificate of the other side of the connection, and :meth:`cipher`, which
+retrieves the cipher being used for the secure connection.
 
 For more sophisticated applications, the :class:`ssl.SSLContext` class
 helps manage settings and certificates, which can then be inherited
@@ -77,10 +74,13 @@ Functions, Constants, and Exceptions
 Socket creation
 ^^^^^^^^^^^^^^^
 
-Instances of :class:`SSLSocket` must be created using the
-:meth:`SSLContext.wrap_socket` method. The helper function
+Since Python 3.2 and 2.7.9, it is recommended to use the
+:meth:`SSLContext.wrap_socket` of an :class:`SSLContext` instance to wrap
+sockets as :class:`SSLSocket` objects. The helper functions
 :func:`create_default_context` returns a new context with secure default
-settings.
+settings. The old :func:`wrap_socket` function is deprecated since it is
+both inefficient and has no support for server name indication (SNI) and
+hostname matching.
 
 Client socket example with default context and IPv4/IPv6 dual stack::
 
@@ -126,8 +126,7 @@ Context creation
 A convenience function helps create :class:`SSLContext` objects for common
 purposes.
 
-.. function:: create_default_context(purpose=Purpose.SERVER_AUTH, *,\
-                                     cafile=None, capath=None, cadata=None)
+.. function:: create_default_context(purpose=Purpose.SERVER_AUTH, cafile=None, capath=None, cadata=None)
 
    Return a new :class:`SSLContext` object with default settings for
    the given *purpose*.  The settings are chosen by the :mod:`ssl` module,
@@ -153,12 +152,6 @@ purposes.
    variable :envvar:`SSLKEYLOGFILE` is set, :func:`create_default_context`
    enables key logging.
 
-   The default settings for this context include
-   :data:`VERIFY_X509_PARTIAL_CHAIN` and :data:`VERIFY_X509_STRICT`.
-   These make the underlying OpenSSL implementation behave more like
-   a conforming implementation of :rfc:`5280`, in exchange for a small
-   amount of incompatibility with older X.509 certificates.
-
    .. note::
       The protocol, options, cipher and other settings may change to more
       restrictive values anytime without prior deprecation.  The values
@@ -179,15 +172,6 @@ purposes.
 
          ctx = ssl.create_default_context(Purpose.CLIENT_AUTH)
          ctx.options &= ~ssl.OP_NO_SSLv3
-
-   .. note::
-      This context enables :data:`VERIFY_X509_STRICT` by default, which
-      may reject pre-:rfc:`5280` or malformed certificates that the
-      underlying OpenSSL implementation otherwise would accept. While disabling
-      this is not recommended, you can do so using::
-
-         ctx = ssl.create_default_context()
-         ctx.verify_flags &= ~ssl.VERIFY_X509_STRICT
 
    .. versionadded:: 3.4
 
@@ -210,11 +194,6 @@ purposes.
       The context now uses :data:`PROTOCOL_TLS_CLIENT` or
       :data:`PROTOCOL_TLS_SERVER` protocol instead of generic
       :data:`PROTOCOL_TLS`.
-
-   .. versionchanged:: 3.13
-
-      The context now uses :data:`VERIFY_X509_PARTIAL_CHAIN` and
-      :data:`VERIFY_X509_STRICT` in its default verify flags.
 
 
 Exceptions
@@ -316,7 +295,7 @@ Exceptions
 Random generation
 ^^^^^^^^^^^^^^^^^
 
-.. function:: RAND_bytes(num, /)
+.. function:: RAND_bytes(num)
 
    Return *num* cryptographically strong pseudo-random bytes. Raises an
    :class:`SSLError` if the PRNG has not been seeded with enough data or if the
@@ -333,6 +312,27 @@ Random generation
 
    .. versionadded:: 3.3
 
+.. function:: RAND_pseudo_bytes(num)
+
+   Return (bytes, is_cryptographic): bytes are *num* pseudo-random bytes,
+   is_cryptographic is ``True`` if the bytes generated are cryptographically
+   strong. Raises an :class:`SSLError` if the operation is not supported by the
+   current RAND method.
+
+   Generated pseudo-random byte sequences will be unique if they are of
+   sufficient length, but are not necessarily unpredictable. They can be used
+   for non-cryptographic purposes and for certain purposes in cryptographic
+   protocols, but usually not for key generation etc.
+
+   For almost all applications :func:`os.urandom` is preferable.
+
+   .. versionadded:: 3.3
+
+   .. deprecated:: 3.6
+
+      OpenSSL has deprecated :func:`ssl.RAND_pseudo_bytes`, use
+      :func:`ssl.RAND_bytes` instead.
+
 .. function:: RAND_status()
 
    Return ``True`` if the SSL pseudo-random number generator has been seeded
@@ -340,7 +340,7 @@ Random generation
    :func:`ssl.RAND_egd` and :func:`ssl.RAND_add` to increase the randomness of
    the pseudo-random number generator.
 
-.. function:: RAND_add(bytes, entropy, /)
+.. function:: RAND_add(bytes, entropy)
 
    Mix the given *bytes* into the SSL pseudo-random number generator.  The
    parameter *entropy* (a float) is a lower bound on the entropy contained in
@@ -356,6 +356,49 @@ Certificate handling
 .. testsetup::
 
    import ssl
+
+.. function:: match_hostname(cert, hostname)
+
+   Verify that *cert* (in decoded format as returned by
+   :meth:`SSLSocket.getpeercert`) matches the given *hostname*.  The rules
+   applied are those for checking the identity of HTTPS servers as outlined
+   in :rfc:`2818`, :rfc:`5280` and :rfc:`6125`.  In addition to HTTPS, this
+   function should be suitable for checking the identity of servers in
+   various SSL-based protocols such as FTPS, IMAPS, POPS and others.
+
+   :exc:`CertificateError` is raised on failure. On success, the function
+   returns nothing::
+
+      >>> cert = {'subject': ((('commonName', 'example.com'),),)}
+      >>> ssl.match_hostname(cert, "example.com")
+      >>> ssl.match_hostname(cert, "example.org")
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "/home/py3k/Lib/ssl.py", line 130, in match_hostname
+      ssl.CertificateError: hostname 'example.org' doesn't match 'example.com'
+
+   .. versionadded:: 3.2
+
+   .. versionchanged:: 3.3.3
+      The function now follows :rfc:`6125`, section 6.4.3 and does neither
+      match multiple wildcards (e.g. ``*.*.com`` or ``*a*.example.org``) nor
+      a wildcard inside an internationalized domain names (IDN) fragment.
+      IDN A-labels such as ``www*.xn--pthon-kva.org`` are still supported,
+      but ``x*.python.org`` no longer matches ``xn--tda.python.org``.
+
+   .. versionchanged:: 3.5
+      Matching of IP addresses, when present in the subjectAltName field
+      of the certificate, is now supported.
+
+   .. versionchanged:: 3.7
+      The function is no longer used to TLS connections. Hostname matching
+      is now performed by OpenSSL.
+
+      Allow wildcard when it is the leftmost and the only character
+      in that segment. Partial wildcards like ``www*.example.com`` are no
+      longer supported.
+
+   .. deprecated:: 3.7
 
 .. function:: cert_time_to_seconds(cert_time)
 
@@ -390,10 +433,10 @@ Certificate handling
    Given the address ``addr`` of an SSL-protected server, as a (*hostname*,
    *port-number*) pair, fetches the server's certificate, and returns it as a
    PEM-encoded string.  If ``ssl_version`` is specified, uses that version of
-   the SSL protocol to attempt to connect to the server.  If *ca_certs* is
+   the SSL protocol to attempt to connect to the server.  If ``ca_certs`` is
    specified, it should be a file containing a list of root certificates, the
-   same format as used for the *cafile* parameter in
-   :meth:`SSLContext.load_verify_locations`.  The call will attempt to validate the
+   same format as used for the same parameter in
+   :meth:`SSLContext.wrap_socket`.  The call will attempt to validate the
    server certificate against that set of root certificates, and will fail
    if the validation attempt fails.  A timeout can be specified with the
    ``timeout`` parameter.
@@ -408,12 +451,12 @@ Certificate handling
    .. versionchanged:: 3.10
       The *timeout* parameter was added.
 
-.. function:: DER_cert_to_PEM_cert(der_cert_bytes)
+.. function:: DER_cert_to_PEM_cert(DER_cert_bytes)
 
    Given a certificate as a DER-encoded blob of bytes, returns a PEM-encoded
    string version of the same certificate.
 
-.. function:: PEM_cert_to_DER_cert(pem_cert_string)
+.. function:: PEM_cert_to_DER_cert(PEM_cert_string)
 
    Given a certificate as an ASCII PEM string, returns a DER-encoded sequence of
    bytes for that same certificate.
@@ -472,6 +515,33 @@ Certificate handling
 
    .. versionadded:: 3.4
 
+.. function:: wrap_socket(sock, keyfile=None, certfile=None, \
+       server_side=False, cert_reqs=CERT_NONE, ssl_version=PROTOCOL_TLS, \
+       ca_certs=None, do_handshake_on_connect=True, \
+       suppress_ragged_eofs=True, ciphers=None)
+
+   Takes an instance ``sock`` of :class:`socket.socket`, and returns an instance
+   of :class:`ssl.SSLSocket`, a subtype of :class:`socket.socket`, which wraps
+   the underlying socket in an SSL context.  ``sock`` must be a
+   :data:`~socket.SOCK_STREAM` socket; other socket types are unsupported.
+
+   Internally, function creates a :class:`SSLContext` with protocol
+   *ssl_version* and :attr:`SSLContext.options` set to *cert_reqs*. If
+   parameters *keyfile*, *certfile*, *ca_certs* or *ciphers* are set, then
+   the values are passed to :meth:`SSLContext.load_cert_chain`,
+   :meth:`SSLContext.load_verify_locations`, and
+   :meth:`SSLContext.set_ciphers`.
+
+   The arguments *server_side*, *do_handshake_on_connect*, and
+   *suppress_ragged_eofs* have the same meaning as
+   :meth:`SSLContext.wrap_socket`.
+
+   .. deprecated:: 3.7
+
+      Since Python 3.2 and 2.7.9, it is recommended to use the
+      :meth:`SSLContext.wrap_socket` instead of :func:`wrap_socket`. The
+      top-level function is limited and creates an insecure client socket
+      without server name indication or hostname matching.
 
 Constants
 ^^^^^^^^^
@@ -482,8 +552,8 @@ Constants
 
 .. data:: CERT_NONE
 
-   Possible value for :attr:`SSLContext.verify_mode`.
-   Except for :const:`PROTOCOL_TLS_CLIENT`,
+   Possible value for :attr:`SSLContext.verify_mode`, or the ``cert_reqs``
+   parameter to :func:`wrap_socket`.  Except for :const:`PROTOCOL_TLS_CLIENT`,
    it is the default mode.  With client-side sockets, just about any
    cert is accepted.  Validation errors, such as untrusted or expired cert,
    are ignored and do not abort the TLS/SSL handshake.
@@ -495,8 +565,8 @@ Constants
 
 .. data:: CERT_OPTIONAL
 
-   Possible value for :attr:`SSLContext.verify_mode`.
-   In client mode, :const:`CERT_OPTIONAL`
+   Possible value for :attr:`SSLContext.verify_mode`, or the ``cert_reqs``
+   parameter to :func:`wrap_socket`.  In client mode, :const:`CERT_OPTIONAL`
    has the same meaning as :const:`CERT_REQUIRED`. It is recommended to
    use :const:`CERT_REQUIRED` for client-side sockets instead.
 
@@ -507,12 +577,13 @@ Constants
    the TLS handshake.
 
    Use of this setting requires a valid set of CA certificates to
-   be passed to :meth:`SSLContext.load_verify_locations`.
+   be passed, either to :meth:`SSLContext.load_verify_locations` or as a
+   value of the ``ca_certs`` parameter to :func:`wrap_socket`.
 
 .. data:: CERT_REQUIRED
 
-   Possible value for :attr:`SSLContext.verify_mode`.
-   In this mode, certificates are
+   Possible value for :attr:`SSLContext.verify_mode`, or the ``cert_reqs``
+   parameter to :func:`wrap_socket`.  In this mode, certificates are
    required from the other side of the socket connection; an :class:`SSLError`
    will be raised if no certificate is provided, or if its validation fails.
    This mode is **not** sufficient to verify a certificate in client mode as
@@ -526,7 +597,8 @@ Constants
    the client must provide a valid and trusted certificate.
 
    Use of this setting requires a valid set of CA certificates to
-   be passed to :meth:`SSLContext.load_verify_locations`.
+   be passed, either to :meth:`SSLContext.load_verify_locations` or as a
+   value of the ``ca_certs`` parameter to :func:`wrap_socket`.
 
 .. class:: VerifyMode
 
@@ -634,6 +706,21 @@ Constants
    .. deprecated:: 3.6
 
       Use :data:`PROTOCOL_TLS` instead.
+
+.. data:: PROTOCOL_SSLv2
+
+   Selects SSL version 2 as the channel encryption protocol.
+
+   This protocol is not available if OpenSSL is compiled with the
+   ``no-ssl2`` option.
+
+   .. warning::
+
+      SSL version 2 is insecure.  Its use is highly discouraged.
+
+   .. deprecated:: 3.6
+
+      OpenSSL has removed support for SSLv2.
 
 .. data:: PROTOCOL_SSLv3
 
@@ -783,7 +870,7 @@ Constants
 
 .. data:: OP_SINGLE_DH_USE
 
-   Prevents reuse of the same DH key for distinct SSL sessions.  This
+   Prevents re-use of the same DH key for distinct SSL sessions.  This
    improves forward secrecy but requires more computational resources.
    This option only applies to server sockets.
 
@@ -791,7 +878,7 @@ Constants
 
 .. data:: OP_SINGLE_ECDH_USE
 
-   Prevents reuse of the same ECDH key for distinct SSL sessions.  This
+   Prevents re-use of the same ECDH key for distinct SSL sessions.  This
    improves forward secrecy but requires more computational resources.
    This option only applies to server sockets.
 
@@ -830,29 +917,6 @@ Constants
    This option is only available with OpenSSL 3.0.0 and later.
 
    .. versionadded:: 3.10
-
-.. data:: OP_ENABLE_KTLS
-
-   Enable the use of the kernel TLS. To benefit from the feature, OpenSSL must
-   have been compiled with support for it, and the negotiated cipher suites and
-   extensions must be supported by it (a list of supported ones may vary by
-   platform and kernel version).
-
-   Note that with enabled kernel TLS some cryptographic operations are
-   performed by the kernel directly and not via any available OpenSSL
-   Providers. This might be undesirable if, for example, the application
-   requires all cryptographic operations to be performed by the FIPS provider.
-
-   This option is only available with OpenSSL 3.0.0 and later.
-
-   .. versionadded:: 3.12
-
-.. data:: OP_LEGACY_SERVER_CONNECT
-
-   Allow legacy insecure renegotiation between OpenSSL and unpatched servers
-   only.
-
-   .. versionadded:: 3.12
 
 .. data:: HAS_ALPN
 
@@ -929,18 +993,6 @@ Constants
    Whether the OpenSSL library has built-in support for the TLS 1.3 protocol.
 
    .. versionadded:: 3.7
-
-.. data:: HAS_PSK
-
-   Whether the OpenSSL library has built-in support for TLS-PSK.
-
-   .. versionadded:: 3.13
-
-.. data:: HAS_PHA
-
-   Whether the OpenSSL library has built-in support for TLS-PHA.
-
-   .. versionadded:: 3.14
 
 .. data:: CHANNEL_BINDING_TYPES
 
@@ -1057,25 +1109,25 @@ SSL Sockets
 
    SSL sockets provide the following methods of :ref:`socket-objects`:
 
-   - :meth:`~socket.socket.accept`
-   - :meth:`~socket.socket.bind`
-   - :meth:`~socket.socket.close`
-   - :meth:`~socket.socket.connect`
-   - :meth:`~socket.socket.detach`
-   - :meth:`~socket.socket.fileno`
-   - :meth:`~socket.socket.getpeername`, :meth:`~socket.socket.getsockname`
-   - :meth:`~socket.socket.getsockopt`, :meth:`~socket.socket.setsockopt`
-   - :meth:`~socket.socket.gettimeout`, :meth:`~socket.socket.settimeout`,
-     :meth:`~socket.socket.setblocking`
-   - :meth:`~socket.socket.listen`
-   - :meth:`~socket.socket.makefile`
-   - :meth:`~socket.socket.recv`, :meth:`~socket.socket.recv_into`
+   - :meth:`~socket.socket.accept()`
+   - :meth:`~socket.socket.bind()`
+   - :meth:`~socket.socket.close()`
+   - :meth:`~socket.socket.connect()`
+   - :meth:`~socket.socket.detach()`
+   - :meth:`~socket.socket.fileno()`
+   - :meth:`~socket.socket.getpeername()`, :meth:`~socket.socket.getsockname()`
+   - :meth:`~socket.socket.getsockopt()`, :meth:`~socket.socket.setsockopt()`
+   - :meth:`~socket.socket.gettimeout()`, :meth:`~socket.socket.settimeout()`,
+     :meth:`~socket.socket.setblocking()`
+   - :meth:`~socket.socket.listen()`
+   - :meth:`~socket.socket.makefile()`
+   - :meth:`~socket.socket.recv()`, :meth:`~socket.socket.recv_into()`
      (but passing a non-zero ``flags`` argument is not allowed)
-   - :meth:`~socket.socket.send`, :meth:`~socket.socket.sendall` (with
+   - :meth:`~socket.socket.send()`, :meth:`~socket.socket.sendall()` (with
      the same limitation)
-   - :meth:`~socket.socket.sendfile` (but :mod:`os.sendfile` will be used
-     for plain-text sockets only, else :meth:`~socket.socket.send` will be used)
-   - :meth:`~socket.socket.shutdown`
+   - :meth:`~socket.socket.sendfile()` (but :mod:`os.sendfile` will be used
+     for plain-text sockets only, else :meth:`~socket.socket.send()` will be used)
+   - :meth:`~socket.socket.shutdown()`
 
    However, since the SSL (and TLS) protocol has its own framing atop
    of TCP, the SSL sockets abstraction can, in certain respects, diverge from
@@ -1130,10 +1182,10 @@ SSL sockets also have the following additional methods and attributes:
    .. deprecated:: 3.6
       Use :meth:`~SSLSocket.recv` instead of :meth:`~SSLSocket.read`.
 
-.. method:: SSLSocket.write(data)
+.. method:: SSLSocket.write(buf)
 
-   Write *data* to the SSL socket and return the number of bytes written. The
-   *data* argument must be an object supporting the buffer interface.
+   Write *buf* to the SSL socket and return the number of bytes written. The
+   *buf* argument must be an object supporting the buffer interface.
 
    Raise :exc:`SSLWantReadError` or :exc:`SSLWantWriteError` if the socket is
    :ref:`non-blocking <ssl-nonblocking>` and the write would block.
@@ -1143,7 +1195,7 @@ SSL sockets also have the following additional methods and attributes:
 
    .. versionchanged:: 3.5
       The socket timeout is no longer reset each time bytes are received or sent.
-      The socket timeout is now the maximum total duration to write *data*.
+      The socket timeout is now the maximum total duration to write *buf*.
 
    .. deprecated:: 3.6
       Use :meth:`~SSLSocket.send` instead of :meth:`~SSLSocket.write`.
@@ -1160,15 +1212,12 @@ SSL sockets also have the following additional methods and attributes:
    :meth:`~socket.socket.recv` and :meth:`~socket.socket.send` instead of these
    methods.
 
-.. method:: SSLSocket.do_handshake(block=False)
+.. method:: SSLSocket.do_handshake()
 
    Perform the SSL setup handshake.
 
-   If *block* is true and the timeout obtained by :meth:`~socket.socket.gettimeout`
-   is zero, the socket is set in blocking mode until the handshake is performed.
-
    .. versionchanged:: 3.4
-      The handshake method also performs :func:`!match_hostname` when the
+      The handshake method also performs :func:`match_hostname` when the
       :attr:`~SSLContext.check_hostname` attribute of the socket's
       :attr:`~SSLSocket.context` is true.
 
@@ -1178,7 +1227,7 @@ SSL sockets also have the following additional methods and attributes:
 
    .. versionchanged:: 3.7
       Hostname or IP address is matched by OpenSSL during handshake. The
-      function :func:`!match_hostname` is no longer used. In case OpenSSL
+      function :func:`match_hostname` is no longer used. In case OpenSSL
       refuses a hostname or IP address, the handshake is aborted early and
       a TLS alert message is sent to the peer.
 
@@ -1221,6 +1270,11 @@ SSL sockets also have the following additional methods and attributes:
        'subjectAltName': (('DNS', '*.eff.org'), ('DNS', 'eff.org')),
        'version': 3}
 
+   .. note::
+
+      To validate a certificate for a particular service, you can use the
+      :func:`match_hostname` function.
+
    If the ``binary_form`` parameter is :const:`True`, and a certificate was
    provided, this method returns the DER-encoded form of the entire certificate
    as a sequence of bytes, or :const:`None` if the peer did not provide a
@@ -1235,8 +1289,6 @@ SSL sockets also have the following additional methods and attributes:
      :const:`None` if you used :const:`CERT_NONE` (rather than
      :const:`CERT_OPTIONAL` or :const:`CERT_REQUIRED`).
 
-   See also :attr:`SSLContext.check_hostname`.
-
    .. versionchanged:: 3.2
       The returned dictionary includes additional items such as ``issuer``
       and ``notBefore``.
@@ -1248,22 +1300,6 @@ SSL sockets also have the following additional methods and attributes:
 
    .. versionchanged:: 3.9
       IPv6 address strings no longer have a trailing new line.
-
-.. method:: SSLSocket.get_verified_chain()
-
-   Returns verified certificate chain provided by the other
-   end of the SSL channel as a list of DER-encoded bytes.
-   If certificate verification was disabled method acts the same as
-   :meth:`~SSLSocket.get_unverified_chain`.
-
-   .. versionadded:: 3.13
-
-.. method:: SSLSocket.get_unverified_chain()
-
-   Returns raw certificate chain provided by the other
-   end of the SSL channel as a list of DER-encoded bytes.
-
-   .. versionadded:: 3.13
 
 .. method:: SSLSocket.cipher()
 
@@ -1373,7 +1409,10 @@ SSL sockets also have the following additional methods and attributes:
 
 .. attribute:: SSLSocket.context
 
-   The :class:`SSLContext` object this SSL socket is tied to.
+   The :class:`SSLContext` object this SSL socket is tied to.  If the SSL
+   socket was created using the deprecated :func:`wrap_socket` function
+   (rather than :meth:`SSLContext.wrap_socket`), this is a custom context
+   object created for this SSL socket.
 
    .. versionadded:: 3.2
 
@@ -1464,10 +1503,11 @@ to speed up repeated connections from the same clients.
       The context is created with secure default values. The options
       :data:`OP_NO_COMPRESSION`, :data:`OP_CIPHER_SERVER_PREFERENCE`,
       :data:`OP_SINGLE_DH_USE`, :data:`OP_SINGLE_ECDH_USE`,
-      :data:`OP_NO_SSLv2`,
+      :data:`OP_NO_SSLv2` (except for :data:`PROTOCOL_SSLv2`),
       and :data:`OP_NO_SSLv3` (except for :data:`PROTOCOL_SSLv3`) are
       set by default. The initial cipher suite list contains only ``HIGH``
-      ciphers, no ``NULL`` ciphers and no ``MD5`` ciphers.
+      ciphers, no ``NULL`` ciphers and no ``MD5`` ciphers (except for
+      :data:`PROTOCOL_SSLv2`).
 
    .. deprecated:: 3.10
 
@@ -1483,19 +1523,6 @@ to speed up repeated connections from the same clients.
       :data:`PROTOCOL_TLS`, :data:`PROTOCOL_TLS_CLIENT`, and
       :data:`PROTOCOL_TLS_SERVER` use TLS 1.2 as minimum TLS version.
 
-   .. note::
-
-      :class:`SSLContext` only supports limited mutation once it has been used
-      by a connection. Adding new certificates to the internal trust store is
-      allowed, but changing ciphers, verification settings, or mTLS
-      certificates may result in surprising behavior.
-
-   .. note::
-
-      :class:`SSLContext` is designed to be shared and used by multiple
-      connections.
-      Thus, it is thread-safe as long as it is not reconfigured after being
-      used by a connection.
 
 :class:`SSLContext` objects have the following methods and attributes:
 
@@ -1577,7 +1604,7 @@ to speed up repeated connections from the same clients.
    The *capath* string, if present, is
    the path to a directory containing several CA certificates in PEM format,
    following an `OpenSSL specific layout
-   <https://docs.openssl.org/master/man3/SSL_CTX_load_verify_locations/>`_.
+   <https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html>`_.
 
    The *cadata* object, if present, is either an ASCII string of one or more
    PEM-encoded certificates or a :term:`bytes-like object` of DER-encoded
@@ -1648,11 +1675,11 @@ to speed up repeated connections from the same clients.
    provided as part of the operating system, though, it is likely to be
    configured properly.
 
-.. method:: SSLContext.set_ciphers(ciphers, /)
+.. method:: SSLContext.set_ciphers(ciphers)
 
    Set the available ciphers for sockets created with this context.
    It should be a string in the `OpenSSL cipher list format
-   <https://docs.openssl.org/master/man1/ciphers/>`_.
+   <https://www.openssl.org/docs/manmaster/man1/ciphers.html>`_.
    If no cipher can be selected (because compile-time options or other
    configuration forbids use of all the specified ciphers), an
    :class:`SSLError` will be raised.
@@ -1664,7 +1691,7 @@ to speed up repeated connections from the same clients.
       TLS 1.3 cipher suites cannot be disabled with
       :meth:`~SSLContext.set_ciphers`.
 
-.. method:: SSLContext.set_alpn_protocols(alpn_protocols)
+.. method:: SSLContext.set_alpn_protocols(protocols)
 
    Specify which protocols the socket should advertise during the SSL/TLS
    handshake. It should be a list of ASCII strings, like ``['http/1.1',
@@ -1678,7 +1705,7 @@ to speed up repeated connections from the same clients.
 
    .. versionadded:: 3.5
 
-.. method:: SSLContext.set_npn_protocols(npn_protocols)
+.. method:: SSLContext.set_npn_protocols(protocols)
 
    Specify which protocols the socket should advertise during the SSL/TLS
    handshake. It should be a list of strings, like ``['http/1.1', 'spdy/2']``,
@@ -1724,9 +1751,8 @@ to speed up repeated connections from the same clients.
    Due to the early negotiation phase of the TLS connection, only limited
    methods and attributes are usable like
    :meth:`SSLSocket.selected_alpn_protocol` and :attr:`SSLSocket.context`.
-   The :meth:`SSLSocket.getpeercert`, :meth:`SSLSocket.get_verified_chain`,
-   :meth:`SSLSocket.get_unverified_chain` :meth:`SSLSocket.cipher`
-   and :meth:`SSLSocket.compression` methods require that
+   The :meth:`SSLSocket.getpeercert`,
+   :meth:`SSLSocket.cipher` and :meth:`SSLSocket.compression` methods require that
    the TLS connection has progressed beyond the TLS Client Hello and therefore
    will not return meaningful values nor can they be called safely.
 
@@ -1745,7 +1771,7 @@ to speed up repeated connections from the same clients.
 
    .. versionadded:: 3.7
 
-.. method:: SSLContext.set_servername_callback(server_name_callback)
+.. attribute:: SSLContext.set_servername_callback(server_name_callback)
 
    This is a legacy API retained for backwards compatibility. When possible,
    you should use :attr:`sni_callback` instead. The given *server_name_callback*
@@ -1753,13 +1779,13 @@ to speed up repeated connections from the same clients.
    IDN-encoded internationalized domain name, the *server_name_callback*
    receives a decoded U-label (``"pythön.org"``).
 
-   If there is a decoding error on the server name, the TLS connection will
+   If there is an decoding error on the server name, the TLS connection will
    terminate with an :const:`ALERT_DESCRIPTION_INTERNAL_ERROR` fatal TLS
    alert message to the client.
 
    .. versionadded:: 3.4
 
-.. method:: SSLContext.load_dh_params(dhfile, /)
+.. method:: SSLContext.load_dh_params(dhfile)
 
    Load the key generation parameters for Diffie-Hellman (DH) key exchange.
    Using DH key exchange improves forward secrecy at the expense of
@@ -1772,7 +1798,7 @@ to speed up repeated connections from the same clients.
 
    .. versionadded:: 3.3
 
-.. method:: SSLContext.set_ecdh_curve(curve_name, /)
+.. method:: SSLContext.set_ecdh_curve(curve_name)
 
    Set the curve name for Elliptic Curve-based Diffie-Hellman (ECDH) key
    exchange.  ECDH is significantly faster than regular DH while arguably
@@ -1844,16 +1870,15 @@ to speed up repeated connections from the same clients.
    .. versionchanged:: 3.6
       *session* argument was added.
 
-   .. versionchanged:: 3.7
+    .. versionchanged:: 3.7
       The method returns an instance of :attr:`SSLContext.sslsocket_class`
       instead of hard-coded :class:`SSLSocket`.
 
 .. attribute:: SSLContext.sslsocket_class
 
    The return type of :meth:`SSLContext.wrap_socket`, defaults to
-   :class:`SSLSocket`. The attribute can be assigned to on instances of
-   :class:`SSLContext` in order to return a custom subclass of
-   :class:`SSLSocket`.
+   :class:`SSLSocket`. The attribute can be overridden on instance of class
+   in order to return a custom subclass of :class:`SSLSocket`.
 
    .. versionadded:: 3.7
 
@@ -1886,7 +1911,7 @@ to speed up repeated connections from the same clients.
 .. method:: SSLContext.session_stats()
 
    Get statistics about the SSL sessions created or managed by this context.
-   A dictionary is returned which maps the names of each `piece of information <https://docs.openssl.org/1.1.1/man3/SSL_CTX_sess_number/>`_ to their
+   A dictionary is returned which maps the names of each `piece of information <https://www.openssl.org/docs/man1.1.1/man3/SSL_CTX_sess_number.html>`_ to their
    numeric values.  For example, here is the total number of hits and misses
    in the session cache since the context was created::
 
@@ -1943,8 +1968,8 @@ to speed up repeated connections from the same clients.
 
    A :class:`TLSVersion` enum member representing the highest supported
    TLS version. The value defaults to :attr:`TLSVersion.MAXIMUM_SUPPORTED`.
-   The attribute is read-only for protocols other than :const:`PROTOCOL_TLS`,
-   :const:`PROTOCOL_TLS_CLIENT`, and :const:`PROTOCOL_TLS_SERVER`.
+   The attribute is read-only for protocols other than :attr:`PROTOCOL_TLS`,
+   :attr:`PROTOCOL_TLS_CLIENT`, and :attr:`PROTOCOL_TLS_SERVER`.
 
    The attributes :attr:`~SSLContext.maximum_version`,
    :attr:`~SSLContext.minimum_version` and
@@ -1967,7 +1992,7 @@ to speed up repeated connections from the same clients.
 .. attribute:: SSLContext.num_tickets
 
    Control the number of TLS 1.3 session tickets of a
-   :const:`PROTOCOL_TLS_SERVER` context. The setting has no impact on TLS
+   :attr:`PROTOCOL_TLS_SERVER` context. The setting has no impact on TLS
    1.0 to 1.2 connections.
 
    .. versionadded:: 3.8
@@ -2029,7 +2054,7 @@ to speed up repeated connections from the same clients.
 .. attribute:: SSLContext.security_level
 
    An integer representing the `security level
-   <https://docs.openssl.org/master/man3/SSL_CTX_get_security_level/>`_
+   <https://www.openssl.org/docs/manmaster/man3/SSL_CTX_get_security_level.html>`_
    for the context. This attribute is read-only.
 
    .. versionadded:: 3.10
@@ -2059,100 +2084,6 @@ to speed up repeated connections from the same clients.
 
          >>> ssl.create_default_context().verify_mode  # doctest: +SKIP
          <VerifyMode.CERT_REQUIRED: 2>
-
-.. method:: SSLContext.set_psk_client_callback(callback)
-
-   Enables TLS-PSK (pre-shared key) authentication on a client-side connection.
-
-   In general, certificate based authentication should be preferred over this method.
-
-   The parameter ``callback`` is a callable object with the signature:
-   ``def callback(hint: str | None) -> tuple[str | None, bytes]``.
-   The ``hint`` parameter is an optional identity hint sent by the server.
-   The return value is a tuple in the form (client-identity, psk).
-   Client-identity is an optional string which may be used by the server to
-   select a corresponding PSK for the client. The string must be less than or
-   equal to ``256`` octets when UTF-8 encoded. PSK is a
-   :term:`bytes-like object` representing the pre-shared key. Return a zero
-   length PSK to reject the connection.
-
-   Setting ``callback`` to :const:`None` removes any existing callback.
-
-   .. note::
-      When using TLS 1.3:
-
-      - the ``hint`` parameter is always :const:`None`.
-      - client-identity must be a non-empty string.
-
-   Example usage::
-
-      context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-      context.check_hostname = False
-      context.verify_mode = ssl.CERT_NONE
-      context.maximum_version = ssl.TLSVersion.TLSv1_2
-      context.set_ciphers('PSK')
-
-      # A simple lambda:
-      psk = bytes.fromhex('c0ffee')
-      context.set_psk_client_callback(lambda hint: (None, psk))
-
-      # A table using the hint from the server:
-      psk_table = { 'ServerId_1': bytes.fromhex('c0ffee'),
-                    'ServerId_2': bytes.fromhex('facade')
-      }
-      def callback(hint):
-          return 'ClientId_1', psk_table.get(hint, b'')
-      context.set_psk_client_callback(callback)
-
-   This method will raise :exc:`NotImplementedError` if :data:`HAS_PSK` is
-   ``False``.
-
-   .. versionadded:: 3.13
-
-.. method:: SSLContext.set_psk_server_callback(callback, identity_hint=None)
-
-   Enables TLS-PSK (pre-shared key) authentication on a server-side connection.
-
-   In general, certificate based authentication should be preferred over this method.
-
-   The parameter ``callback`` is a callable object with the signature:
-   ``def callback(identity: str | None) -> bytes``.
-   The ``identity`` parameter is an optional identity sent by the client which can
-   be used to select a corresponding PSK.
-   The return value is a :term:`bytes-like object` representing the pre-shared key.
-   Return a zero length PSK to reject the connection.
-
-   Setting ``callback`` to :const:`None` removes any existing callback.
-
-   The parameter ``identity_hint`` is an optional identity hint string sent to
-   the client. The string must be less than or equal to ``256`` octets when
-   UTF-8 encoded.
-
-   .. note::
-      When using TLS 1.3 the ``identity_hint`` parameter is not sent to the client.
-
-   Example usage::
-
-      context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-      context.maximum_version = ssl.TLSVersion.TLSv1_2
-      context.set_ciphers('PSK')
-
-      # A simple lambda:
-      psk = bytes.fromhex('c0ffee')
-      context.set_psk_server_callback(lambda identity: psk)
-
-      # A table using the identity of the client:
-      psk_table = { 'ClientId_1': bytes.fromhex('c0ffee'),
-                    'ClientId_2': bytes.fromhex('facade')
-      }
-      def callback(identity):
-          return psk_table.get(identity, b'')
-      context.set_psk_server_callback(callback, 'ServerId_1')
-
-   This method will raise :exc:`NotImplementedError` if :data:`HAS_PSK` is
-   ``False``.
-
-   .. versionadded:: 3.13
 
 .. index:: single: certificates
 
@@ -2241,7 +2172,7 @@ Combined key and certificate
 
 Often the private key is stored in the same file as the certificate; in this
 case, only the ``certfile`` parameter to :meth:`SSLContext.load_cert_chain`
-needs to be passed.  If the private key is stored
+and :func:`wrap_socket` needs to be passed.  If the private key is stored
 with the certificate, it should come before the first certificate in
 the certificate chain::
 
@@ -2520,8 +2451,8 @@ thus several things you need to be aware of:
 .. seealso::
 
    The :mod:`asyncio` module supports :ref:`non-blocking SSL sockets
-   <ssl-nonblocking>` and provides a higher level :ref:`Streams API <asyncio-streams>`.
-   It polls for events using the :mod:`selectors` module and
+   <ssl-nonblocking>` and provides a
+   higher level API. It polls for events using the :mod:`selectors` module and
    handles :exc:`SSLWantWriteError`, :exc:`SSLWantReadError` and
    :exc:`BlockingIOError` exceptions. It runs the SSL handshake asynchronously
    as well.
@@ -2581,8 +2512,6 @@ provided.
    - :meth:`~SSLSocket.read`
    - :meth:`~SSLSocket.write`
    - :meth:`~SSLSocket.getpeercert`
-   - :meth:`~SSLSocket.get_verified_chain`
-   - :meth:`~SSLSocket.get_unverified_chain`
    - :meth:`~SSLSocket.selected_alpn_protocol`
    - :meth:`~SSLSocket.selected_npn_protocol`
    - :meth:`~SSLSocket.cipher`
@@ -2622,8 +2551,12 @@ provided.
      :exc:`SSLWantReadError` if it needs more data than the incoming BIO has
      available.
 
+   - There is no module-level ``wrap_bio()`` call like there is for
+     :meth:`~SSLContext.wrap_socket`. An :class:`SSLObject` is always created
+     via an :class:`SSLContext`.
+
    .. versionchanged:: 3.7
-      :class:`SSLObject` instances must be created with
+      :class:`SSLObject` instances must to created with
       :meth:`~SSLContext.wrap_bio`. In earlier versions, it was possible to
       create instances directly. This was never documented or officially
       supported.
@@ -2646,12 +2579,12 @@ purpose.  It wraps an OpenSSL memory BIO (Basic IO) object:
       A boolean indicating whether the memory BIO is current at the end-of-file
       position.
 
-   .. method:: MemoryBIO.read(n=-1, /)
+   .. method:: MemoryBIO.read(n=-1)
 
       Read up to *n* bytes from the memory buffer. If *n* is not specified or
       negative, all bytes are returned.
 
-   .. method:: MemoryBIO.write(buf, /)
+   .. method:: MemoryBIO.write(buf)
 
       Write the bytes from *buf* to the memory BIO. The *buf* argument must be an
       object supporting the buffer protocol.
@@ -2722,19 +2655,20 @@ Verifying certificates
 
 When calling the :class:`SSLContext` constructor directly,
 :const:`CERT_NONE` is the default.  Since it does not authenticate the other
-peer, it can be insecure, especially in client mode where most of the time you
+peer, it can be insecure, especially in client mode where most of time you
 would like to ensure the authenticity of the server you're talking to.
 Therefore, when in client mode, it is highly recommended to use
 :const:`CERT_REQUIRED`.  However, it is in itself not sufficient; you also
 have to check that the server certificate, which can be obtained by calling
 :meth:`SSLSocket.getpeercert`, matches the desired service.  For many
-protocols and applications, the service can be identified by the hostname.
-This common check is automatically performed when
-:attr:`SSLContext.check_hostname` is enabled.
+protocols and applications, the service can be identified by the hostname;
+in this case, the :func:`match_hostname` function can be used.  This common
+check is automatically performed when :attr:`SSLContext.check_hostname` is
+enabled.
 
 .. versionchanged:: 3.7
    Hostname matchings is now performed by OpenSSL. Python no longer uses
-   :func:`!match_hostname`.
+   :func:`match_hostname`.
 
 In server mode, if you want to authenticate your clients using the SSL layer
 (rather than using a higher-level authentication mechanism), you'll also have
@@ -2771,7 +2705,7 @@ enabled when negotiating a SSL session is possible through the
 :meth:`SSLContext.set_ciphers` method.  Starting from Python 3.2.3, the
 ssl module disables certain weak ciphers by default, but you may want
 to further restrict the cipher choice. Be sure to read OpenSSL's documentation
-about the `cipher list format <https://docs.openssl.org/1.1.1/man1/ciphers/#cipher-list-format>`_.
+about the `cipher list format <https://www.openssl.org/docs/man1.1.1/man1/ciphers.html#CIPHER-LIST-FORMAT>`_.
 If you want to check which ciphers are enabled by a given cipher list, use
 :meth:`SSLContext.get_ciphers` or the ``openssl ciphers`` command on your
 system.
@@ -2784,8 +2718,8 @@ for example the :mod:`multiprocessing` or :mod:`concurrent.futures` modules),
 be aware that OpenSSL's internal random number generator does not properly
 handle forked processes.  Applications must change the PRNG state of the
 parent process if they use any SSL feature with :func:`os.fork`.  Any
-successful call of :func:`~ssl.RAND_add` or :func:`~ssl.RAND_bytes` is
-sufficient.
+successful call of :func:`~ssl.RAND_add`, :func:`~ssl.RAND_bytes` or
+:func:`~ssl.RAND_pseudo_bytes` is sufficient.
 
 
 .. _ssl-tlsv1_3:
@@ -2825,16 +2759,16 @@ of TLS/SSL. Some new TLS 1.3 features are not yet available.
        Steve Kent
 
    :rfc:`RFC 4086: Randomness Requirements for Security <4086>`
-       Donald E. Eastlake, Jeffrey I. Schiller, Steve Crocker
+       Donald E., Jeffrey I. Schiller
 
    :rfc:`RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile <5280>`
-       David Cooper et al.
+       D. Cooper
 
    :rfc:`RFC 5246: The Transport Layer Security (TLS) Protocol Version 1.2 <5246>`
-       Tim Dierks and Eric Rescorla.
+       T. Dierks et. al.
 
    :rfc:`RFC 6066: Transport Layer Security (TLS) Extensions <6066>`
-       Donald E. Eastlake
+       D. Eastlake
 
    `IANA TLS: Transport Layer Security (TLS) Parameters <https://www.iana.org/assignments/tls-parameters/tls-parameters.xml>`_
        IANA

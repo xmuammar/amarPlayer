@@ -1,5 +1,5 @@
-:mod:`!dbm` --- Interfaces to Unix "databases"
-==============================================
+:mod:`dbm` --- Interfaces to Unix "databases"
+=============================================
 
 .. module:: dbm
    :synopsis: Interfaces to various Unix "database" formats.
@@ -8,16 +8,12 @@
 
 --------------
 
-:mod:`dbm` is a generic interface to variants of the DBM database:
-
-* :mod:`dbm.sqlite3`
-* :mod:`dbm.gnu`
-* :mod:`dbm.ndbm`
-
-If none of these modules are installed, the
+:mod:`dbm` is a generic interface to variants of the DBM database ---
+:mod:`dbm.gnu` or :mod:`dbm.ndbm`.  If none of these modules is installed, the
 slow-but-simple implementation in module :mod:`dbm.dumb` will be used.  There
 is a `third party interface <https://www.jcea.es/programacion/pybsddb.htm>`_ to
 the Oracle Berkeley DB.
+
 
 .. exception:: error
 
@@ -29,8 +25,8 @@ the Oracle Berkeley DB.
 .. function:: whichdb(filename)
 
    This function attempts to guess which of the several simple database modules
-   available --- :mod:`dbm.sqlite3`, :mod:`dbm.gnu`, :mod:`dbm.ndbm`,
-   or :mod:`dbm.dumb` --- should be used to open a given file.
+   available --- :mod:`dbm.gnu`, :mod:`dbm.ndbm` or :mod:`dbm.dumb` --- should
+   be used to open a given file.
 
    Return one of the following values:
 
@@ -84,13 +80,10 @@ the Oracle Berkeley DB.
    .. versionchanged:: 3.11
       *file* accepts a :term:`path-like object`.
 
-The object returned by :func:`~dbm.open` supports the basic
-functionality of mutable :term:`mappings <mapping>`;
-keys and their corresponding values can be stored, retrieved, and
-deleted, and iteration, the :keyword:`in` operator and methods :meth:`!keys`,
-:meth:`!get`, :meth:`!setdefault` and :meth:`!clear` are available.
-The :meth:`!keys` method returns a list instead of a view object.
-The :meth:`!setdefault` method requires two arguments.
+The object returned by :func:`~dbm.open` supports the same basic functionality as a
+:class:`dict`; keys and their corresponding values can be stored, retrieved, and
+deleted, and the :keyword:`in` operator and the :meth:`!keys` method are
+available, as well as :meth:`!get` and :meth:`!setdefault` methods.
 
 Key and values are always stored as :class:`bytes`. This means that when
 strings are used they are implicitly converted to the default encoding before
@@ -110,10 +103,6 @@ will automatically close them when done.
 .. versionchanged:: 3.8
    Deleting a key from a read-only database raises a database module specific exception
    instead of :exc:`KeyError`.
-
-.. versionchanged:: 3.13
-   :meth:`!clear` methods are now available for all :mod:`dbm` backends.
-
 
 The following example records some hostnames and a corresponding title,  and
 then prints out the contents of the database::
@@ -151,56 +140,6 @@ then prints out the contents of the database::
 
 The individual submodules are described in the following sections.
 
-:mod:`dbm.sqlite3` --- SQLite backend for dbm
----------------------------------------------
-
-.. module:: dbm.sqlite3
-   :platform: All
-   :synopsis: SQLite backend for dbm
-
-.. versionadded:: 3.13
-
-**Source code:** :source:`Lib/dbm/sqlite3.py`
-
---------------
-
-This module uses the standard library :mod:`sqlite3` module to provide an
-SQLite backend for the :mod:`dbm` module.
-The files created by :mod:`dbm.sqlite3` can thus be opened by :mod:`sqlite3`,
-or any other SQLite browser, including the SQLite CLI.
-
-.. include:: ../includes/wasm-notavail.rst
-
-.. function:: open(filename, /, flag="r", mode=0o666)
-
-   Open an SQLite database.
-
-   :param filename:
-      The path to the database to be opened.
-   :type filename: :term:`path-like object`
-
-   :param str flag:
-
-      * ``'r'`` (default): |flag_r|
-      * ``'w'``: |flag_w|
-      * ``'c'``: |flag_c|
-      * ``'n'``: |flag_n|
-
-   :param mode:
-      The Unix file access mode of the file (default: octal ``0o666``),
-      used only when the database has to be created.
-
-   The returned database object behaves similar to a mutable :term:`mapping`,
-   but the :meth:`!keys` method returns a list, and
-   the :meth:`!setdefault` method requires two arguments.
-   It also supports a "closing" context manager via the :keyword:`with` keyword.
-
-   The following method is also provided:
-
-   .. method:: sqlite3.close()
-
-      Close the SQLite database.
-
 
 :mod:`dbm.gnu` --- GNU database manager
 ---------------------------------------
@@ -222,17 +161,10 @@ functionality like crash tolerance.
    The file formats created by :mod:`dbm.gnu` and :mod:`dbm.ndbm` are incompatible
    and can not be used interchangeably.
 
-.. include:: ../includes/wasm-mobile-notavail.rst
-
 .. exception:: error
 
    Raised on :mod:`dbm.gnu`-specific errors, such as I/O errors. :exc:`KeyError` is
    raised for general mapping errors like specifying an incorrect key.
-
-
-.. data:: open_flags
-
-   A string of characters the *flag* parameter of :meth:`~dbm.gnu.open` supports.
 
 
 .. function:: open(filename, flag="r", mode=0o666, /)
@@ -270,24 +202,13 @@ functionality like crash tolerance.
    .. versionchanged:: 3.11
       *filename* accepts a :term:`path-like object`.
 
-   :class:`!gdbm` objects behave similar to mutable :term:`mappings <mapping>`,
-   but methods :meth:`!items`, :meth:`!values`, :meth:`!pop`, :meth:`!popitem`,
-   and :meth:`!update` are not supported,
-   the :meth:`!keys` method returns a list, and
-   the :meth:`!setdefault` method requires two arguments.
-   It also supports a "closing" context manager via the :keyword:`with` keyword.
+   .. data:: open_flags
 
-   .. versionchanged:: 3.2
-      Added the :meth:`!get` and :meth:`!setdefault` methods.
+      A string of characters the *flag* parameter of :meth:`~dbm.gnu.open` supports.
 
-   .. versionchanged:: 3.13
-      Added the :meth:`!clear` method.
-
+   :class:`!gdbm` objects behave similar to :term:`mappings <mapping>`,
+   but :meth:`!items` and :meth:`!values` methods are not supported.
    The following methods are also provided:
-
-   .. method:: gdbm.close()
-
-      Close the GDBM database.
 
    .. method:: gdbm.firstkey()
 
@@ -320,6 +241,10 @@ functionality like crash tolerance.
       When the database has been opened in fast mode, this method forces any
       unwritten data to be written to the disk.
 
+   .. method:: gdbm.close()
+
+      Close the GDBM database.
+
 
 :mod:`dbm.ndbm` --- New Database Manager
 ----------------------------------------
@@ -348,8 +273,6 @@ This module can be used with the "classic" NDBM interface or the
    size of values, which can result in corrupted database files
    when storing values larger than this limit. Reading such corrupted files can
    result in a hard crash (segmentation fault).
-
-.. include:: ../includes/wasm-mobile-notavail.rst
 
 .. exception:: error
 
@@ -380,23 +303,12 @@ This module can be used with the "classic" NDBM interface or the
    :param int mode:
       |mode_param_doc|
 
+   :class:`!ndbm` objects behave similar to :term:`mappings <mapping>`,
+   but :meth:`!items` and :meth:`!values` methods are not supported.
+   The following methods are also provided:
+
    .. versionchanged:: 3.11
       Accepts :term:`path-like object` for filename.
-
-   :class:`!ndbm` objects behave similar to mutable :term:`mappings <mapping>`,
-   but methods :meth:`!items`, :meth:`!values`, :meth:`!pop`, :meth:`!popitem`,
-   and :meth:`!update` are not supported,
-   the :meth:`!keys` method returns a list, and
-   the :meth:`!setdefault` method requires two arguments.
-   It also supports a "closing" context manager via the :keyword:`with` keyword.
-
-   .. versionchanged:: 3.2
-      Added the :meth:`!get` and :meth:`!setdefault` methods.
-
-   .. versionchanged:: 3.13
-      Added the :meth:`!clear` method.
-
-   The following method is also provided:
 
    .. method:: ndbm.close()
 
@@ -438,6 +350,9 @@ The :mod:`!dbm.dumb` module defines the following:
 .. function:: open(filename, flag="c", mode=0o666)
 
    Open a :mod:`!dbm.dumb` database.
+   The returned database object behaves similar to a :term:`mapping`,
+   in addition to providing :meth:`~dumbdbm.sync` and :meth:`~dumbdbm.close`
+   methods.
 
    :param filename:
       The basename of the database file (without extensions).
@@ -471,18 +386,16 @@ The :mod:`!dbm.dumb` module defines the following:
    .. versionchanged:: 3.11
       *filename* accepts a :term:`path-like object`.
 
-   The returned database object behaves similar to a mutable :term:`mapping`,
-   but the :meth:`!keys` and :meth:`!items` methods return lists, and
-   the :meth:`!setdefault` method requires two arguments.
-   It also supports a "closing" context manager via the :keyword:`with` keyword.
+   In addition to the methods provided by the
+   :class:`collections.abc.MutableMapping` class,
+   the following methods are provided:
 
-   The following methods are also provided:
+   .. method:: dumbdbm.sync()
+
+      Synchronize the on-disk directory and data files.  This method is called
+      by the :meth:`Shelve.sync` method.
 
    .. method:: dumbdbm.close()
 
       Close the database.
 
-   .. method:: dumbdbm.sync()
-
-      Synchronize the on-disk directory and data files.  This method is called
-      by the :meth:`shelve.Shelf.sync` method.

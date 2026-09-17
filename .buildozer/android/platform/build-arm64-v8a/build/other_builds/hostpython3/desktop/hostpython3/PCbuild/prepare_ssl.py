@@ -70,8 +70,7 @@ def copy_includes(makefile, suffix):
     try:
         os.makedirs(dir)
     except OSError:
-        if not os.path.isdir(dir):
-            raise
+        pass
     copy_if_different = r'$(PERL) $(SRC_D)\util\copy-if-different.pl'
     with open(makefile) as fin:
         for line in fin:

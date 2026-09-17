@@ -1,5 +1,5 @@
-:mod:`!select` --- Waiting for I/O completion
-=============================================
+:mod:`select` --- Waiting for I/O completion
+============================================
 
 .. module:: select
    :synopsis: Wait for I/O completion on multiple streams.
@@ -115,7 +115,7 @@ The module defines the following:
    :ref:`kevent-objects` below for the methods supported by kevent objects.
 
 
-.. function:: select(rlist, wlist, xlist, timeout=None)
+.. function:: select(rlist, wlist, xlist[, timeout])
 
    This is a straightforward interface to the Unix :c:func:`!select` system call.
    The first three arguments are iterables of 'waitable objects': either
@@ -129,9 +129,8 @@ The module defines the following:
 
    Empty iterables are allowed, but acceptance of three empty iterables is
    platform-dependent. (It is known to work on Unix but not on Windows.)  The
-   optional *timeout* argument specifies a time-out as a floating-point number
-   in seconds.
-   When the *timeout* argument is omitted or ``None``, the function blocks until
+   optional *timeout* argument specifies a time-out as a floating point number
+   in seconds.  When the *timeout* argument is omitted the function blocks until
    at least one file descriptor is ready.  A time-out value of zero specifies a
    poll and never blocks.
 
@@ -166,7 +165,7 @@ The module defines the following:
       :exc:`InterruptedError`.
 
 
-.. data:: PIPE_BUF
+.. attribute:: PIPE_BUF
 
    The minimum number of bytes which can be written without blocking to a pipe
    when the pipe has been reported as ready for writing by :func:`~select.select`,
@@ -318,15 +317,9 @@ Edge and Level Trigger Polling (epoll) Objects
    +-------------------------+-----------------------------------------------+
    | :const:`EPOLLMSG`       | Ignored.                                      |
    +-------------------------+-----------------------------------------------+
-   | :const:`EPOLLWAKEUP`    | Prevents sleep during event waiting.          |
-   +-------------------------+-----------------------------------------------+
 
    .. versionadded:: 3.6
       :const:`EPOLLEXCLUSIVE` was added.  It's only supported by Linux Kernel 4.5
-      or later.
-
-   .. versionadded:: 3.14
-      :const:`EPOLLWAKEUP` was added. It's only supported by Linux Kernel 3.5
       or later.
 
 .. method:: epoll.close()

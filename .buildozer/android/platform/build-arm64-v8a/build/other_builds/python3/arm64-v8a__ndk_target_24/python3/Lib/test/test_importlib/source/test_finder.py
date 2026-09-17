@@ -10,6 +10,7 @@ import sys
 import tempfile
 from test.support.import_helper import make_legacy_pyc
 import unittest
+import warnings
 
 
 class FinderTests(abc.FinderTests):
@@ -73,7 +74,7 @@ class FinderTests(abc.FinderTests):
                         if error.errno != errno.ENOENT:
                             raise
             loader = self.import_(mapping['.root'], test)
-            self.assertHasAttr(loader, 'load_module')
+            self.assertTrue(hasattr(loader, 'load_module'))
             return loader
 
     def test_module(self):
@@ -100,7 +101,7 @@ class FinderTests(abc.FinderTests):
         with util.create_modules('pkg.__init__', 'pkg.sub') as mapping:
             pkg_dir = os.path.dirname(mapping['pkg.__init__'])
             loader = self.import_(pkg_dir, 'pkg.sub')
-            self.assertHasAttr(loader, 'load_module')
+            self.assertTrue(hasattr(loader, 'load_module'))
 
     # [sub package]
     def test_package_in_package(self):
@@ -108,7 +109,7 @@ class FinderTests(abc.FinderTests):
         with context as mapping:
             pkg_dir = os.path.dirname(mapping['pkg.__init__'])
             loader = self.import_(pkg_dir, 'pkg.sub')
-            self.assertHasAttr(loader, 'load_module')
+            self.assertTrue(hasattr(loader, 'load_module'))
 
     # [package over modules]
     def test_package_over_module(self):
@@ -119,7 +120,7 @@ class FinderTests(abc.FinderTests):
     def test_failure(self):
         with util.create_modules('blah') as mapping:
             nothing = self.import_(mapping['.root'], 'sdfsadsadf')
-            self.assertEqual(nothing, self.NOT_FOUND)
+            self.assertIsNone(nothing)
 
     def test_empty_string_for_dir(self):
         # The empty string from sys.path means to search in the cwd.
@@ -129,7 +130,7 @@ class FinderTests(abc.FinderTests):
             file.write("# test file for importlib")
         try:
             loader = self._find(finder, 'mod', loader_only=True)
-            self.assertHasAttr(loader, 'load_module')
+            self.assertTrue(hasattr(loader, 'load_module'))
         finally:
             os.unlink('mod.py')
 
@@ -149,7 +150,7 @@ class FinderTests(abc.FinderTests):
             found = self._find(finder, 'mod', loader_only=True)
             self.assertIsNotNone(found)
         found = self._find(finder, 'mod', loader_only=True)
-        self.assertEqual(found, self.NOT_FOUND)
+        self.assertIsNone(found)
 
     @unittest.skipUnless(sys.platform != 'win32',
             'os.chmod() does not support the needed arguments under Windows')
@@ -195,17 +196,30 @@ class FinderTestsPEP420(FinderTests):
     NOT_FOUND = (None, [])
 
     def _find(self, finder, name, loader_only=False):
-        spec = finder.find_spec(name)
-        if spec is None:
-            return self.NOT_FOUND
-        if loader_only:
-            return spec.loader
-        return spec.loader, spec.submodule_search_locations
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            loader_portions = finder.find_loader(name)
+            return loader_portions[0] if loader_only else loader_portions
 
 
 (Frozen_FinderTestsPEP420,
  Source_FinderTestsPEP420
  ) = util.test_both(FinderTestsPEP420, machinery=machinery)
+
+
+class FinderTestsPEP302(FinderTests):
+
+    NOT_FOUND = None
+
+    def _find(self, finder, name, loader_only=False):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return finder.find_module(name)
+
+
+(Frozen_FinderTestsPEP302,
+ Source_FinderTestsPEP302
+ ) = util.test_both(FinderTestsPEP302, machinery=machinery)
 
 
 if __name__ == '__main__':

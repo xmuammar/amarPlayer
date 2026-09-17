@@ -16,65 +16,63 @@ export SHELL
 
 # Be more Bourne compatible
 DUALCASE=1; export DUALCASE # for MKS sh
-if test ${ZSH_VERSION+y} && (emulate sh) >/dev/null 2>&1
-then :
+if test -n "${ZSH_VERSION+set}" && (emulate sh) >/dev/null 2>&1; then :
   emulate sh
   NULLCMD=:
   # Pre-4.2 versions of Zsh do word splitting on ${1+"$@"}, which
   # is contrary to our usage.  Disable this feature.
   alias -g '${1+"$@"}'='"$@"'
   setopt NO_GLOB_SUBST
-else case e in #(
-  e) case `(set -o) 2>/dev/null` in #(
+else
+  case `(set -o) 2>/dev/null` in #(
   *posix*) :
     set -o posix ;; #(
   *) :
      ;;
-esac ;;
 esac
 fi
 
 
-
-# Reset variables that may have inherited troublesome values from
-# the environment.
-
-# IFS needs to be set, to space, tab, and newline, in precisely that order.
-# (If _AS_PATH_WALK were called with IFS unset, it would have the
-# side effect of setting IFS to empty, thus disabling word splitting.)
-# Quoting is to prevent editors from complaining about space-tab.
 as_nl='
 '
 export as_nl
-IFS=" ""	$as_nl"
-
-PS1='$ '
-PS2='> '
-PS4='+ '
-
-# Ensure predictable behavior from utilities with locale-dependent output.
-LC_ALL=C
-export LC_ALL
-LANGUAGE=C
-export LANGUAGE
-
-# We cannot yet rely on "unset" to work, but we need these variables
-# to be unset--not just set to an empty or harmless value--now, to
-# avoid bugs in old shells (e.g. pre-3.0 UWIN ksh).  This construct
-# also avoids known problems related to "unset" and subshell syntax
-# in other old shells (e.g. bash 2.01 and pdksh 5.2.14).
-for as_var in BASH_ENV ENV MAIL MAILPATH CDPATH
-do eval test \${$as_var+y} \
-  && ( (unset $as_var) || exit 1) >/dev/null 2>&1 && unset $as_var || :
-done
-
-# Ensure that fds 0, 1, and 2 are open.
-if (exec 3>&0) 2>/dev/null; then :; else exec 0</dev/null; fi
-if (exec 3>&1) 2>/dev/null; then :; else exec 1>/dev/null; fi
-if (exec 3>&2)            ; then :; else exec 2>/dev/null; fi
+# Printing a long string crashes Solaris 7 /usr/bin/printf.
+as_echo='\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'
+as_echo=$as_echo$as_echo$as_echo$as_echo$as_echo
+as_echo=$as_echo$as_echo$as_echo$as_echo$as_echo$as_echo
+# Prefer a ksh shell builtin over an external printf program on Solaris,
+# but without wasting forks for bash or zsh.
+if test -z "$BASH_VERSION$ZSH_VERSION" \
+    && (test "X`print -r -- $as_echo`" = "X$as_echo") 2>/dev/null; then
+  as_echo='print -r --'
+  as_echo_n='print -rn --'
+elif (test "X`printf %s $as_echo`" = "X$as_echo") 2>/dev/null; then
+  as_echo='printf %s\n'
+  as_echo_n='printf %s'
+else
+  if test "X`(/usr/ucb/echo -n -n $as_echo) 2>/dev/null`" = "X-n $as_echo"; then
+    as_echo_body='eval /usr/ucb/echo -n "$1$as_nl"'
+    as_echo_n='/usr/ucb/echo -n'
+  else
+    as_echo_body='eval expr "X$1" : "X\\(.*\\)"'
+    as_echo_n_body='eval
+      arg=$1;
+      case $arg in #(
+      *"$as_nl"*)
+	expr "X$arg" : "X\\(.*\\)$as_nl";
+	arg=`expr "X$arg" : ".*$as_nl\\(.*\\)"`;;
+      esac;
+      expr "X$arg" : "X\\(.*\\)" | tr -d "$as_nl"
+    '
+    export as_echo_n_body
+    as_echo_n='sh -c $as_echo_n_body as_echo'
+  fi
+  export as_echo_body
+  as_echo='sh -c $as_echo_body as_echo'
+fi
 
 # The user is always right.
-if ${PATH_SEPARATOR+false} :; then
+if test "${PATH_SEPARATOR+set}" != set; then
   PATH_SEPARATOR=:
   (PATH='/bin;/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 && {
     (PATH='/bin:/bin'; FPATH=$PATH; sh -c :) >/dev/null 2>&1 ||
@@ -82,6 +80,13 @@ if ${PATH_SEPARATOR+false} :; then
   }
 fi
 
+
+# IFS
+# We need space, tab and new line, in precisely that order.  Quoting is
+# there to prevent editors from complaining about space-tab.
+# (If _AS_PATH_WALK were called with IFS unset, it would disable word
+# splitting by setting IFS to empty value.)
+IFS=" ""	$as_nl"
 
 # Find who we are.  Look in the path if we contain no directory separator.
 as_myself=
@@ -91,27 +96,43 @@ case $0 in #((
 for as_dir in $PATH
 do
   IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    test -r "$as_dir$0" && as_myself=$as_dir$0 && break
+  test -z "$as_dir" && as_dir=.
+    test -r "$as_dir/$0" && as_myself=$as_dir/$0 && break
   done
 IFS=$as_save_IFS
 
      ;;
 esac
-# We did not find ourselves, most probably we were run as 'sh COMMAND'
+# We did not find ourselves, most probably we were run as `sh COMMAND'
 # in which case we are not to be found in the path.
 if test "x$as_myself" = x; then
   as_myself=$0
 fi
 if test ! -f "$as_myself"; then
-  printf "%s\n" "$as_myself: error: cannot find myself; rerun with an absolute file name" >&2
+  $as_echo "$as_myself: error: cannot find myself; rerun with an absolute file name" >&2
   exit 1
 fi
 
+# Unset variables that we do not need and which cause bugs (e.g. in
+# pre-3.0 UWIN ksh).  But do not cause bugs in bash 2.01; the "|| exit 1"
+# suppresses any "Segmentation fault" message there.  '((' could
+# trigger a bug in pdksh 5.2.14.
+for as_var in BASH_ENV ENV MAIL MAILPATH
+do eval test x\${$as_var+set} = xset \
+  && ( (unset $as_var) || exit 1) >/dev/null 2>&1 && unset $as_var || :
+done
+PS1='$ '
+PS2='> '
+PS4='+ '
+
+# NLS nuisances.
+LC_ALL=C
+export LC_ALL
+LANGUAGE=C
+export LANGUAGE
+
+# CDPATH.
+(unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
 
 # as_fn_error STATUS ERROR [LINENO LOG_FD]
@@ -124,9 +145,9 @@ as_fn_error ()
   as_status=$1; test $as_status -eq 0 && as_status=1
   if test "$4"; then
     as_lineno=${as_lineno-"$3"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: $2" >&$4
+    $as_echo "$as_me:${as_lineno-$LINENO}: error: $2" >&$4
   fi
-  printf "%s\n" "$as_me: error: $2" >&2
+  $as_echo "$as_me: error: $2" >&2
   as_fn_exit $as_status
 } # as_fn_error
 
@@ -157,25 +178,22 @@ as_fn_unset ()
   { eval $1=; unset $1;}
 }
 as_unset=as_fn_unset
-
 # as_fn_append VAR VALUE
 # ----------------------
 # Append the text in VALUE to the end of the definition contained in VAR. Take
 # advantage of any shell optimizations that allow amortized linear growth over
 # repeated appends, instead of the typical quadratic growth present in naive
 # implementations.
-if (eval "as_var=1; as_var+=2; test x\$as_var = x12") 2>/dev/null
-then :
+if (eval "as_var=1; as_var+=2; test x\$as_var = x12") 2>/dev/null; then :
   eval 'as_fn_append ()
   {
     eval $1+=\$2
   }'
-else case e in #(
-  e) as_fn_append ()
+else
+  as_fn_append ()
   {
     eval $1=\$$1\$2
-  } ;;
-esac
+  }
 fi # as_fn_append
 
 # as_fn_arith ARG...
@@ -183,18 +201,16 @@ fi # as_fn_append
 # Perform arithmetic evaluation on the ARGs, and store the result in the
 # global $as_val. Take advantage of shells that can avoid forks. The arguments
 # must be portable across $(()) and expr.
-if (eval "test \$(( 1 + 1 )) = 2") 2>/dev/null
-then :
+if (eval "test \$(( 1 + 1 )) = 2") 2>/dev/null; then :
   eval 'as_fn_arith ()
   {
     as_val=$(( $* ))
   }'
-else case e in #(
-  e) as_fn_arith ()
+else
+  as_fn_arith ()
   {
     as_val=`expr "$@" || test $? -eq 1`
-  } ;;
-esac
+  }
 fi # as_fn_arith
 
 
@@ -221,7 +237,7 @@ as_me=`$as_basename -- "$0" ||
 $as_expr X/"$0" : '.*/\([^/][^/]*\)/*$' \| \
 	 X"$0" : 'X\(//\)$' \| \
 	 X"$0" : 'X\(/\)' \| . 2>/dev/null ||
-printf "%s\n" X/"$0" |
+$as_echo X/"$0" |
     sed '/^.*\/\([^/][^/]*\)\/*$/{
 	    s//\1/
 	    q
@@ -243,10 +259,6 @@ as_cr_Letters=$as_cr_letters$as_cr_LETTERS
 as_cr_digits='0123456789'
 as_cr_alnum=$as_cr_Letters$as_cr_digits
 
-
-# Determine whether it's possible to make 'echo' print without a newline.
-# These variables are no longer used directly by Autoconf, but are AC_SUBSTed
-# for compatibility with existing Makefiles.
 ECHO_C= ECHO_N= ECHO_T=
 case `echo -n x` in #(((((
 -n*)
@@ -260,12 +272,6 @@ case `echo -n x` in #(((((
   ECHO_N='-n';;
 esac
 
-# For backward compatibility with old third-party macros, we provide
-# the shell variables $as_echo and $as_echo_n.  New code should use
-# AS_ECHO(["message"]) and AS_ECHO_N(["message"]), respectively.
-as_echo='printf %s\n'
-as_echo_n='printf %s'
-
 rm -f conf$$ conf$$.exe conf$$.file
 if test -d conf$$.dir; then
   rm -f conf$$.dir/conf$$.file
@@ -277,9 +283,9 @@ if (echo >conf$$.file) 2>/dev/null; then
   if ln -s conf$$.file conf$$ 2>/dev/null; then
     as_ln_s='ln -s'
     # ... but there are two gotchas:
-    # 1) On MSYS, both 'ln -s file dir' and 'ln file dir' fail.
-    # 2) DJGPP < 2.04 has no symlinks; 'ln -s' creates a wrapper executable.
-    # In both cases, we have to default to 'cp -pR'.
+    # 1) On MSYS, both `ln -s file dir' and `ln file dir' fail.
+    # 2) DJGPP < 2.04 has no symlinks; `ln -s' creates a wrapper executable.
+    # In both cases, we have to default to `cp -pR'.
     ln -s conf$$.file conf$$.dir 2>/dev/null && test ! -f conf$$.exe ||
       as_ln_s='cp -pR'
   elif ln conf$$.file conf$$ 2>/dev/null; then
@@ -307,7 +313,7 @@ as_fn_mkdir_p ()
     as_dirs=
     while :; do
       case $as_dir in #(
-      *\'*) as_qdir=`printf "%s\n" "$as_dir" | sed "s/'/'\\\\\\\\''/g"`;; #'(
+      *\'*) as_qdir=`$as_echo "$as_dir" | sed "s/'/'\\\\\\\\''/g"`;; #'(
       *) as_qdir=$as_dir;;
       esac
       as_dirs="'$as_qdir' $as_dirs"
@@ -316,7 +322,7 @@ $as_expr X"$as_dir" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
 	 X"$as_dir" : 'X\(//\)[^/]' \| \
 	 X"$as_dir" : 'X\(//\)$' \| \
 	 X"$as_dir" : 'X\(/\)' \| . 2>/dev/null ||
-printf "%s\n" X"$as_dir" |
+$as_echo X"$as_dir" |
     sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
 	    s//\1/
 	    q
@@ -360,12 +366,10 @@ as_test_x='test -x'
 as_executable_p=as_fn_executable_p
 
 # Sed expression to map a string onto a valid CPP name.
-as_sed_cpp="y%*$as_cr_letters%P$as_cr_LETTERS%;s%[^_$as_cr_alnum]%_%g"
-as_tr_cpp="eval sed '$as_sed_cpp'" # deprecated
+as_tr_cpp="eval sed 'y%*$as_cr_letters%P$as_cr_LETTERS%;s%[^_$as_cr_alnum]%_%g'"
 
 # Sed expression to map a string onto a valid variable name.
-as_sed_sh="y%*+%pp%;s%[^_$as_cr_alnum]%_%g"
-as_tr_sh="eval sed '$as_sed_sh'" # deprecated
+as_tr_sh="eval sed 'y%*+%pp%;s%[^_$as_cr_alnum]%_%g'"
 
 
 exec 6>&1
@@ -376,8 +380,8 @@ exec 6>&1
 # report actual input values of CONFIG_FILES etc. instead of their
 # values after options handling.
 ac_log="
-This file was extended by python $as_me 3.14, which was
-generated by GNU Autoconf 2.72.  Invocation command line was
+This file was extended by python $as_me 3.11, which was
+generated by GNU Autoconf 2.69.  Invocation command line was
 
   CONFIG_FILES    = $CONFIG_FILES
   CONFIG_HEADERS  = $CONFIG_HEADERS
@@ -393,7 +397,7 @@ config_files=" Makefile.pre Misc/python.pc Misc/python-embed.pc Misc/python-conf
 config_headers=" pyconfig.h"
 
 ac_cs_usage="\
-'$as_me' instantiates files and other configuration actions
+\`$as_me' instantiates files and other configuration actions
 from templates according to the current configuration.  Unless the files
 and actions are specified as TAGs, all are instantiated by default.
 
@@ -419,13 +423,13 @@ $config_headers
 
 Report bugs to <https://github.com/python/cpython/issues/>."
 
-ac_cs_config='--host=aarch64-linux-android --build=aarch64-unknown-linux-gnu --enable-shared --enable-ipv6 --enable-loadable-sqlite-extensions --without-static-libpython --without-readline --without-ensurepip --prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root ac_cv_file__dev_ptmx=yes ac_cv_file__dev_ptc=no ac_cv_header_sys_eventfd_h=no ac_cv_little_endian_double=yes ac_cv_header_bzlib_h=no --with-openssl=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 --with-build-python=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python build_alias=aarch64-unknown-linux-gnu host_alias=aarch64-linux-android PKG_CONFIG_LIBDIR=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi CC=/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang '\''CFLAGS=-fPIC -DANDROID'\'' '\''LDFLAGS=  -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/libs_collections/amarPlayer/arm64-v8a -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/.libs -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 -L/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24'\'' '\''LIBS= -lsqlite3 -lffi -lcrypto -lssl -lz'\'' '\''CPPFLAGS=-DANDROID -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.14 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include/openssl -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include'\'''
+ac_cs_config="'--host=aarch64-linux-android' '--build=aarch64-unknown-linux-gnu' '--enable-shared' '--enable-ipv6' '--enable-loadable-sqlite-extensions' '--without-static-libpython' '--without-readline' '--without-ensurepip' '--prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root' 'ac_cv_file__dev_ptmx=yes' 'ac_cv_file__dev_ptc=no' 'ac_cv_header_sys_eventfd_h=no' 'ac_cv_little_endian_double=yes' 'ac_cv_header_bzlib_h=no' '--with-openssl=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3' '--with-build-python=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python' 'build_alias=aarch64-unknown-linux-gnu' 'host_alias=aarch64-linux-android' 'PKG_CONFIG_LIBDIR=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi' 'CC=/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang' 'CFLAGS=-fPIC -DANDROID' 'LDFLAGS=  -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/libs_collections/amarPlayer/arm64-v8a -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/.libs -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 -L/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24' 'LIBS= -lsqlite3 -lffi -lcrypto -lssl -lz' 'CPPFLAGS=-DANDROID -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.11 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include/openssl -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include'"
 ac_cs_version="\
-python config.status 3.14
-configured by /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/configure, generated by GNU Autoconf 2.72,
+python config.status 3.11
+configured by /home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/configure, generated by GNU Autoconf 2.69,
   with options \"$ac_cs_config\"
 
-Copyright (C) 2023 Free Software Foundation, Inc.
+Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
@@ -461,15 +465,15 @@ do
   -recheck | --recheck | --rechec | --reche | --rech | --rec | --re | --r)
     ac_cs_recheck=: ;;
   --version | --versio | --versi | --vers | --ver | --ve | --v | -V )
-    printf "%s\n" "$ac_cs_version"; exit ;;
+    $as_echo "$ac_cs_version"; exit ;;
   --config | --confi | --conf | --con | --co | --c )
-    printf "%s\n" "$ac_cs_config"; exit ;;
+    $as_echo "$ac_cs_config"; exit ;;
   --debug | --debu | --deb | --de | --d | -d )
     debug=: ;;
   --file | --fil | --fi | --f )
     $ac_shift
     case $ac_optarg in
-    *\'*) ac_optarg=`printf "%s\n" "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    *\'*) ac_optarg=`$as_echo "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"` ;;
     '') as_fn_error $? "missing file argument" ;;
     esac
     as_fn_append CONFIG_FILES " '$ac_optarg'"
@@ -477,23 +481,23 @@ do
   --header | --heade | --head | --hea )
     $ac_shift
     case $ac_optarg in
-    *\'*) ac_optarg=`printf "%s\n" "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    *\'*) ac_optarg=`$as_echo "$ac_optarg" | sed "s/'/'\\\\\\\\''/g"` ;;
     esac
     as_fn_append CONFIG_HEADERS " '$ac_optarg'"
     ac_need_defaults=false;;
   --he | --h)
     # Conflict between --help and --header
-    as_fn_error $? "ambiguous option: '$1'
-Try '$0 --help' for more information.";;
+    as_fn_error $? "ambiguous option: \`$1'
+Try \`$0 --help' for more information.";;
   --help | --hel | -h )
-    printf "%s\n" "$ac_cs_usage"; exit ;;
+    $as_echo "$ac_cs_usage"; exit ;;
   -q | -quiet | --quiet | --quie | --qui | --qu | --q \
   | -silent | --silent | --silen | --sile | --sil | --si | --s)
     ac_cs_silent=: ;;
 
   # This is an error.
-  -*) as_fn_error $? "unrecognized option: '$1'
-Try '$0 --help' for more information." ;;
+  -*) as_fn_error $? "unrecognized option: \`$1'
+Try \`$0 --help' for more information." ;;
 
   *) as_fn_append ac_config_targets " $1"
      ac_need_defaults=false ;;
@@ -510,9 +514,9 @@ if $ac_cs_silent; then
 fi
 
 if $ac_cs_recheck; then
-  set X /bin/sh '/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/configure'  '--host=aarch64-linux-android' '--build=aarch64-unknown-linux-gnu' '--enable-shared' '--enable-ipv6' '--enable-loadable-sqlite-extensions' '--without-static-libpython' '--without-readline' '--without-ensurepip' '--prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root' 'ac_cv_file__dev_ptmx=yes' 'ac_cv_file__dev_ptc=no' 'ac_cv_header_sys_eventfd_h=no' 'ac_cv_little_endian_double=yes' 'ac_cv_header_bzlib_h=no' '--with-openssl=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3' '--with-build-python=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python' 'build_alias=aarch64-unknown-linux-gnu' 'host_alias=aarch64-linux-android' 'PKG_CONFIG_LIBDIR=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi' 'CC=/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang' 'CFLAGS=-fPIC -DANDROID' 'LDFLAGS=  -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/libs_collections/amarPlayer/arm64-v8a -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/.libs -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 -L/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24' 'LIBS= -lsqlite3 -lffi -lcrypto -lssl -lz' 'CPPFLAGS=-DANDROID -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.14 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include/openssl -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include' $ac_configure_extra_args --no-create --no-recursion
+  set X /bin/sh '/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/configure'  '--host=aarch64-linux-android' '--build=aarch64-unknown-linux-gnu' '--enable-shared' '--enable-ipv6' '--enable-loadable-sqlite-extensions' '--without-static-libpython' '--without-readline' '--without-ensurepip' '--prefix=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root' 'ac_cv_file__dev_ptmx=yes' 'ac_cv_file__dev_ptc=no' 'ac_cv_header_sys_eventfd_h=no' 'ac_cv_little_endian_double=yes' 'ac_cv_header_bzlib_h=no' '--with-openssl=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3' '--with-build-python=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python' 'build_alias=aarch64-unknown-linux-gnu' 'host_alias=aarch64-linux-android' 'PKG_CONFIG_LIBDIR=/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi' 'CC=/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang' 'CFLAGS=-fPIC -DANDROID' 'LDFLAGS=  -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/libs_collections/amarPlayer/arm64-v8a -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/.libs -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 -L/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24' 'LIBS= -lsqlite3 -lffi -lcrypto -lssl -lz' 'CPPFLAGS=-DANDROID -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.11 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include/openssl -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include' $ac_configure_extra_args --no-create --no-recursion
   shift
-  \printf "%s\n" "running CONFIG_SHELL=/bin/sh $*" >&6
+  $as_echo "running CONFIG_SHELL=/bin/sh $*" >&6
   CONFIG_SHELL='/bin/sh'
   export CONFIG_SHELL
   exec "$@"
@@ -524,7 +528,7 @@ exec 5>>config.log
   sed 'h;s/./-/g;s/^.../## /;s/...$/ ##/;p;x;p;x' <<_ASBOX
 ## Running $as_me. ##
 _ASBOX
-  printf "%s\n" "$ac_log"
+  $as_echo "$ac_log"
 } >&5
 
 
@@ -537,7 +541,6 @@ do
     "Mac/PythonLauncher/Makefile") CONFIG_FILES="$CONFIG_FILES Mac/PythonLauncher/Makefile" ;;
     "Mac/Resources/framework/Info.plist") CONFIG_FILES="$CONFIG_FILES Mac/Resources/framework/Info.plist" ;;
     "Mac/Resources/app/Info.plist") CONFIG_FILES="$CONFIG_FILES Mac/Resources/app/Info.plist" ;;
-    "Apple/iOS/Resources/Info.plist") CONFIG_FILES="$CONFIG_FILES Apple/iOS/Resources/Info.plist" ;;
     "Makefile.pre") CONFIG_FILES="$CONFIG_FILES Makefile.pre" ;;
     "Misc/python.pc") CONFIG_FILES="$CONFIG_FILES Misc/python.pc" ;;
     "Misc/python-embed.pc") CONFIG_FILES="$CONFIG_FILES Misc/python-embed.pc" ;;
@@ -546,7 +549,7 @@ do
     "Modules/Setup.stdlib") CONFIG_FILES="$CONFIG_FILES Modules/Setup.stdlib" ;;
     "Modules/ld_so_aix") CONFIG_FILES="$CONFIG_FILES Modules/ld_so_aix" ;;
 
-  *) as_fn_error $? "invalid argument: '$ac_config_target'" "$LINENO" 5;;
+  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
 done
 
@@ -556,8 +559,8 @@ done
 # We use the long form for the default assignment because of an extremely
 # bizarre bug on SunOS 4.1.3.
 if $ac_need_defaults; then
-  test ${CONFIG_FILES+y} || CONFIG_FILES=$config_files
-  test ${CONFIG_HEADERS+y} || CONFIG_HEADERS=$config_headers
+  test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
+  test "${CONFIG_HEADERS+set}" = set || CONFIG_HEADERS=$config_headers
 fi
 
 # Have a temporary directory for convenience.  Make it in the build tree
@@ -565,7 +568,7 @@ fi
 # creating and moving files from /tmp can sometimes cause problems.
 # Hook for its removal unless debugging.
 # Note that there is a small window in which the directory will not be cleaned:
-# after its creation but before its name has been assigned to '$tmp'.
+# after its creation but before its name has been assigned to `$tmp'.
 $debug ||
 {
   tmp= ac_tmp=
@@ -589,7 +592,7 @@ ac_tmp=$tmp
 
 # Set up the scripts for CONFIG_FILES section.
 # No need to generate them if there are no CONFIG_FILES.
-# This happens for instance with './config.status config.h'.
+# This happens for instance with `./config.status config.h'.
 if test -n "$CONFIG_FILES"; then
 
 
@@ -617,25 +620,26 @@ S["MODULE_BLOCK"]="MODULE__IO_STATE=yes\n"\
 "MODULE_ARRAY_STATE=yes\n"\
 "MODULE__ASYNCIO_STATE=yes\n"\
 "MODULE__BISECT_STATE=yes\n"\
+"MODULE__CONTEXTVARS_STATE=yes\n"\
 "MODULE__CSV_STATE=yes\n"\
 "MODULE__HEAPQ_STATE=yes\n"\
 "MODULE__JSON_STATE=yes\n"\
 "MODULE__LSPROF_STATE=yes\n"\
+"MODULE__OPCODE_STATE=yes\n"\
 "MODULE__PICKLE_STATE=yes\n"\
 "MODULE__POSIXSUBPROCESS_STATE=yes\n"\
 "MODULE__QUEUE_STATE=yes\n"\
 "MODULE__RANDOM_STATE=yes\n"\
-"MODULE__REMOTE_DEBUGGING_STATE=yes\n"\
 "MODULE_SELECT_STATE=yes\n"\
 "MODULE__STRUCT_STATE=yes\n"\
-"MODULE__TYPES_STATE=yes\n"\
 "MODULE__TYPING_STATE=yes\n"\
-"MODULE__INTERPRETERS_STATE=yes\n"\
-"MODULE__INTERPCHANNELS_STATE=yes\n"\
-"MODULE__INTERPQUEUES_STATE=yes\n"\
+"MODULE__XXSUBINTERPRETERS_STATE=yes\n"\
 "MODULE__ZONEINFO_STATE=yes\n"\
-"MODULE__MULTIPROCESSING_STATE=missing\n"\
+"MODULE__MULTIPROCESSING_STATE=yes\n"\
+"MODULE__MULTIPROCESSING_CFLAGS=-I$(srcdir)/Modules/_multiprocessing\n"\
 "MODULE__POSIXSHMEM_STATE=missing\n"\
+"MODULE_AUDIOOP_STATE=yes\n"\
+"MODULE_AUDIOOP_LDFLAGS=-lm\n"\
 "MODULE__STATISTICS_STATE=yes\n"\
 "MODULE__STATISTICS_LDFLAGS=-lm\n"\
 "MODULE_CMATH_STATE=yes\n"\
@@ -648,11 +652,13 @@ S["MODULE_BLOCK"]="MODULE__IO_STATE=yes\n"\
 "MODULE_FCNTL_LDFLAGS=\n"\
 "MODULE_MMAP_STATE=yes\n"\
 "MODULE__SOCKET_STATE=yes\n"\
-"MODULE__SOCKET_LDFLAGS=\n"\
-"MODULE_GRP_STATE=missing\n"\
+"MODULE_GRP_STATE=yes\n"\
+"MODULE_OSSAUDIODEV_STATE=yes\n"\
+"MODULE_OSSAUDIODEV_LDFLAGS=\n"\
 "MODULE_PWD_STATE=yes\n"\
 "MODULE_RESOURCE_STATE=yes\n"\
 "MODULE__SCPROXY_STATE=n/a\n"\
+"MODULE_SPWD_STATE=missing\n"\
 "MODULE_SYSLOG_STATE=yes\n"\
 "MODULE_TERMIOS_STATE=yes\n"\
 "MODULE_PYEXPAT_STATE=yes\n"\
@@ -669,42 +675,19 @@ S["MODULE_BLOCK"]="MODULE__IO_STATE=yes\n"\
 "MODULE__MULTIBYTECODEC_STATE=yes\n"\
 "MODULE_UNICODEDATA_STATE=yes\n"\
 "MODULE__MD5_STATE=yes\n"\
-"MODULE__MD5_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMOD"\
-"ULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__MD5_LDFLAGS=$(LIBHACL_MD5_LIB_SHARED)\n"\
 "MODULE__SHA1_STATE=yes\n"\
-"MODULE__SHA1_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMO"\
-"DULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__SHA1_LDFLAGS=$(LIBHACL_SHA1_LIB_SHARED)\n"\
-"MODULE__SHA2_STATE=yes\n"\
-"MODULE__SHA2_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMO"\
-"DULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__SHA2_LDFLAGS=$(LIBHACL_SHA2_LIB_SHARED)\n"\
+"MODULE__SHA256_STATE=yes\n"\
+"MODULE__SHA512_STATE=yes\n"\
 "MODULE__SHA3_STATE=yes\n"\
-"MODULE__SHA3_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMO"\
-"DULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__SHA3_LDFLAGS=$(LIBHACL_SHA3_LIB_SHARED)\n"\
 "MODULE__BLAKE2_STATE=yes\n"\
-"MODULE__BLAKE2_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STD"\
-"MODULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__BLAKE2_LDFLAGS=$(LIBHACL_BLAKE2_LIB_SHARED)\n"\
-"MODULE__HMAC_STATE=yes\n"\
-"MODULE__HMAC_CFLAGS=-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMO"\
-"DULE_CFLAGS) $(CCSHARED)\n"\
-"MODULE__HMAC_LDFLAGS=$(LIBHACL_HMAC_LIB_SHARED)\n"\
-"MODULE__CTYPES_STATE=yes\n"\
-"MODULE__CTYPES_CFLAGS=-fno-strict-overflow -I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v"\
-"8a__ndk_target_24/libffi/include\n"\
-"MODULE__CTYPES_LDFLAGS=-L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/li"\
-"bffi/lib -lffi -ldl\n"\
-"MODULE__CURSES_STATE=missing\n"\
-"MODULE__CURSES_PANEL_STATE=missing\n"\
+"MODULE__BLAKE2_CFLAGS=\n"\
+"MODULE__BLAKE2_LDFLAGS=\n"\
+"MODULE__CRYPT_STATE=missing\n"\
 "MODULE__DECIMAL_STATE=yes\n"\
 "MODULE__DECIMAL_CFLAGS=-I$(srcdir)/Modules/_decimal/libmpdec -DCONFIG_64=1 -DANSI=1 -DHAVE_UINT128_T=1\n"\
 "MODULE__DECIMAL_LDFLAGS=-lm $(LIBMPDEC_A)\n"\
-"MODULE__DBM_STATE=missing\n"\
 "MODULE__GDBM_STATE=missing\n"\
-"MODULE_READLINE_STATE=missing\n"\
+"MODULE_NIS_STATE=missing\n"\
 "MODULE__SQLITE3_STATE=yes\n"\
 "MODULE__SQLITE3_CFLAGS= -I$(srcdir)/Modules/_sqlite\n"\
 "MODULE__SQLITE3_LDFLAGS=-lsqlite3\n"\
@@ -718,7 +701,6 @@ S["MODULE_BLOCK"]="MODULE__IO_STATE=yes\n"\
 "MODULE_BINASCII_LDFLAGS=-lz\n"\
 "MODULE__BZ2_STATE=missing\n"\
 "MODULE__LZMA_STATE=missing\n"\
-"MODULE__ZSTD_STATE=missing\n"\
 "MODULE__SSL_STATE=yes\n"\
 "MODULE__SSL_CFLAGS=-I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/opens"\
 "sl3/include\n"\
@@ -730,22 +712,14 @@ S["MODULE_BLOCK"]="MODULE__IO_STATE=yes\n"\
 "MODULE__HASHLIB_LDFLAGS=-L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/"\
 "openssl3/lib   -lcrypto\n"\
 "MODULE__TESTCAPI_STATE=yes\n"\
-"MODULE__TESTCAPI_LDFLAGS=\n"\
 "MODULE__TESTCLINIC_STATE=yes\n"\
-"MODULE__TESTCLINIC_LIMITED_STATE=yes\n"\
-"MODULE__TESTLIMITEDCAPI_STATE=yes\n"\
 "MODULE__TESTINTERNALCAPI_STATE=yes\n"\
 "MODULE__TESTBUFFER_STATE=yes\n"\
 "MODULE__TESTIMPORTMULTIPLE_STATE=yes\n"\
 "MODULE__TESTMULTIPHASE_STATE=yes\n"\
-"MODULE__TESTSINGLEPHASE_STATE=yes\n"\
-"MODULE_XXSUBTYPE_STATE=yes\n"\
 "MODULE__XXTESTFUZZ_STATE=yes\n"\
 "MODULE__CTYPES_TEST_STATE=yes\n"\
-"MODULE__CTYPES_TEST_CFLAGS=-I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_2"\
-"4/libffi/include\n"\
-"MODULE__CTYPES_TEST_LDFLAGS=-L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_"\
-"24/libffi/lib -lffi -ldl -lm\n"\
+"MODULE__CTYPES_TEST_LDFLAGS=-lm\n"\
 "MODULE_XXLIMITED_STATE=yes\n"\
 "MODULE_XXLIMITED_35_STATE=yes\n"\
 ""
@@ -757,10 +731,6 @@ S["MODULE__CTYPES_TEST_FALSE"]="#"
 S["MODULE__CTYPES_TEST_TRUE"]=""
 S["MODULE__XXTESTFUZZ_FALSE"]="#"
 S["MODULE__XXTESTFUZZ_TRUE"]=""
-S["MODULE_XXSUBTYPE_FALSE"]="#"
-S["MODULE_XXSUBTYPE_TRUE"]=""
-S["MODULE__TESTSINGLEPHASE_FALSE"]="#"
-S["MODULE__TESTSINGLEPHASE_TRUE"]=""
 S["MODULE__TESTMULTIPHASE_FALSE"]="#"
 S["MODULE__TESTMULTIPHASE_TRUE"]=""
 S["MODULE__TESTIMPORTMULTIPLE_FALSE"]="#"
@@ -769,10 +739,6 @@ S["MODULE__TESTBUFFER_FALSE"]="#"
 S["MODULE__TESTBUFFER_TRUE"]=""
 S["MODULE__TESTINTERNALCAPI_FALSE"]="#"
 S["MODULE__TESTINTERNALCAPI_TRUE"]=""
-S["MODULE__TESTLIMITEDCAPI_FALSE"]="#"
-S["MODULE__TESTLIMITEDCAPI_TRUE"]=""
-S["MODULE__TESTCLINIC_LIMITED_FALSE"]="#"
-S["MODULE__TESTCLINIC_LIMITED_TRUE"]=""
 S["MODULE__TESTCLINIC_FALSE"]="#"
 S["MODULE__TESTCLINIC_TRUE"]=""
 S["MODULE__TESTCAPI_FALSE"]="#"
@@ -781,8 +747,6 @@ S["MODULE__HASHLIB_FALSE"]="#"
 S["MODULE__HASHLIB_TRUE"]=""
 S["MODULE__SSL_FALSE"]="#"
 S["MODULE__SSL_TRUE"]=""
-S["MODULE__ZSTD_FALSE"]=""
-S["MODULE__ZSTD_TRUE"]="#"
 S["MODULE__LZMA_FALSE"]=""
 S["MODULE__LZMA_TRUE"]="#"
 S["MODULE__BZ2_FALSE"]=""
@@ -797,40 +761,26 @@ S["MODULE__TKINTER_FALSE"]=""
 S["MODULE__TKINTER_TRUE"]="#"
 S["MODULE__SQLITE3_FALSE"]="#"
 S["MODULE__SQLITE3_TRUE"]=""
-S["MODULE_READLINE_FALSE"]=""
-S["MODULE_READLINE_TRUE"]="#"
+S["MODULE_NIS_FALSE"]=""
+S["MODULE_NIS_TRUE"]="#"
 S["MODULE__GDBM_FALSE"]=""
 S["MODULE__GDBM_TRUE"]="#"
-S["MODULE__DBM_FALSE"]=""
-S["MODULE__DBM_TRUE"]="#"
 S["MODULE__DECIMAL_FALSE"]="#"
 S["MODULE__DECIMAL_TRUE"]=""
-S["MODULE__CURSES_PANEL_FALSE"]=""
-S["MODULE__CURSES_PANEL_TRUE"]="#"
-S["MODULE__CURSES_FALSE"]=""
-S["MODULE__CURSES_TRUE"]="#"
-S["MODULE__CTYPES_FALSE"]="#"
-S["MODULE__CTYPES_TRUE"]=""
-S["MODULE__HMAC_FALSE"]="#"
-S["MODULE__HMAC_TRUE"]=""
+S["MODULE__CRYPT_FALSE"]=""
+S["MODULE__CRYPT_TRUE"]="#"
 S["MODULE__BLAKE2_FALSE"]="#"
 S["MODULE__BLAKE2_TRUE"]=""
 S["MODULE__SHA3_FALSE"]="#"
 S["MODULE__SHA3_TRUE"]=""
-S["MODULE__SHA2_FALSE"]="#"
-S["MODULE__SHA2_TRUE"]=""
+S["MODULE__SHA512_FALSE"]="#"
+S["MODULE__SHA512_TRUE"]=""
+S["MODULE__SHA256_FALSE"]="#"
+S["MODULE__SHA256_TRUE"]=""
 S["MODULE__SHA1_FALSE"]="#"
 S["MODULE__SHA1_TRUE"]=""
 S["MODULE__MD5_FALSE"]="#"
 S["MODULE__MD5_TRUE"]=""
-S["LIBHACL_LDEPS_LIBTYPE"]="SHARED"
-S["LIBHACL_BLAKE2_SIMD256_OBJS"]=""
-S["LIBHACL_SIMD256_FLAGS"]=""
-S["LIBHACL_BLAKE2_SIMD128_OBJS"]=""
-S["LIBHACL_SIMD128_FLAGS"]=""
-S["LIBHACL_LDFLAGS"]=""
-S["LIBHACL_CFLAGS"]="-I$(srcdir)/Modules/_hacl -I$(srcdir)/Modules/_hacl/include -D_BSD_SOURCE -D_DEFAULT_SOURCE -DLINUX_NO_EXPLICIT_BZERO $(PY_STDMODULE_CFLAGS) $(CCSHA"\
-"RED)"
 S["MODULE_UNICODEDATA_FALSE"]="#"
 S["MODULE_UNICODEDATA_TRUE"]=""
 S["MODULE__MULTIBYTECODEC_FALSE"]="#"
@@ -855,14 +805,18 @@ S["MODULE_TERMIOS_FALSE"]="#"
 S["MODULE_TERMIOS_TRUE"]=""
 S["MODULE_SYSLOG_FALSE"]="#"
 S["MODULE_SYSLOG_TRUE"]=""
+S["MODULE_SPWD_FALSE"]=""
+S["MODULE_SPWD_TRUE"]="#"
 S["MODULE__SCPROXY_FALSE"]=""
 S["MODULE__SCPROXY_TRUE"]="#"
 S["MODULE_RESOURCE_FALSE"]="#"
 S["MODULE_RESOURCE_TRUE"]=""
 S["MODULE_PWD_FALSE"]="#"
 S["MODULE_PWD_TRUE"]=""
-S["MODULE_GRP_FALSE"]=""
-S["MODULE_GRP_TRUE"]="#"
+S["MODULE_OSSAUDIODEV_FALSE"]="#"
+S["MODULE_OSSAUDIODEV_TRUE"]=""
+S["MODULE_GRP_FALSE"]="#"
+S["MODULE_GRP_TRUE"]=""
 S["MODULE__SOCKET_FALSE"]="#"
 S["MODULE__SOCKET_TRUE"]=""
 S["MODULE_MMAP_FALSE"]="#"
@@ -877,28 +831,22 @@ S["MODULE_CMATH_FALSE"]="#"
 S["MODULE_CMATH_TRUE"]=""
 S["MODULE__STATISTICS_FALSE"]="#"
 S["MODULE__STATISTICS_TRUE"]=""
+S["MODULE_AUDIOOP_FALSE"]="#"
+S["MODULE_AUDIOOP_TRUE"]=""
 S["MODULE__POSIXSHMEM_FALSE"]=""
 S["MODULE__POSIXSHMEM_TRUE"]="#"
-S["MODULE__MULTIPROCESSING_FALSE"]=""
-S["MODULE__MULTIPROCESSING_TRUE"]="#"
+S["MODULE__MULTIPROCESSING_FALSE"]="#"
+S["MODULE__MULTIPROCESSING_TRUE"]=""
 S["MODULE__ZONEINFO_FALSE"]="#"
 S["MODULE__ZONEINFO_TRUE"]=""
-S["MODULE__INTERPQUEUES_FALSE"]="#"
-S["MODULE__INTERPQUEUES_TRUE"]=""
-S["MODULE__INTERPCHANNELS_FALSE"]="#"
-S["MODULE__INTERPCHANNELS_TRUE"]=""
-S["MODULE__INTERPRETERS_FALSE"]="#"
-S["MODULE__INTERPRETERS_TRUE"]=""
+S["MODULE__XXSUBINTERPRETERS_FALSE"]="#"
+S["MODULE__XXSUBINTERPRETERS_TRUE"]=""
 S["MODULE__TYPING_FALSE"]="#"
 S["MODULE__TYPING_TRUE"]=""
-S["MODULE__TYPES_FALSE"]="#"
-S["MODULE__TYPES_TRUE"]=""
 S["MODULE__STRUCT_FALSE"]="#"
 S["MODULE__STRUCT_TRUE"]=""
 S["MODULE_SELECT_FALSE"]="#"
 S["MODULE_SELECT_TRUE"]=""
-S["MODULE__REMOTE_DEBUGGING_FALSE"]="#"
-S["MODULE__REMOTE_DEBUGGING_TRUE"]=""
 S["MODULE__RANDOM_FALSE"]="#"
 S["MODULE__RANDOM_TRUE"]=""
 S["MODULE__QUEUE_FALSE"]="#"
@@ -907,6 +855,8 @@ S["MODULE__POSIXSUBPROCESS_FALSE"]="#"
 S["MODULE__POSIXSUBPROCESS_TRUE"]=""
 S["MODULE__PICKLE_FALSE"]="#"
 S["MODULE__PICKLE_TRUE"]=""
+S["MODULE__OPCODE_FALSE"]="#"
+S["MODULE__OPCODE_TRUE"]=""
 S["MODULE__LSPROF_FALSE"]="#"
 S["MODULE__LSPROF_TRUE"]=""
 S["MODULE__JSON_FALSE"]="#"
@@ -915,6 +865,8 @@ S["MODULE__HEAPQ_FALSE"]="#"
 S["MODULE__HEAPQ_TRUE"]=""
 S["MODULE__CSV_FALSE"]="#"
 S["MODULE__CSV_TRUE"]=""
+S["MODULE__CONTEXTVARS_FALSE"]="#"
+S["MODULE__CONTEXTVARS_TRUE"]=""
 S["MODULE__BISECT_FALSE"]="#"
 S["MODULE__BISECT_TRUE"]=""
 S["MODULE__ASYNCIO_FALSE"]="#"
@@ -925,36 +877,29 @@ S["MODULE_TIME_FALSE"]="#"
 S["MODULE_TIME_TRUE"]=""
 S["MODULE__IO_FALSE"]="#"
 S["MODULE__IO_TRUE"]=""
+S["MODULES_SETUP_STDLIB"]=""
 S["MODULE_BUILDTYPE"]="shared"
-S["_PYTHREAD_NAME_MAXLEN"]="15"
 S["TEST_MODULES"]="yes"
+S["LIBB2_LIBS"]=""
+S["LIBB2_CFLAGS"]=""
+S["OPENSSL_RPATH"]=""
 S["OPENSSL_LDFLAGS"]="-L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/lib"
 S["OPENSSL_LIBS"]="-lssl -lcrypto"
 S["OPENSSL_INCLUDES"]="-I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include"
 S["ENSUREPIP"]="no"
-S["SRCDIRS"]="  Modules   Modules/_ctypes   Modules/_decimal   Modules/_decimal/libmpdec   Modules/_hacl   Modules/_io   Modules/_multiprocessing   Modules/_sqlit"\
-"e   Modules/_sre   Modules/_testcapi   Modules/_testinternalcapi   Modules/_testlimitedcapi   Modules/_xxtestfuzz   Modules/_zstd   Modules/cjkcodec"\
-"s   Modules/expat   Objects   Objects/mimalloc   Objects/mimalloc/prim   Parser   Parser/tokenizer   Parser/lexer   Programs   Python   Python/froze"\
-"n_modules"
+S["SRCDIRS"]="  Modules   Modules/_blake2   Modules/_ctypes   Modules/_decimal   Modules/_decimal/libmpdec   Modules/_io   Modules/_multiprocessing   Modules/_sha"\
+"3   Modules/_sqlite   Modules/_sre   Modules/_xxtestfuzz   Modules/cjkcodecs   Modules/expat   Objects   Parser   Programs   Python   Python/frozen_"\
+"modules   Python/deepfreeze"
 S["THREADHEADERS"]=" $(srcdir)/Python/thread_nt.h $(srcdir)/Python/thread_pthread.h $(srcdir)/Python/thread_pthread_stubs.h"
-S["PANEL_LIBS"]=""
-S["PANEL_CFLAGS"]=""
-S["CURSES_LIBS"]=""
-S["CURSES_CFLAGS"]=""
-S["LIBEDIT_LIBS"]=""
-S["LIBEDIT_CFLAGS"]=""
-S["LIBREADLINE_LIBS"]=""
-S["LIBREADLINE_CFLAGS"]=""
 S["WHEEL_PKG_DIR"]=""
-S["LIBPL"]="$(prefix)/lib/python3.14/config-$(VERSION)$(ABIFLAGS)-aarch64-linux-android"
+S["LIBPL"]="$(prefix)/lib/python3.11/config-$(VERSION)$(ABIFLAGS)"
 S["PY_ENABLE_SHARED"]="1"
 S["PLATLIBDIR"]="lib"
-S["BINLIBDEST"]="$(LIBDIR)/python$(VERSION)$(ABI_THREAD)"
-S["LIBPYTHON"]="$(BLDLIBRARY)"
-S["MODULE_DEPS_SHARED"]="$(MODULE_DEPS_STATIC) $(EXPORTSYMS) $(LDLIBRARY)"
-S["EXT_SUFFIX"]=".cpython-314-aarch64-linux-android.so"
+S["BINLIBDEST"]="$(LIBDIR)/python$(VERSION)"
+S["LIBPYTHON"]="-lpython3.11"
+S["EXT_SUFFIX"]=".cpython-311.so"
 S["ALT_SOABI"]=""
-S["SOABI"]="cpython-314-aarch64-linux-android"
+S["SOABI"]="cpython-311"
 S["LIBC"]=""
 S["LIBM"]="-lm"
 S["HAVE_GETHOSTBYNAME"]=""
@@ -962,9 +907,9 @@ S["HAVE_GETHOSTBYNAME_R"]=""
 S["HAVE_GETHOSTBYNAME_R_3_ARG"]=""
 S["HAVE_GETHOSTBYNAME_R_5_ARG"]=""
 S["HAVE_GETHOSTBYNAME_R_6_ARG"]=""
+S["LIBCRYPT_LIBS"]=""
+S["LIBCRYPT_CFLAGS"]=""
 S["LIBOBJS"]=""
-S["LIBZSTD_LIBS"]=""
-S["LIBZSTD_CFLAGS"]=""
 S["LIBLZMA_LIBS"]=""
 S["LIBLZMA_CFLAGS"]=""
 S["BZIP2_LIBS"]=""
@@ -981,8 +926,6 @@ S["DTRACE_OBJS"]=""
 S["DTRACE_HEADERS"]=""
 S["DFLAGS"]=""
 S["DTRACE"]=""
-S["INSTALL_MIMALLOC"]="yes"
-S["MIMALLOC_HEADERS"]="$(MIMALLOC_HEADERS)"
 S["GDBM_LIBS"]=""
 S["GDBM_CFLAGS"]=""
 S["X11_LIBS"]=""
@@ -991,22 +934,22 @@ S["TCLTK_LIBS"]=""
 S["TCLTK_CFLAGS"]=""
 S["LIBSQLITE3_LIBS"]="-lsqlite3"
 S["LIBSQLITE3_CFLAGS"]=" -I$(srcdir)/Modules/_sqlite"
+S["LIBNSL_LIBS"]=""
+S["LIBNSL_CFLAGS"]=""
 S["LIBMPDEC_INTERNAL"]="$(LIBMPDEC_HEADERS) $(LIBMPDEC_A)"
-S["LIBMPDEC_LIBS"]="-lm $(LIBMPDEC_A)"
+S["LIBMPDEC_LDFLAGS"]="-lm $(LIBMPDEC_A)"
 S["LIBMPDEC_CFLAGS"]="-I$(srcdir)/Modules/_decimal/libmpdec -DCONFIG_64=1 -DANSI=1 -DHAVE_UINT128_T=1"
-S["MODULE__CTYPES_MALLOC_CLOSURE"]=""
-S["LIBFFI_LIBS"]="-L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/lib -lffi -ldl"
-S["LIBFFI_CFLAGS"]="-I/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include"
+S["LIBFFI_INCLUDEDIR"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include"
 S["LIBEXPAT_INTERNAL"]="$(LIBEXPAT_HEADERS) $(LIBEXPAT_A)"
+S["LIBEXPAT_LDFLAGS"]="-lm $(LIBEXPAT_A)"
 S["LIBEXPAT_CFLAGS"]="-I$(srcdir)/Modules/expat"
 S["TZPATH"]="/usr/share/zoneinfo:/usr/lib/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo"
 S["LIBUUID_LIBS"]=""
 S["LIBUUID_CFLAGS"]=""
-S["PERF_TRAMPOLINE_OBJ"]=""
 S["SHLIBS"]="$(LIBS)"
 S["CFLAGSFORSHARED"]="$(CCSHARED)"
 S["LINKFORSHARED"]="-pie -Xlinker -export-dynamic"
-S["CCSHARED"]="-fPIC"
+S["CCSHARED"]=""
 S["BLDSHARED"]="/usr/bin/ccache /home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/clang -target aarch64-linux-android24 -fomit-frame-po"\
 "inter -march=armv8-a -fPIC -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions"
 S["LDCXXSHARED"]="/usr/bin/ccache /home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ -target aarch64-linux-android24 -fomit-frame-"\
@@ -1014,65 +957,53 @@ S["LDCXXSHARED"]="/usr/bin/ccache /home/muammar/.android-ndk-arm64/r29/toolchain
 S["LDSHARED"]="/usr/bin/ccache /home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/clang -target aarch64-linux-android24 -fomit-frame-po"\
 "inter -march=armv8-a -fPIC -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions"
 S["SHLIB_SUFFIX"]=".so"
-S["DSYMUTIL_PATH"]=""
-S["DSYMUTIL"]=""
-S["JIT_STENCILS_H"]=""
-S["REGEN_JIT_COMMAND"]=""
+S["LIBTOOL_CRUFT"]=""
+S["OTHER_LIBTOOL_OPT"]=""
 S["UNIVERSAL_ARCH_FLAGS"]=""
 S["WASM_STDLIB"]=""
 S["WASM_ASSETS_DIR"]=""
 S["LDFLAGS_NOLTO"]=""
 S["LDFLAGS_NODIST"]=""
-S["CFLAGS_NODIST"]=" -std=c11 -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wstrict-prototypes -Werror=implicit-function-declaration -fvisibility=hidde"\
-"n"
-S["BASECFLAGS"]=" -fno-strict-overflow -Wsign-compare -Wunreachable-code"
-S["CFLAGS_ALIASING"]=""
-S["OPT"]="-DNDEBUG -g -O3 -Wall"
-S["BOLT_APPLY_FLAGS"]="  -update-debug-sections -skip-funcs=_PyEval_EvalFrameDefault,sre_ucs1_match/1,sre_ucs2_match/1,sre_ucs4_match/1  -reorder-blocks=ext-tsp -reorder-f"\
-"unctions=cdsort -split-functions -icf=1 -inline-all -split-eh -reorder-functions-use-hot-size -peepholes=none -jump-tables=aggressive -inline-ap -in"\
-"direct-call-promotion=all -dyno-stats -use-gnu-stack -frame-opt=hot "
-S["BOLT_INSTRUMENT_FLAGS"]=" -update-debug-sections -skip-funcs=_PyEval_EvalFrameDefault,sre_ucs1_match/1,sre_ucs2_match/1,sre_ucs4_match/1 "
-S["BOLT_COMMON_FLAGS"]=" -update-debug-sections -skip-funcs=_PyEval_EvalFrameDefault,sre_ucs1_match/1,sre_ucs2_match/1,sre_ucs4_match/1 "
-S["BOLT_BINARIES"]="$(BUILDPYTHON) $(INSTSONAME)"
-S["MERGE_FDATA"]=""
-S["LLVM_BOLT"]=""
-S["PREBOLT_RULE"]=""
+S["CFLAGS_NODIST"]=" -std=c11 -Werror=implicit-function-declaration -fvisibility=hidden"
+S["BASECFLAGS"]=""
+S["CFLAGS_ALIASING"]="-fno-strict-aliasing"
+S["OPT"]="-DNDEBUG -g -fwrapv -O3 -Wall"
 S["LLVM_PROF_FOUND"]="found"
 S["LLVM_PROFDATA"]="/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata"
 S["LLVM_PROF_ERR"]="no"
-S["LLVM_PROF_FILE"]="LLVM_PROFILE_FILE=\"$(shell pwd)/code-%p.profclangr\""
-S["LLVM_PROF_MERGER"]=" /home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata merge -output=\"$(shell pwd)/code.profclangd\" \"$(shell "\
-"pwd)\"/*.profclangr "
-S["PGO_PROF_USE_FLAG"]="-fprofile-instr-use=\"$(shell pwd)/code.profclangd\""
+S["LLVM_PROF_FILE"]="LLVM_PROFILE_FILE=\"code-%p.profclangr\""
+S["LLVM_PROF_MERGER"]="/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-profdata merge -output=code.profclangd *.profclangr"
+S["PGO_PROF_USE_FLAG"]="-fprofile-instr-use=code.profclangd"
 S["PGO_PROF_GEN_FLAG"]="-fprofile-instr-generate"
 S["LLVM_AR_FOUND"]=""
 S["LLVM_AR"]=""
 S["PROFILE_TASK"]="-m test --pgo --timeout=$(TESTTIMEOUT)"
 S["DEF_MAKE_RULE"]="all"
 S["DEF_MAKE_ALL_RULE"]="build_all"
-S["ABI_THREAD"]=""
 S["ABIFLAGS"]=""
 S["LN"]="ln"
 S["MKDIR_P"]="/usr/bin/mkdir -p"
 S["INSTALL_DATA"]="${INSTALL} -m 644"
 S["INSTALL_SCRIPT"]="${INSTALL}"
 S["INSTALL_PROGRAM"]="${INSTALL}"
+S["ac_ct_READELF"]=""
+S["READELF"]="/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
 S["ARFLAGS"]="rcs"
 S["ac_ct_AR"]=""
 S["AR"]="/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
 S["LINK_PYTHON_OBJS"]="$(BLDLIBRARY)"
 S["LINK_PYTHON_DEPS"]="$(LIBRARY_DEPS)"
 S["LIBRARY_DEPS"]="$(LDLIBRARY) $(PY3LIBRARY) $(EXPORTSYMS)"
-S["HOSTRUNNER"]=""
 S["NODE"]=""
+S["HOSTRUNNER"]=""
 S["STATIC_LIBPYTHON"]="0"
 S["GNULD"]="yes"
 S["EXPORTSFROM"]=""
 S["EXPORTSYMS"]=""
-S["LINKCC"]="$(PURIFY) $(CC)"
+S["LINKCC"]="$(PURIFY) $(MAINCC)"
 S["LDVERSION"]="$(VERSION)$(ABIFLAGS)"
 S["RUNSHARED"]=""
-S["INSTSONAME"]="$(LDLIBRARY)"
+S["INSTSONAME"]="libpython$(LDVERSION).so.1.0"
 S["LDLIBRARYDIR"]=""
 S["PY3LIBRARY"]="libpython3.so"
 S["BLDLIBRARY"]="-L. -lpython$(LDVERSION)"
@@ -1081,11 +1012,11 @@ S["LDLIBRARY"]="libpython$(LDVERSION).so"
 S["LIBRARY"]="libpython$(VERSION)$(ABIFLAGS).a"
 S["BUILDEXEEXT"]=""
 S["NO_AS_NEEDED"]="-Wl,--no-as-needed"
-S["_Py_STACK_GROWS_DOWN"]="1"
-S["MULTIARCH_CPPFLAGS"]="-DMULTIARCH=\\\"aarch64-linux-android\\\""
-S["PLATFORM_TRIPLET"]="aarch64-linux-android"
-S["MULTIARCH"]="aarch64-linux-android"
+S["MULTIARCH_CPPFLAGS"]=""
+S["PLATFORM_TRIPLET"]=""
+S["MULTIARCH"]=""
 S["ac_ct_CXX"]=""
+S["MAINCC"]="$(CC)"
 S["CXX"]="/usr/bin/ccache /home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ -target aarch64-linux-android24 -fomit-frame-"\
 "pointer -march=armv8-a -fPIC"
 S["EGREP"]="/usr/bin/grep -E"
@@ -1096,7 +1027,7 @@ S["OBJEXT"]="o"
 S["EXEEXT"]=""
 S["ac_ct_CC"]=""
 S["CPPFLAGS"]="-DANDROID -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/an"\
-"droid/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.14 -I/home/mua"\
+"droid/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.11 -I/home/mua"\
 "mmar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3"\
 "/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildoze"\
 "r/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/andro"\
@@ -1109,13 +1040,10 @@ S["LDFLAGS"]="  -L/home/muammar/aplikasiMp3/.buildozer/android/platform/build-ar
 "_64/sysroot/usr/lib/aarch64-linux-android/24"
 S["CFLAGS"]="-fPIC -DANDROID"
 S["CC"]="/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-S["HAS_XCRUN"]=""
-S["IPHONEOS_DEPLOYMENT_TARGET"]=""
 S["EXPORT_MACOSX_DEPLOYMENT_TARGET"]="#"
 S["CONFIGURE_MACOSX_DEPLOYMENT_TARGET"]=""
-S["_PYTHON_HOST_PLATFORM"]="android-aarch64"
-S["APP_STORE_COMPLIANCE_PATCH"]=""
-S["INSTALLTARGETS"]="commoninstall bininstall maninstall"
+S["_PYTHON_HOST_PLATFORM"]="linux-aarch64"
+S["MACHDEP"]="linux"
 S["FRAMEWORKINSTALLAPPSPREFIX"]=""
 S["FRAMEWORKUNIXTOOLSPREFIX"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/andr"\
 "oid-root"
@@ -1124,8 +1052,6 @@ S["FRAMEWORKALTINSTALLLAST"]=""
 S["FRAMEWORKALTINSTALLFIRST"]=""
 S["FRAMEWORKINSTALLLAST"]=""
 S["FRAMEWORKINSTALLFIRST"]=""
-S["RESSRCDIR"]=""
-S["PYTHONFRAMEWORKINSTALLNAMEPREFIX"]=""
 S["PYTHONFRAMEWORKINSTALLDIR"]=""
 S["PYTHONFRAMEWORKPREFIX"]=""
 S["PYTHONFRAMEWORKDIR"]="no-framework"
@@ -1135,9 +1061,6 @@ S["LIPO_INTEL64_FLAGS"]=""
 S["LIPO_32BIT_FLAGS"]=""
 S["ARCH_RUN_32BIT"]=""
 S["UNIVERSALSDK"]=""
-S["host_exec_prefix"]="${exec_prefix}"
-S["host_prefix"]="${prefix}"
-S["MACHDEP"]="android"
 S["PKG_CONFIG_LIBDIR"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi"
 S["PKG_CONFIG_PATH"]=""
 S["PKG_CONFIG"]="/usr/bin/pkg-config"
@@ -1155,14 +1078,14 @@ S["CONFIG_ARGS"]=" '--host=aarch64-linux-android' '--build=aarch64-unknown-linux
 "likasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3 -L/home/muammar/.android-ndk-arm6"\
 "4/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24' 'LIBS= -lsqlite3 -lffi -lcrypto -lssl -lz' 'CPPFLAGS=-DANDROID"\
 " -I/home/muammar/.android-ndk-arm64/r29/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I/home/muammar/aplikasiMp3/.buildozer/android/pla"\
-"tform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.14 -I/home/muammar/apli"\
+"tform/build-arm64-v8a/build/other_builds/python3/arm64-v8a__ndk_target_24/python3/android-build/android-root/include/python3.11 -I/home/muammar/apli"\
 "kasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/sqlite3/arm64-v8a__ndk_target_24/sqlite3 -I/home/muammar/aplikasiMp3/.buildoz"\
 "er/android/platform/build-arm64-v8a/build/other_builds/libffi/arm64-v8a__ndk_target_24/libffi/include -I/home/muammar/aplikasiMp3/.buildozer/android"\
 "/platform/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include -I/home/muammar/aplikasiMp3/.buildozer/android/platfo"\
 "rm/build-arm64-v8a/build/other_builds/openssl/arm64-v8a__ndk_target_24/openssl3/include/openssl -I/home/muammar/.android-ndk-arm64/r29/toolchains/ll"\
 "vm/prebuilt/linux-x86_64/sysroot/usr/include'"
 S["SOVERSION"]="1.0"
-S["VERSION"]="3.14"
+S["VERSION"]="3.11"
 S["PYTHON_FOR_REGEN"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local"\
 "/bin/python"
 S["PYTHON_FOR_BUILD_DEPS"]=""
@@ -1172,10 +1095,9 @@ S["FREEZE_MODULE_BOOTSTRAP_DEPS"]="$(srcdir)/Programs/_freeze_module.py"
 S["FREEZE_MODULE_BOOTSTRAP"]="$(PYTHON_FOR_FREEZE) $(srcdir)/Programs/_freeze_module.py"
 S["PYTHON_FOR_FREEZE"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local"\
 "/bin/python"
-S["PYTHON_FOR_BUILD"]="_PYTHON_PROJECT_BASE=$(abs_builddir) _PYTHON_HOST_PLATFORM=$(_PYTHON_HOST_PLATFORM) PYTHONPATH=$(srcdir)/Lib _PYTHON_SYSCONFIGDATA_NAME=_sysconfigda"\
-"ta_$(ABIFLAGS)_$(MACHDEP)_$(MULTIARCH) _PYTHON_SYSCONFIGDATA_PATH=$(shell test -f pybuilddir.txt && echo $(abs_builddir)/`cat pybuilddir.txt`) /home"\
-"/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/"\
-"python"
+S["PYTHON_FOR_BUILD"]="_PYTHON_PROJECT_BASE=$(abs_builddir) _PYTHON_HOST_PLATFORM=$(_PYTHON_HOST_PLATFORM) PYTHONPATH=$(shell test -f pybuilddir.txt && echo $(abs_builddir"\
+")/`cat pybuilddir.txt`:)$(srcdir)/Lib _PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata_$(ABIFLAGS)_$(MACHDEP)_$(MULTIARCH) /home/muammar/aplikasiMp3/.build"\
+"ozer/android/platform/build-arm64-v8a/build/other_builds/hostpython3/desktop/hostpython3/native-build/root/usr/local/bin/python"
 S["host_os"]="linux-android"
 S["host_vendor"]="unknown"
 S["host_cpu"]="aarch64"
@@ -1192,7 +1114,7 @@ S["BASECPPFLAGS"]="-IObjects -IInclude -IPython"
 S["target_alias"]=""
 S["host_alias"]="aarch64-linux-android"
 S["build_alias"]="aarch64-unknown-linux-gnu"
-S["LIBS"]="-ldl  -lsqlite3 -lffi -lcrypto -lssl -lz -llog"
+S["LIBS"]="-ldl  -lsqlite3 -lffi -lcrypto -lssl -lz"
 S["ECHO_T"]=""
 S["ECHO_N"]="-n"
 S["ECHO_C"]=""
@@ -1223,8 +1145,8 @@ S["prefix"]="/home/muammar/aplikasiMp3/.buildozer/android/platform/build-arm64-v
 S["exec_prefix"]="${prefix}"
 S["PACKAGE_URL"]=""
 S["PACKAGE_BUGREPORT"]="https://github.com/python/cpython/issues/"
-S["PACKAGE_STRING"]="python 3.14"
-S["PACKAGE_VERSION"]="3.14"
+S["PACKAGE_STRING"]="python 3.11"
+S["PACKAGE_VERSION"]="3.11"
 S["PACKAGE_TARNAME"]="python"
 S["PACKAGE_NAME"]="python"
 S["PATH_SEPARATOR"]=":"
@@ -1266,7 +1188,7 @@ fi # test -n "$CONFIG_FILES"
 
 # Set up the scripts for CONFIG_HEADERS section.
 # No need to generate them if there are no CONFIG_HEADERS.
-# This happens for instance with './config.status Makefile'.
+# This happens for instance with `./config.status Makefile'.
 if test -n "$CONFIG_HEADERS"; then
 cat >"$ac_tmp/defines.awk" <<\_ACAWK ||
 BEGIN {
@@ -1277,36 +1199,22 @@ D["_PYTHONFRAMEWORK"]=" \"\""
 D["_XOPEN_SOURCE"]=" 700"
 D["_XOPEN_SOURCE_EXTENDED"]=" 1"
 D["_POSIX_C_SOURCE"]=" 200809L"
-D["HAVE_STDIO_H"]=" 1"
+D["STDC_HEADERS"]=" 1"
+D["HAVE_SYS_TYPES_H"]=" 1"
+D["HAVE_SYS_STAT_H"]=" 1"
 D["HAVE_STDLIB_H"]=" 1"
 D["HAVE_STRING_H"]=" 1"
+D["HAVE_MEMORY_H"]=" 1"
+D["HAVE_STRINGS_H"]=" 1"
 D["HAVE_INTTYPES_H"]=" 1"
 D["HAVE_STDINT_H"]=" 1"
-D["HAVE_STRINGS_H"]=" 1"
-D["HAVE_SYS_STAT_H"]=" 1"
-D["HAVE_SYS_TYPES_H"]=" 1"
 D["HAVE_UNISTD_H"]=" 1"
-D["HAVE_WCHAR_H"]=" 1"
-D["STDC_HEADERS"]=" 1"
-D["_ALL_SOURCE"]=" 1"
-D["_DARWIN_C_SOURCE"]=" 1"
-D["_GNU_SOURCE"]=" 1"
-D["_HPUX_ALT_XOPEN_SOCKET_API"]=" 1"
-D["_NETBSD_SOURCE"]=" 1"
-D["_OPENBSD_SOURCE"]=" 1"
-D["_POSIX_PTHREAD_SEMANTICS"]=" 1"
-D["__STDC_WANT_IEC_60559_ATTRIBS_EXT__"]=" 1"
-D["__STDC_WANT_IEC_60559_BFP_EXT__"]=" 1"
-D["__STDC_WANT_IEC_60559_DFP_EXT__"]=" 1"
-D["__STDC_WANT_IEC_60559_EXT__"]=" 1"
-D["__STDC_WANT_IEC_60559_FUNCS_EXT__"]=" 1"
-D["__STDC_WANT_IEC_60559_TYPES_EXT__"]=" 1"
-D["__STDC_WANT_LIB_EXT2__"]=" 1"
-D["__STDC_WANT_MATH_SPEC_FUNCS__"]=" 1"
-D["_TANDEM_SOURCE"]=" 1"
 D["__EXTENSIONS__"]=" 1"
-D["_Py_STACK_GROWS_DOWN"]=" 1"
-D["PY_SUPPORT_TIER"]=" 3"
+D["_ALL_SOURCE"]=" 1"
+D["_GNU_SOURCE"]=" 1"
+D["_POSIX_PTHREAD_SEMANTICS"]=" 1"
+D["_TANDEM_SOURCE"]=" 1"
+D["PY_SUPPORT_TIER"]=" 0"
 D["ANDROID_API_LEVEL"]=" 24"
 D["Py_ENABLE_SHARED"]=" 1"
 D["STDC_HEADERS"]=" 1"
@@ -1320,17 +1228,13 @@ D["HAVE_GRP_H"]=" 1"
 D["HAVE_LANGINFO_H"]=" 1"
 D["HAVE_LINUX_AUXVEC_H"]=" 1"
 D["HAVE_SYS_AUXV_H"]=" 1"
-D["HAVE_LINUX_FS_H"]=" 1"
 D["HAVE_LINUX_LIMITS_H"]=" 1"
 D["HAVE_LINUX_MEMFD_H"]=" 1"
-D["HAVE_LINUX_NETFILTER_IPV4_H"]=" 1"
 D["HAVE_LINUX_RANDOM_H"]=" 1"
 D["HAVE_LINUX_SOUNDCARD_H"]=" 1"
-D["HAVE_LINUX_SCHED_H"]=" 1"
 D["HAVE_LINUX_TIPC_H"]=" 1"
 D["HAVE_LINUX_WAIT_H"]=" 1"
 D["HAVE_NETDB_H"]=" 1"
-D["HAVE_NET_ETHERNET_H"]=" 1"
 D["HAVE_NETINET_IN_H"]=" 1"
 D["HAVE_NETPACKET_PACKET_H"]=" 1"
 D["HAVE_POLL_H"]=" 1"
@@ -1346,7 +1250,6 @@ D["HAVE_SYS_FILE_H"]=" 1"
 D["HAVE_SYS_IOCTL_H"]=" 1"
 D["HAVE_SYS_MMAN_H"]=" 1"
 D["HAVE_SYS_PARAM_H"]=" 1"
-D["HAVE_SYS_PIDFD_H"]=" 1"
 D["HAVE_SYS_POLL_H"]=" 1"
 D["HAVE_SYS_RANDOM_H"]=" 1"
 D["HAVE_SYS_RESOURCE_H"]=" 1"
@@ -1359,7 +1262,6 @@ D["HAVE_SYS_SYSCALL_H"]=" 1"
 D["HAVE_SYS_SYSMACROS_H"]=" 1"
 D["HAVE_SYS_TIME_H"]=" 1"
 D["HAVE_SYS_TIMES_H"]=" 1"
-D["HAVE_SYS_TIMERFD_H"]=" 1"
 D["HAVE_SYS_TYPES_H"]=" 1"
 D["HAVE_SYS_UIO_H"]=" 1"
 D["HAVE_SYS_UN_H"]=" 1"
@@ -1381,14 +1283,12 @@ D["HAVE_LINUX_CAN_H"]=" 1"
 D["HAVE_LINUX_CAN_BCM_H"]=" 1"
 D["HAVE_LINUX_CAN_J1939_H"]=" 1"
 D["HAVE_LINUX_CAN_RAW_H"]=" 1"
-D["HAVE_CLOCK_T"]=" 1"
 D["HAVE_MAKEDEV"]=" 1"
 D["HAVE_HTOLE64"]=" 1"
 D["_LARGEFILE_SOURCE"]=" 1"
 D["_FILE_OFFSET_BITS"]=" 64"
 D["RETSIGTYPE"]=" void"
 D["HAVE_SSIZE_T"]=" 1"
-D["HAVE___UINT128_T"]=" 1"
 D["HAVE_GCC_UINT128_T"]=" 1"
 D["SIZEOF_INT"]=" 4"
 D["SIZEOF_LONG"]=" 8"
@@ -1403,7 +1303,6 @@ D["SIZEOF_SIZE_T"]=" 8"
 D["ALIGNOF_SIZE_T"]=" 8"
 D["SIZEOF_PID_T"]=" 4"
 D["SIZEOF_UINTPTR_T"]=" 8"
-D["ALIGNOF_MAX_ALIGN_T"]=" 16"
 D["HAVE_LONG_DOUBLE"]=" 1"
 D["SIZEOF_LONG_DOUBLE"]=" 16"
 D["SIZEOF__BOOL"]=" 1"
@@ -1413,13 +1312,9 @@ D["SIZEOF_PTHREAD_T"]=" 8"
 D["SIZEOF_PTHREAD_KEY_T"]=" 4"
 D["PTHREAD_KEY_T_IS_COMPATIBLE_WITH_INT"]=" 1"
 D["HAVE_LIBDL"]=" 1"
-D["HAVE_EXECINFO_H"]=" 1"
-D["HAVE_LINK_H"]=" 1"
-D["HAVE_DLFCN_H"]=" 1"
-D["HAVE_FFI_PREP_CIF_VAR"]=" 1"
-D["HAVE_FFI_PREP_CLOSURE_LOC"]=" 1"
-D["HAVE_FFI_CLOSURE_ALLOC"]=" 1"
+D["HAVE_ALIGNED_REQUIRED"]=" 1"
 D["WITH_DECIMAL_CONTEXTVAR"]=" 1"
+D["HAVE_LIBSQLITE3"]=" 1"
 D["HAVE_LIBSQLITE3"]=" 1"
 D["HAVE_LIBSQLITE3"]=" 1"
 D["HAVE_LIBSQLITE3"]=" 1"
@@ -1438,10 +1333,8 @@ D["ENABLE_IPV6"]=" 1"
 D["HAVE_LINUX_CAN_RAW_FD_FRAMES"]=" 1"
 D["HAVE_LINUX_CAN_RAW_JOIN_FILTERS"]=" 1"
 D["WITH_DOC_STRINGS"]=" 1"
-D["HAVE_STD_ATOMIC"]=" 1"
-D["HAVE_BUILTIN_ATOMIC"]=" 1"
-D["WITH_MIMALLOC"]=" 1"
 D["WITH_PYMALLOC"]=" 1"
+D["WITH_FREELISTS"]=" 1"
 D["PY_COERCE_C_LOCALE"]=" 1"
 D["HAVE_DLOPEN"]=" 1"
 D["HAVE_DYNAMIC_LOADING"]=" 1"
@@ -1450,7 +1343,6 @@ D["HAVE_ALARM"]=" 1"
 D["HAVE_CHMOD"]=" 1"
 D["HAVE_CHOWN"]=" 1"
 D["HAVE_CLOCK"]=" 1"
-D["HAVE_DLADDR"]=" 1"
 D["HAVE_DUP"]=" 1"
 D["HAVE_DUP3"]=" 1"
 D["HAVE_EXECV"]=" 1"
@@ -1473,6 +1365,7 @@ D["HAVE_GETGRGID"]=" 1"
 D["HAVE_GETGRGID_R"]=" 1"
 D["HAVE_GETGRNAM_R"]=" 1"
 D["HAVE_GETGROUPLIST"]=" 1"
+D["HAVE_GETGROUPS"]=" 1"
 D["HAVE_GETHOSTNAME"]=" 1"
 D["HAVE_GETITIMER"]=" 1"
 D["HAVE_GETLOGIN"]=" 1"
@@ -1489,8 +1382,8 @@ D["HAVE_GETRESUID"]=" 1"
 D["HAVE_GETRUSAGE"]=" 1"
 D["HAVE_GETSID"]=" 1"
 D["HAVE_GETUID"]=" 1"
-D["HAVE_GRANTPT"]=" 1"
 D["HAVE_IF_NAMEINDEX"]=" 1"
+D["HAVE_INITGROUPS"]=" 1"
 D["HAVE_KILL"]=" 1"
 D["HAVE_KILLPG"]=" 1"
 D["HAVE_LCHOWN"]=" 1"
@@ -1518,16 +1411,10 @@ D["HAVE_PIPE2"]=" 1"
 D["HAVE_POLL"]=" 1"
 D["HAVE_POSIX_FADVISE"]=" 1"
 D["HAVE_POSIX_FALLOCATE"]=" 1"
-D["HAVE_POSIX_OPENPT"]=" 1"
 D["HAVE_PREAD"]=" 1"
 D["HAVE_PREADV"]=" 1"
-D["HAVE_PROCESS_VM_READV"]=" 1"
 D["HAVE_PTHREAD_CONDATTR_SETCLOCK"]=" 1"
 D["HAVE_PTHREAD_KILL"]=" 1"
-D["HAVE_PTHREAD_SETNAME_NP"]=" 1"
-D["HAVE_PTHREAD_GETATTR_NP"]=" 1"
-D["HAVE_PTSNAME"]=" 1"
-D["HAVE_PTSNAME_R"]=" 1"
 D["HAVE_PWRITE"]=" 1"
 D["HAVE_PWRITEV"]=" 1"
 D["HAVE_READLINK"]=" 1"
@@ -1541,14 +1428,25 @@ D["HAVE_SCHED_SETAFFINITY"]=" 1"
 D["HAVE_SCHED_SETPARAM"]=" 1"
 D["HAVE_SCHED_SETSCHEDULER"]=" 1"
 D["HAVE_SEM_GETVALUE"]=" 1"
+D["HAVE_SEM_OPEN"]=" 1"
 D["HAVE_SEM_TIMEDWAIT"]=" 1"
+D["HAVE_SEM_UNLINK"]=" 1"
 D["HAVE_SENDFILE"]=" 1"
+D["HAVE_SETEGID"]=" 1"
+D["HAVE_SETEUID"]=" 1"
+D["HAVE_SETGID"]=" 1"
+D["HAVE_SETHOSTNAME"]=" 1"
 D["HAVE_SETITIMER"]=" 1"
 D["HAVE_SETLOCALE"]=" 1"
 D["HAVE_SETPGID"]=" 1"
 D["HAVE_SETPGRP"]=" 1"
 D["HAVE_SETPRIORITY"]=" 1"
+D["HAVE_SETREGID"]=" 1"
+D["HAVE_SETRESGID"]=" 1"
+D["HAVE_SETRESUID"]=" 1"
+D["HAVE_SETREUID"]=" 1"
 D["HAVE_SETSID"]=" 1"
+D["HAVE_SETUID"]=" 1"
 D["HAVE_SETVBUF"]=" 1"
 D["HAVE_SHUTDOWN"]=" 1"
 D["HAVE_SIGACTION"]=" 1"
@@ -1567,6 +1465,7 @@ D["HAVE_STRSIGNAL"]=" 1"
 D["HAVE_SYMLINKAT"]=" 1"
 D["HAVE_SYNC"]=" 1"
 D["HAVE_SYSCONF"]=" 1"
+D["HAVE_SYSTEM"]=" 1"
 D["HAVE_TCGETPGRP"]=" 1"
 D["HAVE_TCSETPGRP"]=" 1"
 D["HAVE_TEMPNAM"]=" 1"
@@ -1575,11 +1474,10 @@ D["HAVE_TIMES"]=" 1"
 D["HAVE_TMPFILE"]=" 1"
 D["HAVE_TMPNAM"]=" 1"
 D["HAVE_TRUNCATE"]=" 1"
-D["HAVE_TTYNAME_R"]=" 1"
+D["HAVE_TTYNAME"]=" 1"
 D["HAVE_UMASK"]=" 1"
 D["HAVE_UNAME"]=" 1"
 D["HAVE_UNLINKAT"]=" 1"
-D["HAVE_UNLOCKPT"]=" 1"
 D["HAVE_UTIMENSAT"]=" 1"
 D["HAVE_UTIMES"]=" 1"
 D["HAVE_VFORK"]=" 1"
@@ -1592,9 +1490,8 @@ D["HAVE_WCSFTIME"]=" 1"
 D["HAVE_WCSXFRM"]=" 1"
 D["HAVE_WMEMCMP"]=" 1"
 D["HAVE_WRITEV"]=" 1"
-D["HAVE_GETGROUPS"]=" 1"
-D["HAVE_SYSTEM"]=" 1"
 D["HAVE_DIRFD"]=" 1"
+D["HAVE_CHROOT"]=" 1"
 D["HAVE_LINK"]=" 1"
 D["HAVE_SYMLINK"]=" 1"
 D["HAVE_FCHDIR"]=" 1"
@@ -1603,7 +1500,6 @@ D["HAVE_FDATASYNC"]=" 1"
 D["HAVE_EPOLL"]=" 1"
 D["HAVE_EPOLL_CREATE1"]=" 1"
 D["HAVE_PRLIMIT"]=" 1"
-D["HAVE_TIMERFD_CREATE"]=" 1"
 D["HAVE_FLOCK"]=" 1"
 D["HAVE_GETPAGESIZE"]=" 1"
 D["HAVE_ZLIB_H"]=" 1"
@@ -1628,8 +1524,6 @@ D["HAVE_SENDTO"]=" 1"
 D["HAVE_SETSOCKOPT"]=" 1"
 D["HAVE_SOCKET"]=" 1"
 D["HAVE_SETGROUPS"]=" 1"
-D["HAVE_DECL_UT_NAMESIZE"]=" 1"
-D["HAVE_UT_NAMESIZE"]=" 1"
 D["HAVE_OPENPTY"]=" 1"
 D["HAVE_LOGIN_TTY"]=" 1"
 D["HAVE_FORKPTY"]=" 1"
@@ -1640,16 +1534,16 @@ D["HAVE_STATVFS"]=" 1"
 D["HAVE_DUP2"]=" 1"
 D["HAVE_GETPGRP"]=" 1"
 D["HAVE_SETPGRP"]=" 1"
-D["HAVE_SETNS"]=" 1"
-D["HAVE_UNSHARE"]=" 1"
 D["HAVE_CLOCK_GETTIME"]=" 1"
 D["HAVE_CLOCK_GETRES"]=" 1"
+D["HAVE_CLOCK_SETTIME"]=" 1"
 D["HAVE_CLOCK_NANOSLEEP"]=" 1"
 D["HAVE_NANOSLEEP"]=" 1"
 D["HAVE_DEVICE_MACROS"]=" 1"
 D["SYS_SELECT_WITH_SYS_TIME"]=" 1"
 D["HAVE_GETADDRINFO"]=" 1"
 D["HAVE_GETNAMEINFO"]=" 1"
+D["TIME_WITH_SYS_TIME"]=" 1"
 D["HAVE_STRUCT_TM_TM_ZONE"]=" 1"
 D["HAVE_TM_ZONE"]=" 1"
 D["HAVE_STRUCT_STAT_ST_RDEV"]=" 1"
@@ -1662,6 +1556,7 @@ D["HAVE_ADDRINFO"]=" 1"
 D["HAVE_SOCKADDR_STORAGE"]=" 1"
 D["HAVE_SOCKADDR_ALG"]=" 1"
 D["HAVE_PROTOTYPES"]=" 1"
+D["HAVE_STDARG_PROTOTYPES"]=" 1"
 D["HAVE_SOCKETPAIR"]=" 1"
 D["HAVE_GETHOSTBYNAME_R"]=" 1"
 D["HAVE_GETHOSTBYNAME_R"]=" 1"
@@ -1688,13 +1583,15 @@ D["HAVE_WCHAR_H"]=" 1"
 D["SIZEOF_WCHAR_T"]=" 4"
 D["HAVE_GETC_UNLOCKED"]=" 1"
 D["HAVE_STAT_TV_NSEC"]=" 1"
-D["HAVE_SOCKLEN_T"]=" 1"
-D["Py_REMOTE_DEBUG"]=" 1"
+D["HAVE_DEV_PTMX"]=" 1"
+D["PY_FORMAT_SIZE_T"]=" \"z\""
+D["HAVE_STD_ATOMIC"]=" 1"
+D["HAVE_BUILTIN_ATOMIC"]=" 1"
 D["HAVE_DIRENT_D_TYPE"]=" 1"
 D["HAVE_GETRANDOM_SYSCALL"]=" 1"
 D["PY_SSL_DEFAULT_CIPHERS"]=" 1"
-D["PY_BUILTIN_HASHLIB_HASHES"]=" \"md5,sha1,sha2,sha3,blake2\""
-D["_PYTHREAD_NAME_MAXLEN"]=" 15"
+D["PY_BUILTIN_HASHLIB_HASHES"]=" /**/"
+D["PY_BUILTIN_HASHLIB_HASHES"]=" \"md5,sha1,sha256,sha512,sha3,blake2\""
   for (key in D) D_is_set[key] = 1
   FS = ""
 }
@@ -1740,7 +1637,7 @@ do
   esac
   case $ac_mode$ac_tag in
   :[FHL]*:*);;
-  :L* | :C*:*) as_fn_error $? "invalid tag '$ac_tag'" "$LINENO" 5;;
+  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5;;
   :[FH]-) ac_tag=-:-;;
   :[FH]*) ac_tag=$ac_tag:$ac_tag.in;;
   esac
@@ -1762,33 +1659,33 @@ do
       -) ac_f="$ac_tmp/stdin";;
       *) # Look for the file first in the build tree, then in the source tree
 	 # (if the path is not absolute).  The absolute path cannot be DOS-style,
-	 # because $ac_f cannot contain ':'.
+	 # because $ac_f cannot contain `:'.
 	 test -f "$ac_f" ||
 	   case $ac_f in
 	   [\\/$]*) false;;
 	   *) test -f "$srcdir/$ac_f" && ac_f="$srcdir/$ac_f";;
 	   esac ||
-	   as_fn_error 1 "cannot find input file: '$ac_f'" "$LINENO" 5;;
+	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5;;
       esac
-      case $ac_f in *\'*) ac_f=`printf "%s\n" "$ac_f" | sed "s/'/'\\\\\\\\''/g"`;; esac
+      case $ac_f in *\'*) ac_f=`$as_echo "$ac_f" | sed "s/'/'\\\\\\\\''/g"`;; esac
       as_fn_append ac_file_inputs " '$ac_f'"
     done
 
-    # Let's still pretend it is 'configure' which instantiates (i.e., don't
+    # Let's still pretend it is `configure' which instantiates (i.e., don't
     # use $as_me), people would be surprised to read:
     #    /* config.h.  Generated by config.status.  */
     configure_input='Generated from '`
-	  printf "%s\n" "$*" | sed 's|^[^:]*/||;s|:[^:]*/|, |g'
+	  $as_echo "$*" | sed 's|^[^:]*/||;s|:[^:]*/|, |g'
 	`' by configure.'
     if test x"$ac_file" != x-; then
       configure_input="$ac_file.  $configure_input"
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: creating $ac_file" >&5
-printf "%s\n" "$as_me: creating $ac_file" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: creating $ac_file" >&5
+$as_echo "$as_me: creating $ac_file" >&6;}
     fi
     # Neutralize special characters interpreted by sed in replacement strings.
     case $configure_input in #(
     *\&* | *\|* | *\\* )
-       ac_sed_conf_input=`printf "%s\n" "$configure_input" |
+       ac_sed_conf_input=`$as_echo "$configure_input" |
        sed 's/[\\\\&|]/\\\\&/g'`;; #(
     *) ac_sed_conf_input=$configure_input;;
     esac
@@ -1805,7 +1702,7 @@ $as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
 	 X"$ac_file" : 'X\(//\)[^/]' \| \
 	 X"$ac_file" : 'X\(//\)$' \| \
 	 X"$ac_file" : 'X\(/\)' \| . 2>/dev/null ||
-printf "%s\n" X"$ac_file" |
+$as_echo X"$ac_file" |
     sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
 	    s//\1/
 	    q
@@ -1829,9 +1726,9 @@ printf "%s\n" X"$ac_file" |
 case "$ac_dir" in
 .) ac_dir_suffix= ac_top_builddir_sub=. ac_top_build_prefix= ;;
 *)
-  ac_dir_suffix=/`printf "%s\n" "$ac_dir" | sed 's|^\.[\\/]||'`
+  ac_dir_suffix=/`$as_echo "$ac_dir" | sed 's|^\.[\\/]||'`
   # A ".." for each directory in $ac_dir_suffix.
-  ac_top_builddir_sub=`printf "%s\n" "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
+  ac_top_builddir_sub=`$as_echo "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
   case $ac_top_builddir_sub in
   "") ac_top_builddir_sub=. ac_top_build_prefix= ;;
   *)  ac_top_build_prefix=$ac_top_builddir_sub/ ;;
@@ -1890,8 +1787,8 @@ ac_sed_dataroot='
 case `eval "sed -n \"\$ac_sed_dataroot\" $ac_file_inputs"` in
 *datarootdir*) ac_datarootdir_seen=yes;;
 *@datadir@*|*@docdir@*|*@infodir@*|*@localedir@*|*@mandir@*)
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&5
-printf "%s\n" "$as_me: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&5
+$as_echo "$as_me: WARNING: $ac_file_inputs seems to ignore the --datarootdir setting" >&2;}
   ac_datarootdir_hack='
   s&@datadir@&${datarootdir}&g
   s&@docdir@&${datarootdir}/doc/${PACKAGE_TARNAME}&g
@@ -1925,9 +1822,9 @@ test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$ac_tmp/out"`; test -n "$ac_out"; } &&
   { ac_out=`sed -n '/^[	 ]*datarootdir[	 ]*:*=/p' \
       "$ac_tmp/out"`; test -z "$ac_out"; } &&
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file contains a reference to the variable 'datarootdir'
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $ac_file contains a reference to the variable \`datarootdir'
 which seems to be undefined.  Please make sure it is defined" >&5
-printf "%s\n" "$as_me: WARNING: $ac_file contains a reference to the variable 'datarootdir'
+$as_echo "$as_me: WARNING: $ac_file contains a reference to the variable \`datarootdir'
 which seems to be undefined.  Please make sure it is defined" >&2;}
 
   rm -f "$ac_tmp/stdin"
@@ -1943,20 +1840,20 @@ which seems to be undefined.  Please make sure it is defined" >&2;}
   #
   if test x"$ac_file" != x-; then
     {
-      printf "%s\n" "/* $configure_input  */" >&1 \
+      $as_echo "/* $configure_input  */" \
       && eval '$AWK -f "$ac_tmp/defines.awk"' "$ac_file_inputs"
     } >"$ac_tmp/config.h" \
       || as_fn_error $? "could not create $ac_file" "$LINENO" 5
     if diff "$ac_file" "$ac_tmp/config.h" >/dev/null 2>&1; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: $ac_file is unchanged" >&5
-printf "%s\n" "$as_me: $ac_file is unchanged" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: $ac_file is unchanged" >&5
+$as_echo "$as_me: $ac_file is unchanged" >&6;}
     else
       rm -f "$ac_file"
       mv "$ac_tmp/config.h" "$ac_file" \
 	|| as_fn_error $? "could not create $ac_file" "$LINENO" 5
     fi
   else
-    printf "%s\n" "/* $configure_input  */" >&1 \
+    $as_echo "/* $configure_input  */" \
       && eval '$AWK -f "$ac_tmp/defines.awk"' "$ac_file_inputs" \
       || as_fn_error $? "could not create -" "$LINENO" 5
   fi

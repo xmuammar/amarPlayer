@@ -1,22 +1,26 @@
-import functools
+import asyncio
 from contextlib import (
     asynccontextmanager, AbstractAsyncContextManager,
     AsyncExitStack, nullcontext, aclosing, contextmanager)
+import functools
 from test import support
-from test.support import run_no_yield_async_fn as _run_async_fn
 import unittest
 import traceback
 
 from test.test_contextlib import TestBaseExitStack
 
+support.requires_working_socket(module=True)
 
-def _async_test(async_fn):
-    """Decorator to turn an async function into a synchronous function"""
-    @functools.wraps(async_fn)
+def _async_test(func):
+    """Decorator to turn an async function into a test case."""
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        return _run_async_fn(async_fn, *args, **kwargs)
-
+        coro = func(*args, **kwargs)
+        asyncio.run(coro)
     return wrapper
+
+def tearDownModule():
+    asyncio.set_event_loop_policy(None)
 
 
 class TestAbstractAsyncContextManager(unittest.TestCase):
@@ -32,18 +36,6 @@ class TestAbstractAsyncContextManager(unittest.TestCase):
 
         async with manager as context:
             self.assertIs(manager, context)
-
-    @_async_test
-    async def test_slots(self):
-        class DefaultAsyncContextManager(AbstractAsyncContextManager):
-            __slots__ = ()
-
-            async def __aexit__(self, *args):
-                await super().__aexit__(*args)
-
-        with self.assertRaises(AttributeError):
-            manager = DefaultAsyncContextManager()
-            manager.var = 42
 
     @_async_test
     async def test_async_gen_propagates_generator_exit(self):
@@ -77,23 +69,23 @@ class TestAbstractAsyncContextManager(unittest.TestCase):
             async def __aexit__(self, exc_type, exc_value, traceback):
                 return None
 
-        self.assertIsSubclass(ManagerFromScratch, AbstractAsyncContextManager)
+        self.assertTrue(issubclass(ManagerFromScratch, AbstractAsyncContextManager))
 
         class DefaultEnter(AbstractAsyncContextManager):
             async def __aexit__(self, *args):
                 await super().__aexit__(*args)
 
-        self.assertIsSubclass(DefaultEnter, AbstractAsyncContextManager)
+        self.assertTrue(issubclass(DefaultEnter, AbstractAsyncContextManager))
 
         class NoneAenter(ManagerFromScratch):
             __aenter__ = None
 
-        self.assertNotIsSubclass(NoneAenter, AbstractAsyncContextManager)
+        self.assertFalse(issubclass(NoneAenter, AbstractAsyncContextManager))
 
         class NoneAexit(ManagerFromScratch):
             __aexit__ = None
 
-        self.assertNotIsSubclass(NoneAexit, AbstractAsyncContextManager)
+        self.assertFalse(issubclass(NoneAexit, AbstractAsyncContextManager))
 
 
 class AsyncContextManagerTestCase(unittest.TestCase):
@@ -208,9 +200,6 @@ class AsyncContextManagerTestCase(unittest.TestCase):
         await ctx.__aenter__()
         with self.assertRaises(RuntimeError):
             await ctx.__aexit__(TypeError, TypeError('foo'), None)
-        if support.check_impl_detail(cpython=True):
-            # The "gen" attribute is an implementation detail.
-            self.assertFalse(ctx.gen.ag_suspended)
 
     @_async_test
     async def test_contextmanager_trap_no_yield(self):
@@ -232,9 +221,6 @@ class AsyncContextManagerTestCase(unittest.TestCase):
         await ctx.__aenter__()
         with self.assertRaises(RuntimeError):
             await ctx.__aexit__(None, None, None)
-        if support.check_impl_detail(cpython=True):
-            # The "gen" attribute is an implementation detail.
-            self.assertFalse(ctx.gen.ag_suspended)
 
     @_async_test
     async def test_contextmanager_non_normalised(self):
@@ -522,23 +508,48 @@ class AclosingTestCase(unittest.TestCase):
 
 class TestAsyncExitStack(TestBaseExitStack, unittest.TestCase):
     class SyncAsyncExitStack(AsyncExitStack):
+        @staticmethod
+        def run_coroutine(coro):
+            loop = asyncio.get_event_loop_policy().get_event_loop()
+            t = loop.create_task(coro)
+            t.add_done_callback(lambda f: loop.stop())
+            loop.run_forever()
+
+            exc = t.exception()
+            if not exc:
+                return t.result()
+            else:
+                context = exc.__context__
+
+                try:
+                    raise exc
+                except:
+                    exc.__context__ = context
+                    raise exc
 
         def close(self):
-            return _run_async_fn(self.aclose)
+            return self.run_coroutine(self.aclose())
 
         def __enter__(self):
-            return _run_async_fn(self.__aenter__)
+            return self.run_coroutine(self.__aenter__())
 
         def __exit__(self, *exc_details):
-            return _run_async_fn(self.__aexit__, *exc_details)
+            return self.run_coroutine(self.__aexit__(*exc_details))
 
     exit_stack = SyncAsyncExitStack
     callback_error_internal_frames = [
-        ('__exit__', 'return _run_async_fn(self.__aexit__, *exc_details)'),
-        ('run_no_yield_async_fn', 'coro.send(None)'),
-        ('__aexit__', 'raise exc'),
+        ('__exit__', 'return self.run_coroutine(self.__aexit__(*exc_details))'),
+        ('run_coroutine', 'raise exc'),
+        ('run_coroutine', 'raise exc'),
+        ('__aexit__', 'raise exc_details[1]'),
         ('__aexit__', 'cb_suppress = cb(*exc_details)'),
     ]
+
+    def setUp(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.addCleanup(self.loop.close)
+        self.addCleanup(asyncio.set_event_loop_policy, None)
 
     @_async_test
     async def test_async_callback(self):

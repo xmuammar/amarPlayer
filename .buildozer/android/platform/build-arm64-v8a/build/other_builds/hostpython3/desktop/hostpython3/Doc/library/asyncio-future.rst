@@ -51,12 +51,11 @@ Future Functions
 
    .. important::
 
+      See also the :func:`create_task` function which is the
+      preferred way for creating new Tasks.
+
       Save a reference to the result of this function, to avoid
       a task disappearing mid-execution.
-
-      See also the :func:`create_task` function which is the
-      preferred way for creating new tasks or use :class:`asyncio.TaskGroup`
-      which keeps reference to the task internally.
 
    .. versionchanged:: 3.5.1
       The function accepts any :term:`awaitable` object.
@@ -75,7 +74,6 @@ Future Functions
       Deprecation warning is emitted if *future* is not a Future-like object
       and *loop* is not specified and there is no running event loop.
 
-.. _asyncio-future-obj:
 
 Future Object
 =============
@@ -122,20 +120,20 @@ Future Object
       a :exc:`CancelledError` exception.
 
       If the Future's result isn't yet available, this method raises
-      an :exc:`InvalidStateError` exception.
+      a :exc:`InvalidStateError` exception.
 
    .. method:: set_result(result)
 
       Mark the Future as *done* and set its result.
 
-      Raises an :exc:`InvalidStateError` error if the Future is
+      Raises a :exc:`InvalidStateError` error if the Future is
       already *done*.
 
    .. method:: set_exception(exception)
 
       Mark the Future as *done* and set an exception.
 
-      Raises an :exc:`InvalidStateError` error if the Future is
+      Raises a :exc:`InvalidStateError` error if the Future is
       already *done*.
 
    .. method:: done()

@@ -217,14 +217,15 @@ class TestThreadedServer(SocketThread):
                     pass
         finally:
             super().stop()
-            self._sock.close()
-            self._s1.close()
-            self._s2.close()
-
 
     def run(self):
-        self._sock.setblocking(False)
-        self._run()
+        try:
+            with self._sock:
+                self._sock.setblocking(False)
+                self._run()
+        finally:
+            self._s1.close()
+            self._s2.close()
 
     def _run(self):
         while self._active:

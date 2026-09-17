@@ -1,7 +1,7 @@
 .. _unix:
 
 **********************
-Unix-specific services
+Unix Specific Services
 **********************
 
 The modules described in this chapter provide interfaces to features that are
@@ -11,7 +11,6 @@ of it.  Here's an overview:
 
 .. toctree::
 
-   shlex.rst
    posix.rst
    pwd.rst
    grp.rst

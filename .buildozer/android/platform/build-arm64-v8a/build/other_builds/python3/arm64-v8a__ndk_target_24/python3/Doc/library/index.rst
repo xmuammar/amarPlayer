@@ -55,7 +55,6 @@ the `Python Package Index <https://pypi.org>`_.
    fileformats.rst
    crypto.rst
    allos.rst
-   cmdlinelibs.rst
    concurrency.rst
    ipc.rst
    netdata.rst
@@ -63,6 +62,7 @@ the `Python Package Index <https://pypi.org>`_.
    internet.rst
    mm.rst
    i18n.rst
+   frameworks.rst
    tk.rst
    development.rst
    debug.rst
@@ -75,5 +75,4 @@ the `Python Package Index <https://pypi.org>`_.
    unix.rst
    cmdline.rst
    superseded.rst
-   removed.rst
    security_warnings.rst

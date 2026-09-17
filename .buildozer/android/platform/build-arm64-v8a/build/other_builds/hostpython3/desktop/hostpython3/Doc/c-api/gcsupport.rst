@@ -57,72 +57,11 @@ rules:
    Analogous to :c:macro:`PyObject_New` but for container objects with the
    :c:macro:`Py_TPFLAGS_HAVE_GC` flag set.
 
-   Do not call this directly to allocate memory for an object; call the type's
-   :c:member:`~PyTypeObject.tp_alloc` slot instead.
-
-   When populating a type's :c:member:`~PyTypeObject.tp_alloc` slot,
-   :c:func:`PyType_GenericAlloc` is preferred over a custom function that
-   simply calls this macro.
-
-   Memory allocated by this macro must be freed with
-   :c:func:`PyObject_GC_Del` (usually called via the object's
-   :c:member:`~PyTypeObject.tp_free` slot).
-
-   .. seealso::
-
-      * :c:func:`PyObject_GC_Del`
-      * :c:macro:`PyObject_New`
-      * :c:func:`PyType_GenericAlloc`
-      * :c:member:`~PyTypeObject.tp_alloc`
-
 
 .. c:macro:: PyObject_GC_NewVar(TYPE, typeobj, size)
 
    Analogous to :c:macro:`PyObject_NewVar` but for container objects with the
    :c:macro:`Py_TPFLAGS_HAVE_GC` flag set.
-
-   Do not call this directly to allocate memory for an object; call the type's
-   :c:member:`~PyTypeObject.tp_alloc` slot instead.
-
-   When populating a type's :c:member:`~PyTypeObject.tp_alloc` slot,
-   :c:func:`PyType_GenericAlloc` is preferred over a custom function that
-   simply calls this macro.
-
-   Memory allocated by this macro must be freed with
-   :c:func:`PyObject_GC_Del` (usually called via the object's
-   :c:member:`~PyTypeObject.tp_free` slot).
-
-   .. seealso::
-
-      * :c:func:`PyObject_GC_Del`
-      * :c:macro:`PyObject_NewVar`
-      * :c:func:`PyType_GenericAlloc`
-      * :c:member:`~PyTypeObject.tp_alloc`
-
-
-.. c:function:: PyObject* PyUnstable_Object_GC_NewWithExtraData(PyTypeObject *type, size_t extra_size)
-
-   Analogous to :c:macro:`PyObject_GC_New` but allocates *extra_size*
-   bytes at the end of the object (at offset
-   :c:member:`~PyTypeObject.tp_basicsize`).
-   The allocated memory is initialized to zeros,
-   except for the :c:type:`Python object header <PyObject>`.
-
-   The extra data will be deallocated with the object, but otherwise it is
-   not managed by Python.
-
-   Memory allocated by this function must be freed with
-   :c:func:`PyObject_GC_Del` (usually called via the object's
-   :c:member:`~PyTypeObject.tp_free` slot).
-
-   .. warning::
-      The function is marked as unstable because the final mechanism
-      for reserving extra data after an instance is not yet decided.
-      For allocating a variable number of fields, prefer using
-      :c:type:`PyVarObject` and :c:member:`~PyTypeObject.tp_itemsize`
-      instead.
-
-   .. versionadded:: 3.12
 
 
 .. c:macro:: PyObject_GC_Resize(TYPE, op, newsize)
@@ -178,21 +117,6 @@ rules:
    Releases memory allocated to an object using :c:macro:`PyObject_GC_New` or
    :c:macro:`PyObject_GC_NewVar`.
 
-   Do not call this directly to free an object's memory; call the type's
-   :c:member:`~PyTypeObject.tp_free` slot instead.
-
-   Do not use this for memory allocated by :c:macro:`PyObject_New`,
-   :c:macro:`PyObject_NewVar`, or related allocation functions; use
-   :c:func:`PyObject_Free` instead.
-
-   .. seealso::
-
-      * :c:func:`PyObject_Free` is the non-GC equivalent of this function.
-      * :c:macro:`PyObject_GC_New`
-      * :c:macro:`PyObject_GC_NewVar`
-      * :c:func:`PyType_GenericAlloc`
-      * :c:member:`~PyTypeObject.tp_free`
-
 
 .. c:function:: void PyObject_GC_UnTrack(void *op)
 
@@ -237,9 +161,9 @@ provided.  In order to use this macro, the :c:member:`~PyTypeObject.tp_traverse`
 must name its arguments exactly *visit* and *arg*:
 
 
-.. c:macro:: Py_VISIT(o)
+.. c:function:: void Py_VISIT(PyObject *o)
 
-   If the :c:expr:`PyObject *` *o* is not ``NULL``, call the *visit* callback, with arguments *o*
+   If *o* is not ``NULL``, call the *visit* callback, with arguments *o*
    and *arg*.  If *visit* returns a non-zero value, then return it.
    Using this macro, :c:member:`~PyTypeObject.tp_traverse` handlers
    look like::
@@ -307,36 +231,3 @@ garbage collection runs.
    Returns the current state, 0 for disabled and 1 for enabled.
 
    .. versionadded:: 3.10
-
-
-Querying Garbage Collector State
---------------------------------
-
-The C-API provides the following interface for querying information about
-the garbage collector.
-
-.. c:function:: void PyUnstable_GC_VisitObjects(gcvisitobjects_t callback, void *arg)
-
-   Run supplied *callback* on all live GC-capable objects. *arg* is passed through to
-   all invocations of *callback*.
-
-   .. warning::
-      If new objects are (de)allocated by the callback it is undefined if they
-      will be visited.
-
-      Garbage collection is disabled during operation. Explicitly running a collection
-      in the callback may lead to undefined behaviour e.g. visiting the same objects
-      multiple times or not at all.
-
-   .. versionadded:: 3.12
-
-.. c:type:: int (*gcvisitobjects_t)(PyObject *object, void *arg)
-
-   Type of the visitor function to be passed to :c:func:`PyUnstable_GC_VisitObjects`.
-   *arg* is the same as the *arg* passed to ``PyUnstable_GC_VisitObjects``.
-   Return ``1`` to continue iteration, return ``0`` to stop iteration. Other return
-   values are reserved for now so behavior on returning anything else is undefined.
-
-   .. versionadded:: 3.12
-
-

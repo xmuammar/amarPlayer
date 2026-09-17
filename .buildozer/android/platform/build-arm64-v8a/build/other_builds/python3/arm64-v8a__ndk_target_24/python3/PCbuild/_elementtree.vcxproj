@@ -79,7 +79,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
-    <TargetExt>$(PyStdlibPydExt)</TargetExt>
+    <TargetExt>.pyd</TargetExt>
   </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -106,6 +106,7 @@
     <ClInclude Include="..\Modules\expat\iasciitab.h" />
     <ClInclude Include="..\Modules\expat\internal.h" />
     <ClInclude Include="..\Modules\expat\latin1tab.h" />
+    <ClInclude Include="..\Modules\expat\macconfig.h" />
     <ClInclude Include="..\Modules\expat\nametab.h" />
     <ClInclude Include="..\Modules\expat\pyexpatns.h" />
     <ClInclude Include="..\Modules\expat\utf8tab.h" />

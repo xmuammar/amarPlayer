@@ -23,7 +23,8 @@ def check_syntax_warning(testcase, statement, errtext='',
     testcase.assertEqual(len(warns), 1, warns)
 
     warn, = warns
-    testcase.assertIsSubclass(warn.category, SyntaxWarning)
+    testcase.assertTrue(issubclass(warn.category, SyntaxWarning),
+                        warn.category)
     if errtext:
         testcase.assertRegex(str(warn.message), errtext)
     testcase.assertEqual(warn.filename, '<testcase>')
@@ -159,12 +160,11 @@ def _filterwarnings(filters, quiet=False):
     registry = frame.f_globals.get('__warningregistry__')
     if registry:
         registry.clear()
-    # Because test_warnings swap the module, we need to look up in the
-    # sys.modules dictionary.
-    wmod = sys.modules['warnings']
-    with wmod.catch_warnings(record=True) as w:
-        # Set filter "always" to record all warnings.
-        wmod.simplefilter("always")
+    with warnings.catch_warnings(record=True) as w:
+        # Set filter "always" to record all warnings.  Because
+        # test_warnings swap the module, we need to look up in
+        # the sys.modules dictionary.
+        sys.modules['warnings'].simplefilter("always")
         yield WarningsRecorder(w)
     # Filter the recorded warnings
     reraise = list(w)

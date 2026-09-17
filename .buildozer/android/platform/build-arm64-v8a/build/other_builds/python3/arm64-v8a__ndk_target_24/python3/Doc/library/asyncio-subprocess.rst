@@ -61,14 +61,13 @@ See also the `Examples`_ subsection.
 Creating Subprocesses
 =====================
 
-.. function:: create_subprocess_exec(program, *args, stdin=None, \
-                 stdout=None, stderr=None, limit=None, **kwds)
-   :async:
+.. coroutinefunction:: create_subprocess_exec(program, *args, stdin=None, \
+                          stdout=None, stderr=None, limit=None, **kwds)
 
    Create a subprocess.
 
    The *limit* argument sets the buffer limit for :class:`StreamReader`
-   wrappers for :attr:`~asyncio.subprocess.Process.stdout` and :attr:`~asyncio.subprocess.Process.stderr`
+   wrappers for :attr:`Process.stdout` and :attr:`Process.stderr`
    (if :const:`subprocess.PIPE` is passed to *stdout* and *stderr* arguments).
 
    Return a :class:`~asyncio.subprocess.Process` instance.
@@ -76,30 +75,23 @@ Creating Subprocesses
    See the documentation of :meth:`loop.subprocess_exec` for other
    parameters.
 
-   If the process object is garbage collected while the process is still
-   running, the child process will be killed.
-
    .. versionchanged:: 3.10
       Removed the *loop* parameter.
 
 
-.. function:: create_subprocess_shell(cmd, stdin=None, \
-                 stdout=None, stderr=None, limit=None, **kwds)
-   :async:
+.. coroutinefunction:: create_subprocess_shell(cmd, stdin=None, \
+                          stdout=None, stderr=None, limit=None, **kwds)
 
    Run the *cmd* shell command.
 
    The *limit* argument sets the buffer limit for :class:`StreamReader`
-   wrappers for :attr:`~asyncio.subprocess.Process.stdout` and :attr:`~asyncio.subprocess.Process.stderr`
+   wrappers for :attr:`Process.stdout` and :attr:`Process.stderr`
    (if :const:`subprocess.PIPE` is passed to *stdout* and *stderr* arguments).
 
    Return a :class:`~asyncio.subprocess.Process` instance.
 
    See the documentation of :meth:`loop.subprocess_shell` for other
    parameters.
-
-   If the process object is garbage collected while the process is still
-   running, the child process will be killed.
 
    .. important::
 
@@ -138,12 +130,12 @@ Constants
 
    If *PIPE* is passed to *stdin* argument, the
    :attr:`Process.stdin <asyncio.subprocess.Process.stdin>` attribute
-   will point to a :class:`~asyncio.StreamWriter` instance.
+   will point to a :class:`StreamWriter` instance.
 
    If *PIPE* is passed to *stdout* or *stderr* arguments, the
    :attr:`Process.stdout <asyncio.subprocess.Process.stdout>` and
    :attr:`Process.stderr <asyncio.subprocess.Process.stderr>`
-   attributes will point to :class:`~asyncio.StreamReader` instances.
+   attributes will point to :class:`StreamReader` instances.
 
 .. data:: asyncio.subprocess.STDOUT
    :module:
@@ -171,7 +163,7 @@ their completion.
    :module:
 
    An object that wraps OS processes created by the
-   :func:`~asyncio.create_subprocess_exec` and :func:`~asyncio.create_subprocess_shell`
+   :func:`create_subprocess_exec` and :func:`create_subprocess_shell`
    functions.
 
    This class is designed to have a similar API to the
@@ -196,8 +188,7 @@ their completion.
    See also the :ref:`Subprocess and Threads <asyncio-subprocess-threads>`
    section.
 
-   .. method:: wait()
-      :async:
+   .. coroutinemethod:: wait()
 
       Wait for the child process to terminate.
 
@@ -211,15 +202,13 @@ their completion.
          more data. Use the :meth:`communicate` method when using pipes
          to avoid this condition.
 
-   .. method:: communicate(input=None)
-      :async:
+   .. coroutinemethod:: communicate(input=None)
 
       Interact with process:
 
       1. send data to *stdin* (if *input* is not ``None``);
-      2. closes *stdin*;
-      3. read data from *stdout* and *stderr*, until EOF is reached;
-      4. wait for process to terminate.
+      2. read data from *stdout* and *stderr*, until EOF is reached;
+      3. wait for process to terminate.
 
       The optional *input* argument is the data (:class:`bytes` object)
       that will be sent to the child process.
@@ -239,10 +228,6 @@ their completion.
 
       Note, that the data read is buffered in memory, so do not use
       this method if the data size is large or unlimited.
-
-      .. versionchanged:: 3.12
-
-         *stdin* gets closed when ``input=None`` too.
 
    .. method:: send_signal(signal)
 
@@ -269,24 +254,24 @@ their completion.
 
       Kill the child process.
 
-      On POSIX systems this method sends :py:data:`~signal.SIGKILL` to the child
+      On POSIX systems this method sends :py:data:`SIGKILL` to the child
       process.
 
       On Windows this method is an alias for :meth:`terminate`.
 
    .. attribute:: stdin
 
-      Standard input stream (:class:`~asyncio.StreamWriter`) or ``None``
+      Standard input stream (:class:`StreamWriter`) or ``None``
       if the process was created with ``stdin=None``.
 
    .. attribute:: stdout
 
-      Standard output stream (:class:`~asyncio.StreamReader`) or ``None``
+      Standard output stream (:class:`StreamReader`) or ``None``
       if the process was created with ``stdout=None``.
 
    .. attribute:: stderr
 
-      Standard error stream (:class:`~asyncio.StreamReader`) or ``None``
+      Standard error stream (:class:`StreamReader`) or ``None``
       if the process was created with ``stderr=None``.
 
    .. warning::
@@ -302,7 +287,7 @@ their completion.
 
       Process identification number (PID).
 
-      Note that for processes created by the :func:`~asyncio.create_subprocess_shell`
+      Note that for processes created by the :func:`create_subprocess_shell`
       function, this attribute is the PID of the spawned shell.
 
    .. attribute:: returncode
@@ -325,6 +310,18 @@ default.
 
 On Windows subprocesses are provided by :class:`ProactorEventLoop` only (default),
 :class:`SelectorEventLoop` has no subprocess support.
+
+On UNIX *child watchers* are used for subprocess finish waiting, see
+:ref:`asyncio-watchers` for more info.
+
+
+.. versionchanged:: 3.8
+
+   UNIX switched to use :class:`ThreadedChildWatcher` for spawning subprocesses from
+   different threads without any limitation.
+
+   Spawning a subprocess with *inactive* current child watcher raises
+   :exc:`RuntimeError`.
 
 Note that alternative event loop implementations might have own limitations;
 please refer to their documentation.

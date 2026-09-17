@@ -2,14 +2,11 @@
 /* Method object implementation */
 
 #include "Python.h"
-#include "pycore_call.h"          // _Py_CheckFunctionResult()
 #include "pycore_ceval.h"         // _Py_EnterRecursiveCallTstate()
-#include "pycore_freelist.h"
 #include "pycore_object.h"
 #include "pycore_pyerrors.h"
 #include "pycore_pystate.h"       // _PyThreadState_GET()
-#include "pycore_weakref.h"       // FT_CLEAR_WEAKREFS()
-
+#include "structmember.h"         // PyMemberDef
 
 /* undefine macro trampoline to PyCFunction_NewEx */
 #undef PyCFunction_New
@@ -87,14 +84,12 @@ PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *c
                             "flag but no class");
             return NULL;
         }
-        PyCMethodObject *om = _Py_FREELIST_POP(PyCMethodObject, pycmethodobject);
+        PyCMethodObject *om = PyObject_GC_New(PyCMethodObject, &PyCMethod_Type);
         if (om == NULL) {
-            om = PyObject_GC_New(PyCMethodObject, &PyCMethod_Type);
-            if (om == NULL) {
-                return NULL;
-            }
+            return NULL;
         }
-        om->mm_class = (PyTypeObject*)Py_NewRef(cls);
+        Py_INCREF(cls);
+        om->mm_class = cls;
         op = (PyCFunctionObject *)om;
     } else {
         if (cls) {
@@ -103,19 +98,18 @@ PyCMethod_New(PyMethodDef *ml, PyObject *self, PyObject *module, PyTypeObject *c
                             "but no METH_METHOD flag");
             return NULL;
         }
-        op = _Py_FREELIST_POP(PyCFunctionObject, pycfunctionobject);
+        op = PyObject_GC_New(PyCFunctionObject, &PyCFunction_Type);
         if (op == NULL) {
-            op = PyObject_GC_New(PyCFunctionObject, &PyCFunction_Type);
-            if (op == NULL) {
-                return NULL;
-            }
+            return NULL;
         }
     }
 
     op->m_weakreflist = NULL;
     op->m_ml = ml;
-    op->m_self = Py_XNewRef(self);
-    op->m_module = Py_XNewRef(module);
+    Py_XINCREF(self);
+    op->m_self = self;
+    Py_XINCREF(module);
+    op->m_module = module;
     op->vectorcall = vectorcall;
     _PyObject_GC_TRACK(op);
     return (PyObject *)op;
@@ -164,34 +158,27 @@ PyCMethod_GetClass(PyObject *op)
 /* Methods (the standard built-in methods, that is) */
 
 static void
-meth_dealloc(PyObject *self)
+meth_dealloc(PyCFunctionObject *m)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
+    // The Py_TRASHCAN mechanism requires that we be able to
+    // call PyObject_GC_UnTrack twice on an object.
     PyObject_GC_UnTrack(m);
-    FT_CLEAR_WEAKREFS(self, m->m_weakreflist);
-    // We need to access ml_flags here rather than later.
-    // `m->m_ml` might have the same lifetime
-    // as `m_self` when it's dynamically allocated.
-    int ml_flags = m->m_ml->ml_flags;
+    Py_TRASHCAN_BEGIN(m, meth_dealloc);
+    if (m->m_weakreflist != NULL) {
+        PyObject_ClearWeakRefs((PyObject*) m);
+    }
     // Dereference class before m_self: PyCFunction_GET_CLASS accesses
     // PyMethodDef m_ml, which could be kept alive by m_self
     Py_XDECREF(PyCFunction_GET_CLASS(m));
     Py_XDECREF(m->m_self);
     Py_XDECREF(m->m_module);
-    if (ml_flags & METH_METHOD) {
-        assert(Py_IS_TYPE(self, &PyCMethod_Type));
-        _Py_FREELIST_FREE(pycmethodobject, m, PyObject_GC_Del);
-    }
-    else {
-        assert(Py_IS_TYPE(self, &PyCFunction_Type));
-        _Py_FREELIST_FREE(pycfunctionobject, m, PyObject_GC_Del);
-    }
+    PyObject_GC_Del(m);
+    Py_TRASHCAN_END;
 }
 
 static PyObject *
-meth_reduce(PyObject *self, PyObject *Py_UNUSED(ignored))
+meth_reduce(PyCFunctionObject *m, PyObject *Py_UNUSED(ignored))
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
     if (m->m_self == NULL || PyModule_Check(m->m_self))
         return PyUnicode_FromString(m->m_ml->ml_name);
 
@@ -200,35 +187,30 @@ meth_reduce(PyObject *self, PyObject *Py_UNUSED(ignored))
 }
 
 static PyMethodDef meth_methods[] = {
-    {"__reduce__", meth_reduce, METH_NOARGS, NULL},
+    {"__reduce__", (PyCFunction)meth_reduce, METH_NOARGS, NULL},
     {NULL, NULL}
 };
 
 static PyObject *
-meth_get__text_signature__(PyObject *self, void *closure)
+meth_get__text_signature__(PyCFunctionObject *m, void *closure)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
-    return _PyType_GetTextSignatureFromInternalDoc(m->m_ml->ml_name,
-                                                   m->m_ml->ml_doc,
-                                                   m->m_ml->ml_flags);
+    return _PyType_GetTextSignatureFromInternalDoc(m->m_ml->ml_name, m->m_ml->ml_doc);
 }
 
 static PyObject *
-meth_get__doc__(PyObject *self, void *closure)
+meth_get__doc__(PyCFunctionObject *m, void *closure)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
     return _PyType_GetDocFromInternalDoc(m->m_ml->ml_name, m->m_ml->ml_doc);
 }
 
 static PyObject *
-meth_get__name__(PyObject *self, void *closure)
+meth_get__name__(PyCFunctionObject *m, void *closure)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
     return PyUnicode_FromString(m->m_ml->ml_name);
 }
 
 static PyObject *
-meth_get__qualname__(PyObject *self, void *closure)
+meth_get__qualname__(PyCFunctionObject *m, void *closure)
 {
     /* If __self__ is a module or NULL, return m.__name__
        (e.g. len.__qualname__ == 'len')
@@ -238,15 +220,14 @@ meth_get__qualname__(PyObject *self, void *closure)
 
        Otherwise return type(m.__self__).__qualname__ + '.' + m.__name__
        (e.g. [].append.__qualname__ == 'list.append') */
+    PyObject *type, *type_qualname, *res;
 
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
-    if (m->m_self == NULL || PyModule_Check(m->m_self)) {
+    if (m->m_self == NULL || PyModule_Check(m->m_self))
         return PyUnicode_FromString(m->m_ml->ml_name);
-    }
 
-    PyObject *type = PyType_Check(m->m_self) ? m->m_self : (PyObject*)Py_TYPE(m->m_self);
+    type = PyType_Check(m->m_self) ? m->m_self : (PyObject*)Py_TYPE(m->m_self);
 
-    PyObject *type_qualname = PyObject_GetAttr(type, &_Py_ID(__qualname__));
+    type_qualname = PyObject_GetAttr(type, &_Py_ID(__qualname__));
     if (type_qualname == NULL)
         return NULL;
 
@@ -257,15 +238,14 @@ meth_get__qualname__(PyObject *self, void *closure)
         return NULL;
     }
 
-    PyObject *res = PyUnicode_FromFormat("%S.%s", type_qualname, m->m_ml->ml_name);
+    res = PyUnicode_FromFormat("%S.%s", type_qualname, m->m_ml->ml_name);
     Py_DECREF(type_qualname);
     return res;
 }
 
 static int
-meth_traverse(PyObject *self, visitproc visit, void *arg)
+meth_traverse(PyCFunctionObject *m, visitproc visit, void *arg)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
     Py_VISIT(PyCFunction_GET_CLASS(m));
     Py_VISIT(m->m_self);
     Py_VISIT(m->m_module);
@@ -273,45 +253,43 @@ meth_traverse(PyObject *self, visitproc visit, void *arg)
 }
 
 static PyObject *
-meth_get__self__(PyObject *meth, void *closure)
+meth_get__self__(PyCFunctionObject *m, void *closure)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(meth);
-    PyObject *self = PyCFunction_GET_SELF(m);
-    if (self == NULL) {
+    PyObject *self;
+
+    self = PyCFunction_GET_SELF(m);
+    if (self == NULL)
         self = Py_None;
-    }
-    return Py_NewRef(self);
+    Py_INCREF(self);
+    return self;
 }
 
-static PyGetSetDef meth_getsets[] = {
-    {"__doc__",  meth_get__doc__,  NULL, NULL},
-    {"__name__", meth_get__name__, NULL, NULL},
-    {"__qualname__", meth_get__qualname__, NULL, NULL},
-    {"__self__", meth_get__self__, NULL, NULL},
-    {"__text_signature__", meth_get__text_signature__, NULL, NULL},
+static PyGetSetDef meth_getsets [] = {
+    {"__doc__",  (getter)meth_get__doc__,  NULL, NULL},
+    {"__name__", (getter)meth_get__name__, NULL, NULL},
+    {"__qualname__", (getter)meth_get__qualname__, NULL, NULL},
+    {"__self__", (getter)meth_get__self__, NULL, NULL},
+    {"__text_signature__", (getter)meth_get__text_signature__, NULL, NULL},
     {0}
 };
 
 #define OFF(x) offsetof(PyCFunctionObject, x)
 
 static PyMemberDef meth_members[] = {
-    {"__module__",    _Py_T_OBJECT,     OFF(m_module), 0},
+    {"__module__",    T_OBJECT,     OFF(m_module), 0},
     {NULL}
 };
 
 static PyObject *
-meth_repr(PyObject *self)
+meth_repr(PyCFunctionObject *m)
 {
-    PyCFunctionObject *m = _PyCFunctionObject_CAST(self);
-    if (m->m_self == NULL || PyModule_Check(m->m_self)) {
+    if (m->m_self == NULL || PyModule_Check(m->m_self))
         return PyUnicode_FromFormat("<built-in function %s>",
-                                    m->m_ml->ml_name);
-    }
-
+                                   m->m_ml->ml_name);
     return PyUnicode_FromFormat("<built-in method %s of %s object at %p>",
-                                m->m_ml->ml_name,
-                                Py_TYPE(m->m_self)->tp_name,
-                                m->m_self);
+                               m->m_ml->ml_name,
+                               Py_TYPE(m->m_self)->tp_name,
+                               m->m_self);
 }
 
 static PyObject *
@@ -336,19 +314,19 @@ meth_richcompare(PyObject *self, PyObject *other, int op)
         res = eq ? Py_True : Py_False;
     else
         res = eq ? Py_False : Py_True;
-    return Py_NewRef(res);
+    Py_INCREF(res);
+    return res;
 }
 
 static Py_hash_t
-meth_hash(PyObject *self)
+meth_hash(PyCFunctionObject *a)
 {
-    PyCFunctionObject *a = _PyCFunctionObject_CAST(self);
-    Py_hash_t x = PyObject_GenericHash(a->m_self);
-    Py_hash_t y = Py_HashPointer((void*)(a->m_ml->ml_meth));
+    Py_hash_t x, y;
+    x = _Py_HashPointer(a->m_self);
+    y = _Py_HashPointer((void*)(a->m_ml->ml_meth));
     x ^= y;
-    if (x == -1) {
+    if (x == -1)
         x = -2;
-    }
     return x;
 }
 
@@ -358,16 +336,16 @@ PyTypeObject PyCFunction_Type = {
     "builtin_function_or_method",
     sizeof(PyCFunctionObject),
     0,
-    meth_dealloc,                               /* tp_dealloc */
+    (destructor)meth_dealloc,                   /* tp_dealloc */
     offsetof(PyCFunctionObject, vectorcall),    /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_as_async */
-    meth_repr,                                  /* tp_repr */
+    (reprfunc)meth_repr,                        /* tp_repr */
     0,                                          /* tp_as_number */
     0,                                          /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
-    meth_hash,                                  /* tp_hash */
+    (hashfunc)meth_hash,                        /* tp_hash */
     cfunction_call,                             /* tp_call */
     0,                                          /* tp_str */
     PyObject_GenericGetAttr,                    /* tp_getattro */
@@ -376,7 +354,7 @@ PyTypeObject PyCFunction_Type = {
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
     Py_TPFLAGS_HAVE_VECTORCALL,                 /* tp_flags */
     0,                                          /* tp_doc */
-    meth_traverse,                /* tp_traverse */
+    (traverseproc)meth_traverse,                /* tp_traverse */
     0,                                          /* tp_clear */
     meth_richcompare,                           /* tp_richcompare */
     offsetof(PyCFunctionObject, m_weakreflist), /* tp_weaklistoffset */
@@ -441,7 +419,7 @@ cfunction_vectorcall_FASTCALL(
         return NULL;
     }
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
-    PyCFunctionFast meth = (PyCFunctionFast)
+    _PyCFunctionFast meth = (_PyCFunctionFast)
                             cfunction_enter_call(tstate, func);
     if (meth == NULL) {
         return NULL;
@@ -457,7 +435,7 @@ cfunction_vectorcall_FASTCALL_KEYWORDS(
 {
     PyThreadState *tstate = _PyThreadState_GET();
     Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
-    PyCFunctionFastWithKeywords meth = (PyCFunctionFastWithKeywords)
+    _PyCFunctionFastWithKeywords meth = (_PyCFunctionFastWithKeywords)
                                         cfunction_enter_call(tstate, func);
     if (meth == NULL) {
         return NULL;
@@ -562,7 +540,7 @@ cfunction_call(PyObject *func, PyObject *args, PyObject *kwargs)
     PyObject *result;
     if (flags & METH_KEYWORDS) {
         result = _PyCFunctionWithKeywords_TrampolineCall(
-            *_PyCFunctionWithKeywords_CAST(meth),
+            (*(PyCFunctionWithKeywords)(void(*)(void))meth),
             self, args, kwargs);
     }
     else {
@@ -576,3 +554,11 @@ cfunction_call(PyObject *func, PyObject *args, PyObject *kwargs)
     }
     return _Py_CheckFunctionResult(tstate, func, result, NULL);
 }
+
+#if defined(__EMSCRIPTEN__) && defined(PY_CALL_TRAMPOLINE)
+#include <emscripten.h>
+
+EM_JS(PyObject*, _PyCFunctionWithKeywords_TrampolineCall, (PyCFunctionWithKeywords func, PyObject *self, PyObject *args, PyObject *kw), {
+    return wasmTable.get(func)(self, args, kw);
+});
+#endif

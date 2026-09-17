@@ -1,6 +1,9 @@
 /* C Extension module to test all aspects of PEP-3118.
    Written by Stefan Krah. */
 
+
+#define PY_SSIZE_T_CLEAN
+
 #include "Python.h"
 
 
@@ -24,13 +27,11 @@ static PyTypeObject NDArray_Type;
 #define NDArray_Check(v) Py_IS_TYPE(v, &NDArray_Type)
 
 #define CHECK_LIST_OR_TUPLE(v) \
-    do { \
-        if (!PyList_Check(v) && !PyTuple_Check(v)) { \
-            PyErr_SetString(PyExc_TypeError, \
-                            #v " must be a list or a tuple"); \
-            return NULL; \
-        } \
-    } while (0)
+    if (!PyList_Check(v) && !PyTuple_Check(v)) { \
+        PyErr_SetString(PyExc_TypeError,         \
+            #v " must be a list or a tuple");    \
+        return NULL;                             \
+    }                                            \
 
 #define PyMem_XFree(v) \
     do { if (v) PyMem_Free(v); } while (0)
@@ -218,9 +219,8 @@ ndarray_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 static void
-ndarray_dealloc(PyObject *op)
+ndarray_dealloc(NDArrayObject *self)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     if (self->head) {
         if (ND_IS_CONSUMER(self)) {
             Py_buffer *base = &self->head->base;
@@ -1183,7 +1183,7 @@ init_ndbuf(PyObject *items, PyObject *shape, PyObject *strides,
     Py_ssize_t itemsize;
 
     /* ndim = len(shape) */
-    CHECK_LIST_OR_TUPLE(shape);
+    CHECK_LIST_OR_TUPLE(shape)
     ndim = PySequence_Fast_GET_SIZE(shape);
     if (ndim > ND_MAX_NDIM) {
         PyErr_Format(PyExc_ValueError,
@@ -1193,7 +1193,7 @@ init_ndbuf(PyObject *items, PyObject *shape, PyObject *strides,
 
     /* len(strides) = len(shape) */
     if (strides) {
-        CHECK_LIST_OR_TUPLE(strides);
+        CHECK_LIST_OR_TUPLE(strides)
         if (PySequence_Fast_GET_SIZE(strides) == 0)
             strides = NULL;
         else if (flags & ND_FORTRAN) {
@@ -1220,12 +1220,12 @@ init_ndbuf(PyObject *items, PyObject *shape, PyObject *strides,
 
     /* convert scalar to list */
     if (ndim == 0) {
-        items = PyTuple_Pack(1, items);
+        items = Py_BuildValue("(O)", items);
         if (items == NULL)
             return NULL;
     }
     else {
-        CHECK_LIST_OR_TUPLE(items);
+        CHECK_LIST_OR_TUPLE(items)
         Py_INCREF(items);
     }
 
@@ -1414,9 +1414,8 @@ ndarray_pop(PyObject *self, PyObject *dummy)
 /**************************************************************************/
 
 static int
-ndarray_getbuf(PyObject *op, Py_buffer *view, int flags)
+ndarray_getbuf(NDArrayObject *self, Py_buffer *view, int flags)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     ndbuf_t *ndbuf = self->head;
     Py_buffer *base = &ndbuf->base;
     int baseflags = ndbuf->flags;
@@ -1525,16 +1524,16 @@ ndarray_getbuf(PyObject *op, Py_buffer *view, int flags)
             return -1;
     }
 
-    view->obj = Py_NewRef(self);
+    view->obj = (PyObject *)self;
+    Py_INCREF(view->obj);
     self->head->exports++;
 
     return 0;
 }
 
 static void
-ndarray_releasebuf(PyObject *op, Py_buffer *view)
+ndarray_releasebuf(NDArrayObject *self, Py_buffer *view)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     if (!ND_IS_CONSUMER(self)) {
         ndbuf_t *ndbuf = view->internal;
         if (--ndbuf->exports == 0 && ndbuf != self->head)
@@ -1543,8 +1542,8 @@ ndarray_releasebuf(PyObject *op, Py_buffer *view)
 }
 
 static PyBufferProcs ndarray_as_buffer = {
-    ndarray_getbuf,         /* bf_getbuffer */
-    ndarray_releasebuf,     /* bf_releasebuffer */
+    (getbufferproc)ndarray_getbuf,        /* bf_getbuffer */
+    (releasebufferproc)ndarray_releasebuf /* bf_releasebuffer */
 };
 
 
@@ -1586,9 +1585,8 @@ ptr_from_index(Py_buffer *base, Py_ssize_t index)
 }
 
 static PyObject *
-ndarray_item(PyObject *op, Py_ssize_t index)
+ndarray_item(NDArrayObject *self, Py_ssize_t index)
 {
-    NDArrayObject *self = (NDArrayObject *)op;
     ndbuf_t *ndbuf = self->head;
     Py_buffer *base = &ndbuf->base;
     char *ptr;
@@ -1779,9 +1777,8 @@ err_nomem:
 }
 
 static PyObject *
-ndarray_subscript(PyObject *op, PyObject *key)
+ndarray_subscript(NDArrayObject *self, PyObject *key)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     NDArrayObject *nd;
     ndbuf_t *ndbuf;
     Py_buffer *base = &self->head->base;
@@ -1791,7 +1788,8 @@ ndarray_subscript(PyObject *op, PyObject *key)
             return unpack_single(base->buf, base->format, base->itemsize);
         }
         else if (key == Py_Ellipsis) {
-            return Py_NewRef(self);
+            Py_INCREF(self);
+            return (PyObject *)self;
         }
         else {
             PyErr_SetString(PyExc_TypeError, "invalid indexing of scalar");
@@ -1802,7 +1800,7 @@ ndarray_subscript(PyObject *op, PyObject *key)
         Py_ssize_t index = PyLong_AsSsize_t(key);
         if (index == -1 && PyErr_Occurred())
             return NULL;
-        return ndarray_item(op, index);
+        return ndarray_item(self, index);
     }
 
     nd = (NDArrayObject *)ndarray_new(&NDArray_Type, NULL, NULL);
@@ -1864,9 +1862,8 @@ err_occurred:
 
 
 static int
-ndarray_ass_subscript(PyObject *op, PyObject *key, PyObject *value)
+ndarray_ass_subscript(NDArrayObject *self, PyObject *key, PyObject *value)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     NDArrayObject *nd;
     Py_buffer *dest = &self->head->base;
     Py_buffer src;
@@ -1910,7 +1907,7 @@ ndarray_ass_subscript(PyObject *op, PyObject *key, PyObject *value)
     if (PyObject_GetBuffer(value, &src, PyBUF_FULL_RO) == -1)
         return -1;
 
-    nd = (NDArrayObject *)ndarray_subscript((PyObject*)self, key);
+    nd = (NDArrayObject *)ndarray_subscript(self, key);
     if (nd != NULL) {
         dest = &nd->head->base;
         ret = copy_buffer(dest, &src);
@@ -1962,15 +1959,15 @@ error:
 
 static PyMappingMethods ndarray_as_mapping = {
     NULL,                                 /* mp_length */
-    ndarray_subscript,                    /* mp_subscript */
-    ndarray_ass_subscript                 /* mp_ass_subscript */
+    (binaryfunc)ndarray_subscript,        /* mp_subscript */
+    (objobjargproc)ndarray_ass_subscript  /* mp_ass_subscript */
 };
 
 static PySequenceMethods ndarray_as_sequence = {
-    0,              /* sq_length */
-    0,              /* sq_concat */
-    0,              /* sq_repeat */
-    ndarray_item,   /* sq_item */
+        0,                                /* sq_length */
+        0,                                /* sq_concat */
+        0,                                /* sq_repeat */
+        (ssizeargfunc)ndarray_item,       /* sq_item */
 };
 
 
@@ -2004,99 +2001,89 @@ ssize_array_as_tuple(Py_ssize_t *array, Py_ssize_t len)
 }
 
 static PyObject *
-ndarray_get_flags(PyObject *op, void *closure)
+ndarray_get_flags(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     return PyLong_FromLong(self->head->flags);
 }
 
 static PyObject *
-ndarray_get_offset(PyObject *op, void *closure)
+ndarray_get_offset(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     ndbuf_t *ndbuf = self->head;
     return PyLong_FromSsize_t(ndbuf->offset);
 }
 
 static PyObject *
-ndarray_get_obj(PyObject *op, void *closure)
+ndarray_get_obj(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
 
     if (base->obj == NULL) {
         Py_RETURN_NONE;
     }
-    return Py_NewRef(base->obj);
+    Py_INCREF(base->obj);
+    return base->obj;
 }
 
 static PyObject *
-ndarray_get_nbytes(PyObject *op, void *closure)
+ndarray_get_nbytes(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return PyLong_FromSsize_t(base->len);
 }
 
 static PyObject *
-ndarray_get_readonly(PyObject *op, void *closure)
+ndarray_get_readonly(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return PyBool_FromLong(base->readonly);
 }
 
 static PyObject *
-ndarray_get_itemsize(PyObject *op, void *closure)
+ndarray_get_itemsize(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return PyLong_FromSsize_t(base->itemsize);
 }
 
 static PyObject *
-ndarray_get_format(PyObject *op, void *closure)
+ndarray_get_format(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     const char *fmt = base->format ? base->format : "";
     return PyUnicode_FromString(fmt);
 }
 
 static PyObject *
-ndarray_get_ndim(PyObject *op, void *closure)
+ndarray_get_ndim(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return PyLong_FromSsize_t(base->ndim);
 }
 
 static PyObject *
-ndarray_get_shape(PyObject *op, void *closure)
+ndarray_get_shape(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return ssize_array_as_tuple(base->shape, base->ndim);
 }
 
 static PyObject *
-ndarray_get_strides(PyObject *op, void *closure)
+ndarray_get_strides(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return ssize_array_as_tuple(base->strides, base->ndim);
 }
 
 static PyObject *
-ndarray_get_suboffsets(PyObject *op, void *closure)
+ndarray_get_suboffsets(NDArrayObject *self, void *closure)
 {
-    NDArrayObject *self = (NDArrayObject*)op;
     Py_buffer *base = &self->head->base;
     return ssize_array_as_tuple(base->suboffsets, base->ndim);
 }
 
 static PyObject *
-ndarray_c_contig(PyObject *self, void *dummy)
+ndarray_c_contig(PyObject *self, PyObject *dummy)
 {
     NDArrayObject *nd = (NDArrayObject *)self;
     int ret = PyBuffer_IsContiguous(&nd->head->base, 'C');
@@ -2110,7 +2097,7 @@ ndarray_c_contig(PyObject *self, void *dummy)
 }
 
 static PyObject *
-ndarray_fortran_contig(PyObject *self, void *dummy)
+ndarray_fortran_contig(PyObject *self, PyObject *dummy)
 {
     NDArrayObject *nd = (NDArrayObject *)self;
     int ret = PyBuffer_IsContiguous(&nd->head->base, 'F');
@@ -2124,7 +2111,7 @@ ndarray_fortran_contig(PyObject *self, void *dummy)
 }
 
 static PyObject *
-ndarray_contig(PyObject *self, void *dummy)
+ndarray_contig(PyObject *self, PyObject *dummy)
 {
     NDArrayObject *nd = (NDArrayObject *)self;
     int ret = PyBuffer_IsContiguous(&nd->head->base, 'A');
@@ -2141,21 +2128,21 @@ ndarray_contig(PyObject *self, void *dummy)
 static PyGetSetDef ndarray_getset [] =
 {
   /* ndbuf */
-  { "flags",        ndarray_get_flags,      NULL, NULL, NULL},
-  { "offset",       ndarray_get_offset,     NULL, NULL, NULL},
+  { "flags",        (getter)ndarray_get_flags,      NULL, NULL, NULL},
+  { "offset",       (getter)ndarray_get_offset,     NULL, NULL, NULL},
   /* ndbuf.base */
-  { "obj",          ndarray_get_obj,        NULL, NULL, NULL},
-  { "nbytes",       ndarray_get_nbytes,     NULL, NULL, NULL},
-  { "readonly",     ndarray_get_readonly,   NULL, NULL, NULL},
-  { "itemsize",     ndarray_get_itemsize,   NULL, NULL, NULL},
-  { "format",       ndarray_get_format,     NULL, NULL, NULL},
-  { "ndim",         ndarray_get_ndim,       NULL, NULL, NULL},
-  { "shape",        ndarray_get_shape,      NULL, NULL, NULL},
-  { "strides",      ndarray_get_strides,    NULL, NULL, NULL},
-  { "suboffsets",   ndarray_get_suboffsets, NULL, NULL, NULL},
-  { "c_contiguous", ndarray_c_contig,       NULL, NULL, NULL},
-  { "f_contiguous", ndarray_fortran_contig, NULL, NULL, NULL},
-  { "contiguous",   ndarray_contig,         NULL, NULL, NULL},
+  { "obj",          (getter)ndarray_get_obj,        NULL, NULL, NULL},
+  { "nbytes",       (getter)ndarray_get_nbytes,     NULL, NULL, NULL},
+  { "readonly",     (getter)ndarray_get_readonly,   NULL, NULL, NULL},
+  { "itemsize",     (getter)ndarray_get_itemsize,   NULL, NULL, NULL},
+  { "format",       (getter)ndarray_get_format,     NULL, NULL, NULL},
+  { "ndim",         (getter)ndarray_get_ndim,       NULL, NULL, NULL},
+  { "shape",        (getter)ndarray_get_shape,      NULL, NULL, NULL},
+  { "strides",      (getter)ndarray_get_strides,    NULL, NULL, NULL},
+  { "suboffsets",   (getter)ndarray_get_suboffsets, NULL, NULL, NULL},
+  { "c_contiguous", (getter)ndarray_c_contig,       NULL, NULL, NULL},
+  { "f_contiguous", (getter)ndarray_fortran_contig, NULL, NULL, NULL},
+  { "contiguous",   (getter)ndarray_contig,         NULL, NULL, NULL},
   {NULL}
 };
 
@@ -2572,7 +2559,8 @@ result:
     PyBuffer_Release(&v2);
 
     ret = equal ? Py_True : Py_False;
-    return Py_NewRef(ret);
+    Py_INCREF(ret);
+    return ret;
 }
 
 static PyObject *
@@ -2609,7 +2597,8 @@ is_contiguous(PyObject *self, PyObject *args)
         PyBuffer_Release(&view);
     }
 
-    return Py_NewRef(ret);
+    Py_INCREF(ret);
+    return ret;
 }
 
 static Py_hash_t
@@ -2640,7 +2629,7 @@ ndarray_hash(PyObject *self)
 }
 
 
-static PyMethodDef ndarray_methods[] =
+static PyMethodDef ndarray_methods [] =
 {
     { "tolist", ndarray_tolist, METH_NOARGS, NULL },
     { "tobytes", ndarray_tobytes, METH_NOARGS, NULL },
@@ -2656,7 +2645,7 @@ static PyTypeObject NDArray_Type = {
     "ndarray",                   /* Name of this type */
     sizeof(NDArrayObject),       /* Basic object size */
     0,                           /* Item size for varobject */
-    ndarray_dealloc,             /* tp_dealloc */
+    (destructor)ndarray_dealloc, /* tp_dealloc */
     0,                           /* tp_vectorcall_offset */
     0,                           /* tp_getattr */
     0,                           /* tp_setattr */
@@ -2665,7 +2654,7 @@ static PyTypeObject NDArray_Type = {
     0,                           /* tp_as_number */
     &ndarray_as_sequence,        /* tp_as_sequence */
     &ndarray_as_mapping,         /* tp_as_mapping */
-    ndarray_hash,                /* tp_hash */
+    (hashfunc)ndarray_hash,      /* tp_hash */
     0,                           /* tp_call */
     0,                           /* tp_str */
     PyObject_GenericGetAttr,     /* tp_getattro */
@@ -2743,7 +2732,7 @@ staticarray_init(PyObject *self, PyObject *args, PyObject *kwds)
 }
 
 static void
-staticarray_dealloc(PyObject *self)
+staticarray_dealloc(StaticArrayObject *self)
 {
     PyObject_Free(self);
 }
@@ -2751,23 +2740,23 @@ staticarray_dealloc(PyObject *self)
 /* Return a buffer for a PyBUF_FULL_RO request. Flags are not checked,
    which makes this object a non-compliant exporter! */
 static int
-staticarray_getbuf(PyObject *op, Py_buffer *view, int flags)
+staticarray_getbuf(StaticArrayObject *self, Py_buffer *view, int flags)
 {
-    StaticArrayObject *self = (StaticArrayObject *)op;
     *view = static_buffer;
 
     if (self->legacy_mode) {
         view->obj = NULL; /* Don't use this in new code. */
     }
     else {
-        view->obj = Py_NewRef(self);
+        view->obj = (PyObject *)self;
+        Py_INCREF(view->obj);
     }
 
     return 0;
 }
 
 static PyBufferProcs staticarray_as_buffer = {
-    staticarray_getbuf,                /* bf_getbuffer */
+    (getbufferproc)staticarray_getbuf, /* bf_getbuffer */
     NULL,                              /* bf_releasebuffer */
 };
 
@@ -2776,7 +2765,7 @@ static PyTypeObject StaticArray_Type = {
     "staticarray",                   /* Name of this type */
     sizeof(StaticArrayObject),       /* Basic object size */
     0,                               /* Item size for varobject */
-    staticarray_dealloc,             /* tp_dealloc */
+    (destructor)staticarray_dealloc, /* tp_dealloc */
     0,                               /* tp_vectorcall_offset */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
@@ -2840,9 +2829,6 @@ static int
 _testbuffer_exec(PyObject *mod)
 {
     Py_SET_TYPE(&NDArray_Type, &PyType_Type);
-    if (PyType_Ready(&NDArray_Type)) {
-        return -1;
-    }
     if (PyModule_AddType(mod, &NDArray_Type) < 0) {
         return -1;
     }
@@ -2921,9 +2907,6 @@ PyInit__testbuffer(void)
     if (mod == NULL) {
         return NULL;
     }
-#ifdef Py_GIL_DISABLED
-    PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
-#endif
     if (_testbuffer_exec(mod) < 0) {
         Py_DECREF(mod);
         return NULL;

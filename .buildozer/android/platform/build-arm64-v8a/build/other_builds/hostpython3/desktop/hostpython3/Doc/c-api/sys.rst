@@ -23,11 +23,9 @@ Operating System Utilities
 
    Return true (nonzero) if the standard I/O file *fp* with name *filename* is
    deemed interactive.  This is the case for files for which ``isatty(fileno(fp))``
-   is true.  If the :c:member:`PyConfig.interactive` is non-zero, this function
+   is true.  If the global flag :c:data:`Py_InteractiveFlag` is true, this function
    also returns true if the *filename* pointer is ``NULL`` or if the name is equal to
    one of the strings ``'<stdin>'`` or ``'???'``.
-
-   This function must not be called before Python is initialized.
 
 
 .. c:function:: void PyOS_BeforeFork()
@@ -123,24 +121,6 @@ Operating System Utilities
    This is a thin wrapper around either :c:func:`!sigaction` or :c:func:`!signal`.  Do
    not call those functions directly!
 
-
-.. c:function:: int PyOS_InterruptOccurred(void)
-
-   Check if a :c:macro:`!SIGINT` signal has been received.
-
-   Returns ``1`` if a :c:macro:`!SIGINT` has occurred and clears the signal flag,
-   or ``0`` otherwise.
-
-   In most cases, you should prefer :c:func:`PyErr_CheckSignals` over this function.
-   :c:func:`!PyErr_CheckSignals` invokes the appropriate signal handlers
-   for all pending signals, allowing Python code to handle the signal properly.
-   This function only detects :c:macro:`!SIGINT` and does not invoke any Python
-   signal handlers.
-
-   This function is async-signal-safe and this function cannot fail.
-   The caller must hold an :term:`attached thread state`.
-
-
 .. c:function:: wchar_t* Py_DecodeLocale(const char* arg, size_t *size)
 
    .. warning::
@@ -190,7 +170,7 @@ Operating System Utilities
 
    .. versionchanged:: 3.8
       The function now uses the UTF-8 encoding on Windows if
-      :c:member:`PyPreConfig.legacy_windows_fs_encoding` is zero;
+      :c:data:`Py_LegacyWindowsFSEncodingFlag` is zero;
 
 
 .. c:function:: char* Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
@@ -232,39 +212,7 @@ Operating System Utilities
 
    .. versionchanged:: 3.8
       The function now uses the UTF-8 encoding on Windows if
-      :c:member:`PyPreConfig.legacy_windows_fs_encoding` is zero.
-
-.. c:function:: FILE* Py_fopen(PyObject *path, const char *mode)
-
-   Similar to :c:func:`!fopen`, but *path* is a Python object and
-   an exception is set on error.
-
-   *path* must be a :class:`str` object, a :class:`bytes` object,
-   or a :term:`path-like object`.
-
-   On success, return the new file pointer.
-   On error, set an exception and return ``NULL``.
-
-   The file must be closed by :c:func:`Py_fclose` rather than calling directly
-   :c:func:`!fclose`.
-
-   The file descriptor is created non-inheritable (:pep:`446`).
-
-   The caller must have an :term:`attached thread state`.
-
-   .. versionadded:: 3.14
-
-
-.. c:function:: int Py_fclose(FILE *file)
-
-   Close a file that was opened by :c:func:`Py_fopen`.
-
-   On success, return ``0``.
-   On error, return ``EOF`` and ``errno`` is set to indicate the error.
-   In either case, any further access (including another call to
-   :c:func:`Py_fclose`) to the stream results in undefined behavior.
-
-   .. versionadded:: 3.14
+      :c:data:`Py_LegacyWindowsFSEncodingFlag` is zero.
 
 
 .. _systemfunctions:
@@ -292,8 +240,45 @@ accessible to C code.  They all work with the current interpreter thread's
    Reset :data:`sys.warnoptions` to an empty list. This function may be
    called prior to :c:func:`Py_Initialize`.
 
-   .. deprecated-removed:: 3.13 3.15
-      Clear :data:`sys.warnoptions` and :data:`!warnings.filters` instead.
+.. c:function:: void PySys_AddWarnOption(const wchar_t *s)
+
+   This API is kept for backward compatibility: setting
+   :c:member:`PyConfig.warnoptions` should be used instead, see :ref:`Python
+   Initialization Configuration <init-config>`.
+
+   Append *s* to :data:`sys.warnoptions`. This function must be called prior
+   to :c:func:`Py_Initialize` in order to affect the warnings filter list.
+
+   .. deprecated:: 3.11
+
+.. c:function:: void PySys_AddWarnOptionUnicode(PyObject *unicode)
+
+   This API is kept for backward compatibility: setting
+   :c:member:`PyConfig.warnoptions` should be used instead, see :ref:`Python
+   Initialization Configuration <init-config>`.
+
+   Append *unicode* to :data:`sys.warnoptions`.
+
+   Note: this function is not currently usable from outside the CPython
+   implementation, as it must be called prior to the implicit import of
+   :mod:`warnings` in :c:func:`Py_Initialize` to be effective, but can't be
+   called until enough of the runtime has been initialized to permit the
+   creation of Unicode objects.
+
+   .. deprecated:: 3.11
+
+.. c:function:: void PySys_SetPath(const wchar_t *path)
+
+   This API is kept for backward compatibility: setting
+   :c:member:`PyConfig.module_search_paths` and
+   :c:member:`PyConfig.module_search_paths_set` should be used instead, see
+   :ref:`Python Initialization Configuration <init-config>`.
+
+   Set :data:`sys.path` to a list object of paths found in *path* which should
+   be a list of paths separated with the platform's search path delimiter
+   (``:`` on Unix, ``;`` on Windows).
+
+   .. deprecated:: 3.11
 
 .. c:function:: void PySys_WriteStdout(const char *format, ...)
 
@@ -331,6 +316,20 @@ accessible to C code.  They all work with the current interpreter thread's
 
    .. versionadded:: 3.2
 
+.. c:function:: void PySys_AddXOption(const wchar_t *s)
+
+   This API is kept for backward compatibility: setting
+   :c:member:`PyConfig.xoptions` should be used instead, see :ref:`Python
+   Initialization Configuration <init-config>`.
+
+   Parse *s* as a set of :option:`-X` options and add them to the current
+   options mapping as returned by :c:func:`PySys_GetXOptions`. This function
+   may be called prior to :c:func:`Py_Initialize`.
+
+   .. versionadded:: 3.2
+
+   .. deprecated:: 3.11
+
 .. c:function:: PyObject *PySys_GetXOptions()
 
    Return the current dictionary of :option:`-X` options, similarly to
@@ -345,23 +344,18 @@ accessible to C code.  They all work with the current interpreter thread's
    Raise an auditing event with any active hooks. Return zero for success
    and non-zero with an exception set on failure.
 
-   The *event* string argument must not be *NULL*.
-
    If any hooks have been added, *format* and other arguments will be used
    to construct a tuple to pass. Apart from ``N``, the same format characters
    as used in :c:func:`Py_BuildValue` are available. If the built value is not
-   a tuple, it will be added into a single-element tuple.
-
-   The ``N`` format option must not be used. It consumes a reference, but since
-   there is no way to know whether arguments to this function will be consumed,
-   using it may cause reference leaks.
+   a tuple, it will be added into a single-element tuple. (The ``N`` format
+   option consumes a reference, but since there is no way to know whether
+   arguments to this function will be consumed, using it may cause reference
+   leaks.)
 
    Note that ``#`` format characters should always be treated as
    :c:type:`Py_ssize_t`, regardless of whether ``PY_SSIZE_T_CLEAN`` was defined.
 
    :func:`sys.audit` performs the same function from Python code.
-
-   See also :c:func:`PySys_AuditTuple`.
 
    .. versionadded:: 3.8
 
@@ -369,14 +363,6 @@ accessible to C code.  They all work with the current interpreter thread's
 
       Require :c:type:`Py_ssize_t` for ``#`` format characters. Previously, an
       unavoidable deprecation warning was raised.
-
-
-.. c:function:: int PySys_AuditTuple(const char *event, PyObject *args)
-
-   Similar to :c:func:`PySys_Audit`, but pass arguments as a Python object.
-   *args* must be a :class:`tuple`. To pass no arguments, *args* can be *NULL*.
-
-   .. versionadded:: 3.13
 
 
 .. c:function:: int PySys_AddAuditHook(Py_AuditHookFunction hook, void *userData)
@@ -396,8 +382,8 @@ accessible to C code.  They all work with the current interpreter thread's
    silently abort the operation by raising an error subclassed from
    :class:`Exception` (other errors will not be silenced).
 
-   The hook function is always called with an :term:`attached thread state` by
-   the Python interpreter that raised the event.
+   The hook function is always called with the GIL held by the Python
+   interpreter that raised the event.
 
    See :pep:`578` for a detailed description of auditing.  Functions in the
    runtime and standard library that raise events are listed in the
@@ -416,8 +402,7 @@ accessible to C code.  They all work with the current interpreter thread's
    .. c:type:: int (*Py_AuditHookFunction) (const char *event, PyObject *args, void *userData)
 
       The type of the hook function.
-      *event* is the C string event argument passed to :c:func:`PySys_Audit` or
-      :c:func:`PySys_AuditTuple`.
+      *event* is the C string event argument passed to :c:func:`PySys_Audit`.
       *args* is guaranteed to be a :c:type:`PyTupleObject`.
       *userData* is the argument passed to PySys_AddAuditHook().
 
@@ -476,7 +461,3 @@ Process Control
    function registered last is called first. Each cleanup function will be called
    at most once.  Since Python's internal finalization will have completed before
    the cleanup function, no Python APIs should be called by *func*.
-
-   .. seealso::
-
-      :c:func:`PyUnstable_AtExit` for passing a ``void *data`` argument.

@@ -28,7 +28,6 @@ simple statements is:
               : | `future_stmt`
               : | `global_stmt`
               : | `nonlocal_stmt`
-              : | `type_stmt`
 
 
 .. _exprstmts:
@@ -293,7 +292,7 @@ statements, cannot be an unpacking) and the expression list, performs the binary
 operation specific to the type of assignment on the two operands, and assigns
 the result to the original target.  The target is only evaluated once.
 
-An augmented assignment statement like ``x += 1`` can be rewritten as ``x = x +
+An augmented assignment expression like ``x += 1`` can be rewritten as ``x = x +
 1`` to achieve a similar, but not exactly equal effect. In the augmented
 version, ``x`` is only evaluated once. Also, when possible, the actual operation
 is performed *in-place*, meaning that rather than creating a new object and
@@ -333,24 +332,23 @@ statement, of a variable or attribute annotation and an optional assignment stat
 
 The difference from normal :ref:`assignment` is that only a single target is allowed.
 
-The assignment target is considered "simple" if it consists of a single
-name that is not enclosed in parentheses.
-For simple assignment targets, if in class or module scope,
-the annotations are gathered in a lazily evaluated
-:ref:`annotation scope <annotation-scopes>`. The annotations can be
-evaluated using the :attr:`~object.__annotations__` attribute of a
-class or module, or using the facilities in the :mod:`annotationlib`
-module.
+For simple names as assignment targets, if in class or module scope,
+the annotations are evaluated and stored in a special class or module
+attribute :attr:`__annotations__`
+that is a dictionary mapping from variable names (mangled if private) to
+evaluated annotations. This attribute is writable and is automatically
+created at the start of class or module body execution, if annotations
+are found statically.
 
-If the assignment target is not simple (an attribute, subscript node, or
-parenthesized name), the annotation is never evaluated.
+For expressions as assignment targets, the annotations are evaluated if
+in class or module scope, but not stored.
 
 If a name is annotated in a function scope, then this name is local for
 that scope. Annotations are never evaluated and stored in function scopes.
 
 If the right hand side is present, an annotated
-assignment performs the actual assignment as if there was no annotation
-present. If the right hand side is not present for an expression
+assignment performs the actual assignment before evaluating annotations
+(where applicable). If the right hand side is not present for an expression
 target, then the interpreter evaluates the target except for the last
 :meth:`~object.__setitem__` or :meth:`~object.__setattr__` call.
 
@@ -370,10 +368,6 @@ target, then the interpreter evaluates the target except for the last
    Now annotated assignments allow the same expressions in the right hand side as
    regular assignments. Previously, some expressions (like un-parenthesized
    tuple expressions) caused a syntax error.
-
-.. versionchanged:: 3.14
-   Annotations are now lazily evaluated in a separate :ref:`annotation scope <annotation-scopes>`.
-   If the assignment target is not simple, annotations are never evaluated.
 
 
 .. _assert:
@@ -408,9 +402,9 @@ The extended form, ``assert expression1, expression2``, is equivalent to ::
 
 These equivalences assume that :const:`__debug__` and :exc:`AssertionError` refer to
 the built-in variables with those names.  In the current implementation, the
-built-in variable ``__debug__`` is ``True`` under normal circumstances,
+built-in variable :const:`__debug__` is ``True`` under normal circumstances,
 ``False`` when optimization is requested (command line option :option:`-O`).  The current
-code generator emits no code for an :keyword:`assert` statement when optimization is
+code generator emits no code for an assert statement when optimization is
 requested at compile time.  Note that it is unnecessary to include the source
 code for the expression that failed in the error message; it will be displayed
 as part of the stack trace.
@@ -465,8 +459,8 @@ Deletion of a target list recursively deletes each target, from left to right.
 
 Deletion of a name removes the binding of that name from the local or global
 namespace, depending on whether the name occurs in a :keyword:`global` statement
-in the same code block.  Trying to delete an unbound name raises a
-:exc:`NameError` exception.
+in the same code block.  If the name is unbound, a :exc:`NameError` exception
+will be raised.
 
 .. index:: pair: attribute; deletion
 
@@ -533,8 +527,8 @@ The :keyword:`!yield` statement
    yield_stmt: `yield_expression`
 
 A :keyword:`yield` statement is semantically equivalent to a :ref:`yield
-expression <yieldexpr>`. The ``yield`` statement can be used to omit the
-parentheses that would otherwise be required in the equivalent yield expression
+expression <yieldexpr>`. The yield statement can be used to omit the parentheses
+that would otherwise be required in the equivalent yield expression
 statement. For example, the yield statements ::
 
   yield <expr>
@@ -546,7 +540,7 @@ are equivalent to the yield expression statements ::
   (yield from <expr>)
 
 Yield expressions and statements are only used when defining a :term:`generator`
-function, and are only used in the body of the generator function.  Using :keyword:`yield`
+function, and are only used in the body of the generator function.  Using yield
 in a function definition is sufficient to cause that definition to create a
 generator function instead of a normal function.
 
@@ -831,9 +825,6 @@ where the :keyword:`import` statement occurs.
 
 .. index:: single: __all__ (optional module attribute)
 
-.. attribute:: module.__all__
-   :no-typesetting:
-
 The *public names* defined by a module are determined by checking the module's
 namespace for a variable named ``__all__``; if defined, it must be a sequence
 of strings which are names defined or imported by that module.  The names
@@ -969,21 +960,25 @@ The :keyword:`!global` statement
 .. productionlist:: python-grammar
    global_stmt: "global" `identifier` ("," `identifier`)*
 
-The :keyword:`global` statement causes the listed identifiers to be interpreted
-as globals. It would be impossible to assign to a global variable without
+The :keyword:`global` statement is a declaration which holds for the entire
+current code block.  It means that the listed identifiers are to be interpreted
+as globals.  It would be impossible to assign to a global variable without
 :keyword:`!global`, although free variables may refer to globals without being
 declared global.
 
-The :keyword:`!global` statement applies to the entire current scope
-(module, function body or class definition).
-A :exc:`SyntaxError` is raised if a variable is used or
-assigned to prior to its global declaration in the scope.
+Names listed in a :keyword:`global` statement must not be used in the same code
+block textually preceding that :keyword:`!global` statement.
 
-At the module level, all variables are global, so a :keyword:`!global`
-statement has no effect.
-However, variables must still not be used or
-assigned to prior to their :keyword:`!global` declaration.
-This requirement is relaxed in the interactive prompt (:term:`REPL`).
+Names listed in a :keyword:`global` statement must not be defined as formal
+parameters, or as targets in :keyword:`with` statements or :keyword:`except` clauses, or in a :keyword:`for` target list, :keyword:`class`
+definition, function definition, :keyword:`import` statement, or variable
+annotation.
+
+.. impl-detail::
+
+   The current implementation does not enforce some of these restrictions, but
+   programs should not abuse this freedom, as future implementations may enforce
+   them or silently change the meaning of the program.
 
 .. index::
    pair: built-in function; exec
@@ -1010,70 +1005,21 @@ The :keyword:`!nonlocal` statement
 .. productionlist:: python-grammar
    nonlocal_stmt: "nonlocal" `identifier` ("," `identifier`)*
 
-When the definition of a function or class is nested (enclosed) within
-the definitions of other functions, its nonlocal scopes are the local
-scopes of the enclosing functions. The :keyword:`nonlocal` statement
-causes the listed identifiers to refer to names previously bound in
-nonlocal scopes. It allows encapsulated code to rebind such nonlocal
-identifiers.  If a name is bound in more than one nonlocal scope, the
-nearest binding is used. If a name is not bound in any nonlocal scope,
-or if there is no nonlocal scope, a :exc:`SyntaxError` is raised.
+The :keyword:`nonlocal` statement causes the listed identifiers to refer to
+previously bound variables in the nearest enclosing scope excluding globals.
+This is important because the default behavior for binding is to search the
+local namespace first.  The statement allows encapsulated code to rebind
+variables outside of the local scope besides the global (module) scope.
 
-The :keyword:`nonlocal` statement applies to the entire scope of a function or
-class body. A :exc:`SyntaxError` is raised if a variable is used or
-assigned to prior to its nonlocal declaration in the scope.
+Names listed in a :keyword:`nonlocal` statement, unlike those listed in a
+:keyword:`global` statement, must refer to pre-existing bindings in an
+enclosing scope (the scope in which a new binding should be created cannot
+be determined unambiguously).
+
+Names listed in a :keyword:`nonlocal` statement must not collide with
+pre-existing bindings in the local scope.
 
 .. seealso::
 
    :pep:`3104` - Access to Names in Outer Scopes
       The specification for the :keyword:`nonlocal` statement.
-
-**Programmer's note:** :keyword:`nonlocal` is a directive to the parser
-and applies only to code parsed along with it.  See the note for the
-:keyword:`global` statement.
-
-
-.. _type:
-
-The :keyword:`!type` statement
-==============================
-
-.. index:: pair: statement; type
-
-.. productionlist:: python-grammar
-   type_stmt: 'type' `identifier` [`type_params`] "=" `expression`
-
-The :keyword:`!type` statement declares a type alias, which is an instance
-of :class:`typing.TypeAliasType`.
-
-For example, the following statement creates a type alias::
-
-   type Point = tuple[float, float]
-
-This code is roughly equivalent to::
-
-   annotation-def VALUE_OF_Point():
-       return tuple[float, float]
-   Point = typing.TypeAliasType("Point", VALUE_OF_Point())
-
-``annotation-def`` indicates an :ref:`annotation scope <annotation-scopes>`, which behaves
-mostly like a function, but with several small differences.
-
-The value of the
-type alias is evaluated in the annotation scope. It is not evaluated when the
-type alias is created, but only when the value is accessed through the type alias's
-:attr:`!__value__` attribute (see :ref:`lazy-evaluation`).
-This allows the type alias to refer to names that are not yet defined.
-
-Type aliases may be made generic by adding a :ref:`type parameter list <type-params>`
-after the name. See :ref:`generic-type-aliases` for more.
-
-:keyword:`!type` is a :ref:`soft keyword <soft-keywords>`.
-
-.. versionadded:: 3.12
-
-.. seealso::
-
-   :pep:`695` - Type Parameter Syntax
-      Introduced the :keyword:`!type` statement and syntax for
-      generic classes and functions.

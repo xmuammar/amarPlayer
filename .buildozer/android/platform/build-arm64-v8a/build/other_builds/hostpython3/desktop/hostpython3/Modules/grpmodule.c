@@ -1,17 +1,10 @@
-/* UNIX group file access module */
 
-// Argument Clinic uses the internal C API
-#ifndef Py_BUILD_CORE_BUILTIN
-#  define Py_BUILD_CORE_MODULE 1
-#endif
+/* UNIX group file access module */
 
 #include "Python.h"
 #include "posixmodule.h"
 
-#include <errno.h>                // ERANGE
-#include <grp.h>                  // getgrgid_r()
-#include <string.h>               // memcpy()
-#include <unistd.h>               // sysconf()
+#include <grp.h>
 
 #include "clinic/grpmodule.c.h"
 /*[clinic input]
@@ -55,11 +48,6 @@ get_grp_state(PyObject *module)
 
 static struct PyModuleDef grpmodule;
 
-/* Mutex to protect calls to getgrgid(), getgrnam(), and getgrent().
- * These functions return pointer to static data structure, which
- * may be overwritten by any subsequent calls. */
-static PyMutex group_db_mutex = {0};
-
 #define DEFAULT_BUFFER_SIZE 1024
 
 static PyObject *
@@ -94,7 +82,7 @@ mkgrent(PyObject *module, struct group *p)
         Py_DECREF(x);
     }
 
-#define SET(i,val) PyStructSequence_SetItem(v, i, val)
+#define SET(i,val) PyStructSequence_SET_ITEM(v, i, val)
     SET(setIndex++, PyUnicode_DecodeFSDefault(p->gr_name));
     if (p->gr_passwd)
             SET(setIndex++, PyUnicode_DecodeFSDefault(p->gr_passwd));
@@ -173,15 +161,9 @@ grp_getgrgid_impl(PyObject *module, PyObject *id)
 
     Py_END_ALLOW_THREADS
 #else
-    PyMutex_Lock(&group_db_mutex);
-    // The getgrgid() function need not be thread-safe.
-    // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getgrgid.html
     p = getgrgid(gid);
 #endif
     if (p == NULL) {
-#ifndef HAVE_GETGRGID_R
-        PyMutex_Unlock(&group_db_mutex);
-#endif
         PyMem_RawFree(buf);
         if (nomem == 1) {
             return PyErr_NoMemory();
@@ -196,8 +178,6 @@ grp_getgrgid_impl(PyObject *module, PyObject *id)
     retval = mkgrent(module, p);
 #ifdef HAVE_GETGRGID_R
     PyMem_RawFree(buf);
-#else
-    PyMutex_Unlock(&group_db_mutex);
 #endif
     return retval;
 }
@@ -262,15 +242,9 @@ grp_getgrnam_impl(PyObject *module, PyObject *name)
 
     Py_END_ALLOW_THREADS
 #else
-    PyMutex_Lock(&group_db_mutex);
-    // The getgrnam() function need not be thread-safe.
-    // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getgrnam.html
     p = getgrnam(name_chars);
 #endif
     if (p == NULL) {
-#ifndef HAVE_GETGRNAM_R
-        PyMutex_Unlock(&group_db_mutex);
-#endif
         if (nomem == 1) {
             PyErr_NoMemory();
         }
@@ -280,9 +254,6 @@ grp_getgrnam_impl(PyObject *module, PyObject *name)
         goto out;
     }
     retval = mkgrent(module, p);
-#ifndef HAVE_GETGRNAM_R
-    PyMutex_Unlock(&group_db_mutex);
-#endif
 out:
     PyMem_RawFree(buf);
     Py_DECREF(bytes);
@@ -302,32 +273,23 @@ static PyObject *
 grp_getgrall_impl(PyObject *module)
 /*[clinic end generated code: output=585dad35e2e763d7 input=d7df76c825c367df]*/
 {
-    PyObject *d = PyList_New(0);
-    if (d == NULL) {
-        return NULL;
-    }
-
-    PyMutex_Lock(&group_db_mutex);
-    setgrent();
-
+    PyObject *d;
     struct group *p;
+
+    if ((d = PyList_New(0)) == NULL)
+        return NULL;
+    setgrent();
     while ((p = getgrent()) != NULL) {
-        // gh-126316: Don't release the mutex around mkgrent() since
-        // setgrent()/endgrent() are not reentrant / thread-safe. A deadlock
-        // is unlikely since mkgrent() should not be able to call arbitrary
-        // Python code.
         PyObject *v = mkgrent(module, p);
         if (v == NULL || PyList_Append(d, v) != 0) {
             Py_XDECREF(v);
-            Py_CLEAR(d);
-            goto done;
+            Py_DECREF(d);
+            endgrent();
+            return NULL;
         }
         Py_DECREF(v);
     }
-
-done:
     endgrent();
-    PyMutex_Unlock(&group_db_mutex);
     return d;
 }
 
@@ -371,8 +333,6 @@ grpmodule_exec(PyObject *module)
 
 static PyModuleDef_Slot grpmodule_slots[] = {
     {Py_mod_exec, grpmodule_exec},
-    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
-    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL}
 };
 

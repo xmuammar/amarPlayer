@@ -8,6 +8,7 @@ import array
 import re
 import socket
 import threading
+import warnings
 
 import unittest
 from unittest import mock
@@ -16,6 +17,7 @@ TestCase = unittest.TestCase
 from test import support
 from test.support import os_helper
 from test.support import socket_helper
+from test.support import warnings_helper
 
 support.requires_working_socket(module=True)
 
@@ -273,7 +275,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertStartsWith(sock.data, expected)
+        self.assertTrue(sock.data.startswith(expected))
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [2001:102A::]\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -281,7 +283,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertStartsWith(sock.data, expected)
+        self.assertTrue(sock.data.startswith(expected))
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [fe80::]\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -289,7 +291,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertStartsWith(sock.data, expected)
+        self.assertTrue(sock.data.startswith(expected))
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [fe80::]:81\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -297,7 +299,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertStartsWith(sock.data, expected)
+        self.assertTrue(sock.data.startswith(expected))
 
     def test_malformed_headers_coped_with(self):
         # Issue 19996
@@ -335,9 +337,9 @@ class HeaderTests(TestCase):
         self.assertIsNotNone(resp.getheader('obs-text'))
         self.assertIn('obs-text', resp.msg)
         for folded in (resp.getheader('obs-fold'), resp.msg['obs-fold']):
-            self.assertStartsWith(folded, 'text')
+            self.assertTrue(folded.startswith('text'))
             self.assertIn(' folded with space', folded)
-            self.assertEndsWith(folded, 'folded with tab')
+            self.assertTrue(folded.endswith('folded with tab'))
 
     def test_invalid_headers(self):
         conn = client.HTTPConnection('example.com')
@@ -569,34 +571,12 @@ class BasicTest(TestCase):
                 obj.phrase = phrase
                 obj.description = description
                 return obj
-
-            @property
-            def is_informational(self):
-                return 100 <= self <= 199
-
-            @property
-            def is_success(self):
-                return 200 <= self <= 299
-
-            @property
-            def is_redirection(self):
-                return 300 <= self <= 399
-
-            @property
-            def is_client_error(self):
-                return 400 <= self <= 499
-
-            @property
-            def is_server_error(self):
-                return 500 <= self <= 599
-
             # informational
             CONTINUE = 100, 'Continue', 'Request received, please continue'
             SWITCHING_PROTOCOLS = (101, 'Switching Protocols',
                     'Switching to new protocol; obey Upgrade header')
-            PROCESSING = 102, 'Processing', 'Server is processing the request'
-            EARLY_HINTS = (103, 'Early Hints',
-                'Headers sent to prepare for the response')
+            PROCESSING = 102, 'Processing'
+            EARLY_HINTS = 103, 'Early Hints'
             # success
             OK = 200, 'OK', 'Request fulfilled, document follows'
             CREATED = 201, 'Created', 'Document created, URL follows'
@@ -607,11 +587,9 @@ class BasicTest(TestCase):
             NO_CONTENT = 204, 'No Content', 'Request fulfilled, nothing follows'
             RESET_CONTENT = 205, 'Reset Content', 'Clear input form for further input'
             PARTIAL_CONTENT = 206, 'Partial Content', 'Partial content follows'
-            MULTI_STATUS = (207, 'Multi-Status',
-                'Response contains multiple statuses in the body')
-            ALREADY_REPORTED = (208, 'Already Reported',
-                'Operation has already been reported')
-            IM_USED = 226, 'IM Used', 'Request completed using instance manipulations'
+            MULTI_STATUS = 207, 'Multi-Status'
+            ALREADY_REPORTED = 208, 'Already Reported'
+            IM_USED = 226, 'IM Used'
             # redirection
             MULTIPLE_CHOICES = (300, 'Multiple Choices',
                 'Object has several resources -- see URI list')
@@ -654,33 +632,26 @@ class BasicTest(TestCase):
                 'Client must specify Content-Length')
             PRECONDITION_FAILED = (412, 'Precondition Failed',
                 'Precondition in headers is false')
-            CONTENT_TOO_LARGE = (413, 'Content Too Large',
-                'Content is too large')
-            REQUEST_ENTITY_TOO_LARGE = CONTENT_TOO_LARGE
-            URI_TOO_LONG = (414, 'URI Too Long', 'URI is too long')
-            REQUEST_URI_TOO_LONG = URI_TOO_LONG
+            REQUEST_ENTITY_TOO_LARGE = (413, 'Request Entity Too Large',
+                'Entity is too large')
+            REQUEST_URI_TOO_LONG = (414, 'Request-URI Too Long',
+                'URI is too long')
             UNSUPPORTED_MEDIA_TYPE = (415, 'Unsupported Media Type',
                 'Entity body in unsupported format')
-            RANGE_NOT_SATISFIABLE = (416,
-                'Range Not Satisfiable',
+            REQUESTED_RANGE_NOT_SATISFIABLE = (416,
+                'Requested Range Not Satisfiable',
                 'Cannot satisfy request range')
-            REQUESTED_RANGE_NOT_SATISFIABLE = RANGE_NOT_SATISFIABLE
             EXPECTATION_FAILED = (417, 'Expectation Failed',
                 'Expect condition could not be satisfied')
             IM_A_TEAPOT = (418, 'I\'m a Teapot',
-                'Server refuses to brew coffee because it is a teapot')
+                'Server refuses to brew coffee because it is a teapot.')
             MISDIRECTED_REQUEST = (421, 'Misdirected Request',
                 'Server is not able to produce a response')
-            UNPROCESSABLE_CONTENT = (422, 'Unprocessable Content',
-                'Server is not able to process the contained instructions')
-            UNPROCESSABLE_ENTITY = UNPROCESSABLE_CONTENT
-            LOCKED = 423, 'Locked', 'Resource of a method is locked'
-            FAILED_DEPENDENCY = (424, 'Failed Dependency',
-                'Dependent action of the request failed')
-            TOO_EARLY = (425, 'Too Early',
-                'Server refuses to process a request that might be replayed')
-            UPGRADE_REQUIRED = (426, 'Upgrade Required',
-                'Server refuses to perform the request using the current protocol')
+            UNPROCESSABLE_ENTITY = 422, 'Unprocessable Entity'
+            LOCKED = 423, 'Locked'
+            FAILED_DEPENDENCY = 424, 'Failed Dependency'
+            TOO_EARLY = 425, 'Too Early'
+            UPGRADE_REQUIRED = 426, 'Upgrade Required'
             PRECONDITION_REQUIRED = (428, 'Precondition Required',
                 'The origin server requires the request to be conditional')
             TOO_MANY_REQUESTS = (429, 'Too Many Requests',
@@ -707,43 +678,15 @@ class BasicTest(TestCase):
                 'The gateway server did not receive a timely response')
             HTTP_VERSION_NOT_SUPPORTED = (505, 'HTTP Version Not Supported',
                 'Cannot fulfill request')
-            VARIANT_ALSO_NEGOTIATES = (506, 'Variant Also Negotiates',
-                'Server has an internal configuration error')
-            INSUFFICIENT_STORAGE = (507, 'Insufficient Storage',
-                'Server is not able to store the representation')
-            LOOP_DETECTED = (508, 'Loop Detected',
-                'Server encountered an infinite loop while processing a request')
-            NOT_EXTENDED = (510, 'Not Extended',
-                'Request does not meet the resource access policy')
+            VARIANT_ALSO_NEGOTIATES = 506, 'Variant Also Negotiates'
+            INSUFFICIENT_STORAGE = 507, 'Insufficient Storage'
+            LOOP_DETECTED = 508, 'Loop Detected'
+            NOT_EXTENDED = 510, 'Not Extended'
             NETWORK_AUTHENTICATION_REQUIRED = (511,
                 'Network Authentication Required',
                 'The client needs to authenticate to gain network access')
         enum._test_simple_enum(CheckedHTTPStatus, HTTPStatus)
 
-    def test_httpstatus_range(self):
-        """Checks that the statuses are in the 100-599 range"""
-
-        for member in HTTPStatus.__members__.values():
-            self.assertGreaterEqual(member, 100)
-            self.assertLessEqual(member, 599)
-
-    def test_httpstatus_category(self):
-        """Checks that the statuses belong to the standard categories"""
-
-        categories = (
-            ((100, 199), "is_informational"),
-            ((200, 299), "is_success"),
-            ((300, 399), "is_redirection"),
-            ((400, 499), "is_client_error"),
-            ((500, 599), "is_server_error"),
-        )
-        for member in HTTPStatus.__members__.values():
-            for (lower, upper), category in categories:
-                category_indicator = getattr(member, category)
-                if lower <= member <= upper:
-                    self.assertTrue(category_indicator)
-                else:
-                    self.assertFalse(category_indicator)
 
     def test_status_lines(self):
         # Test HTTP status lines
@@ -1000,7 +943,8 @@ class BasicTest(TestCase):
             sock = FakeSocket(body)
             conn.sock = sock
             conn.request('GET', '/foo', body)
-            self.assertStartsWith(sock.data, expected)
+            self.assertTrue(sock.data.startswith(expected), '%r != %r' %
+                    (sock.data[:len(expected)], expected))
 
     def test_send(self):
         expected = b'this is a test this is only a test'
@@ -1090,25 +1034,6 @@ class BasicTest(TestCase):
         resp.begin()
         self.assertEqual(resp.read(), expected)
         resp.close()
-
-        # Explicit full read
-        for n in (-123, -1, None):
-            with self.subTest('full read', n=n):
-                sock = FakeSocket(chunked_start + last_chunk + chunked_end)
-                resp = client.HTTPResponse(sock, method="GET")
-                resp.begin()
-                self.assertTrue(resp.chunked)
-                self.assertEqual(resp.read(n), expected)
-                resp.close()
-
-        # Read first chunk
-        with self.subTest('read1(-1)'):
-            sock = FakeSocket(chunked_start + last_chunk + chunked_end)
-            resp = client.HTTPResponse(sock, method="GET")
-            resp.begin()
-            self.assertTrue(resp.chunked)
-            self.assertEqual(resp.read1(-1), b"hello worl")
-            resp.close()
 
         # Various read sizes
         for n in range(1, 12):
@@ -1465,72 +1390,6 @@ class BasicTest(TestCase):
         thread.join()
         self.assertEqual(result, b"proxied data\n")
 
-    def test_large_content_length(self):
-        serv = socket.create_server((HOST, 0))
-        self.addCleanup(serv.close)
-
-        def run_server():
-            [conn, address] = serv.accept()
-            with conn:
-                while conn.recv(1024):
-                    conn.sendall(
-                        b"HTTP/1.1 200 Ok\r\n"
-                        b"Content-Length: %d\r\n"
-                        b"\r\n" % size)
-                    conn.sendall(b'A' * (size//3))
-                    conn.sendall(b'B' * (size - size//3))
-
-        thread = threading.Thread(target=run_server)
-        thread.start()
-        self.addCleanup(thread.join, 1.0)
-
-        conn = client.HTTPConnection(*serv.getsockname())
-        try:
-            for w in range(15, 27):
-                size = 1 << w
-                conn.request("GET", "/")
-                with conn.getresponse() as response:
-                    self.assertEqual(len(response.read()), size)
-        finally:
-            conn.close()
-            thread.join(1.0)
-
-    def test_large_content_length_truncated(self):
-        serv = socket.create_server((HOST, 0))
-        self.addCleanup(serv.close)
-
-        def run_server():
-            while True:
-                [conn, address] = serv.accept()
-                with conn:
-                    conn.recv(1024)
-                    if not size:
-                        break
-                    conn.sendall(
-                        b"HTTP/1.1 200 Ok\r\n"
-                        b"Content-Length: %d\r\n"
-                        b"\r\n"
-                        b"Text" % size)
-
-        thread = threading.Thread(target=run_server)
-        thread.start()
-        self.addCleanup(thread.join, 1.0)
-
-        conn = client.HTTPConnection(*serv.getsockname())
-        try:
-            for w in range(18, 65):
-                size = 1 << w
-                conn.request("GET", "/")
-                with conn.getresponse() as response:
-                    self.assertRaises(client.IncompleteRead, response.read)
-                conn.close()
-        finally:
-            conn.close()
-            size = 0
-            conn.request("GET", "/")
-            conn.close()
-            thread.join(1.0)
-
     def test_putrequest_override_domain_validation(self):
         """
         It should be possible to override the default validation
@@ -1629,7 +1488,7 @@ class ExtendedReadTest(TestCase):
                 # then unbounded peek
                 p2 = resp.peek()
                 self.assertGreaterEqual(len(p2), len(p))
-                self.assertStartsWith(p2, p)
+                self.assertTrue(p2.startswith(p))
                 next = resp.read(len(p2))
                 self.assertEqual(next, p2)
             else:
@@ -1654,7 +1513,7 @@ class ExtendedReadTest(TestCase):
             line = readline(limit)
             if line and line != b"foo":
                 if len(line) < 5:
-                    self.assertEndsWith(line, b"\n")
+                    self.assertTrue(line.endswith(b"\n"))
             all.append(line)
             if not line:
                 break
@@ -1816,17 +1675,13 @@ class OfflineTest(TestCase):
             'GONE',
             'LENGTH_REQUIRED',
             'PRECONDITION_FAILED',
-            'CONTENT_TOO_LARGE',
             'REQUEST_ENTITY_TOO_LARGE',
-            'URI_TOO_LONG',
             'REQUEST_URI_TOO_LONG',
             'UNSUPPORTED_MEDIA_TYPE',
-            'RANGE_NOT_SATISFIABLE',
             'REQUESTED_RANGE_NOT_SATISFIABLE',
             'EXPECTATION_FAILED',
             'IM_A_TEAPOT',
             'MISDIRECTED_REQUEST',
-            'UNPROCESSABLE_CONTENT',
             'UNPROCESSABLE_ENTITY',
             'LOCKED',
             'FAILED_DEPENDENCY',
@@ -1849,7 +1704,7 @@ class OfflineTest(TestCase):
         ]
         for const in expected:
             with self.subTest(constant=const):
-                self.assertHasAttr(client, const)
+                self.assertTrue(hasattr(client, const))
 
 
 class SourceAddressTest(TestCase):
@@ -2109,7 +1964,7 @@ class HTTPSTest(TestCase):
         self.assertEqual(exc_info.exception.reason, 'CERTIFICATE_VERIFY_FAILED')
 
     def test_local_good_hostname(self):
-        # The (valid) cert validates the HTTPS hostname
+        # The (valid) cert validates the HTTP hostname
         import ssl
         server = self.make_server(CERT_localhost)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -2122,7 +1977,7 @@ class HTTPSTest(TestCase):
         self.assertEqual(resp.status, 404)
 
     def test_local_bad_hostname(self):
-        # The (valid) cert doesn't validate the HTTPS hostname
+        # The (valid) cert doesn't validate the HTTP hostname
         import ssl
         server = self.make_server(CERT_fakehostname)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -2130,21 +1985,38 @@ class HTTPSTest(TestCase):
         h = client.HTTPSConnection('localhost', server.port, context=context)
         with self.assertRaises(ssl.CertificateError):
             h.request('GET', '/')
-
-        # Same with explicit context.check_hostname=True
-        context.check_hostname = True
-        h = client.HTTPSConnection('localhost', server.port, context=context)
+        # Same with explicit check_hostname=True
+        with warnings_helper.check_warnings(('', DeprecationWarning)):
+            h = client.HTTPSConnection('localhost', server.port,
+                                       context=context, check_hostname=True)
         with self.assertRaises(ssl.CertificateError):
             h.request('GET', '/')
-
-        # With context.check_hostname=False, the mismatching is ignored
+        # With check_hostname=False, the mismatching is ignored
         context.check_hostname = False
-        h = client.HTTPSConnection('localhost', server.port, context=context)
+        with warnings_helper.check_warnings(('', DeprecationWarning)):
+            h = client.HTTPSConnection('localhost', server.port,
+                                       context=context, check_hostname=False)
         h.request('GET', '/nonexistent')
         resp = h.getresponse()
         resp.close()
         h.close()
         self.assertEqual(resp.status, 404)
+        # The context's check_hostname setting is used if one isn't passed to
+        # HTTPSConnection.
+        context.check_hostname = False
+        h = client.HTTPSConnection('localhost', server.port, context=context)
+        h.request('GET', '/nonexistent')
+        resp = h.getresponse()
+        self.assertEqual(resp.status, 404)
+        resp.close()
+        h.close()
+        # Passing check_hostname to HTTPSConnection should override the
+        # context's setting.
+        with warnings_helper.check_warnings(('', DeprecationWarning)):
+            h = client.HTTPSConnection('localhost', server.port,
+                                       context=context, check_hostname=True)
+        with self.assertRaises(ssl.CertificateError):
+            h.request('GET', '/')
 
     @unittest.skipIf(not hasattr(client, 'HTTPSConnection'),
                      'http.client.HTTPSConnection not available')
@@ -2168,8 +2040,8 @@ class HTTPSTest(TestCase):
 
     def test_tls13_pha(self):
         import ssl
-        if not ssl.HAS_TLSv1_3 or not ssl.HAS_PHA:
-            self.skipTest('TLS 1.3 PHA support required')
+        if not ssl.HAS_TLSv1_3:
+            self.skipTest('TLS 1.3 support required')
         # just check status of PHA flag
         h = client.HTTPSConnection('localhost', 443)
         self.assertTrue(h._context.post_handshake_auth)
@@ -2180,9 +2052,11 @@ class HTTPSTest(TestCase):
         self.assertIs(h._context, context)
         self.assertFalse(h._context.post_handshake_auth)
 
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT, cert_file=CERT_localhost)
-        context.post_handshake_auth = True
-        h = client.HTTPSConnection('localhost', 443, context=context)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'key_file, cert_file and check_hostname are deprecated',
+                                    DeprecationWarning)
+            h = client.HTTPSConnection('localhost', 443, context=context,
+                                       cert_file=CERT_localhost)
         self.assertTrue(h._context.post_handshake_auth)
 
 
@@ -2320,12 +2194,11 @@ class HTTPResponseTest(TestCase):
 class TunnelTests(TestCase):
     def setUp(self):
         response_text = (
-            'HTTP/1.1 200 OK\r\n\r\n' # Reply to CONNECT
+            'HTTP/1.0 200 OK\r\n\r\n' # Reply to CONNECT
             'HTTP/1.1 200 OK\r\n' # Reply to HEAD
             'Content-Length: 42\r\n\r\n'
         )
         self.host = 'proxy.com'
-        self.port = client.HTTP_PORT
         self.conn = client.HTTPConnection(self.host)
         self.conn._create_connection = self._create_connection(response_text)
 
@@ -2337,45 +2210,15 @@ class TunnelTests(TestCase):
             return FakeSocket(response_text, host=address[0], port=address[1])
         return create_connection
 
-    def test_set_tunnel_host_port_headers_add_host_missing(self):
+    def test_set_tunnel_host_port_headers(self):
         tunnel_host = 'destination.com'
         tunnel_port = 8888
         tunnel_headers = {'User-Agent': 'Mozilla/5.0 (compatible, MSIE 11)'}
-        tunnel_headers_after = tunnel_headers.copy()
-        tunnel_headers_after['Host'] = '%s:%d' % (tunnel_host, tunnel_port)
         self.conn.set_tunnel(tunnel_host, port=tunnel_port,
                              headers=tunnel_headers)
         self.conn.request('HEAD', '/', '')
         self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertEqual(self.conn._tunnel_host, tunnel_host)
-        self.assertEqual(self.conn._tunnel_port, tunnel_port)
-        self.assertEqual(self.conn._tunnel_headers, tunnel_headers_after)
-
-    def test_set_tunnel_host_port_headers_set_host_identical(self):
-        tunnel_host = 'destination.com'
-        tunnel_port = 8888
-        tunnel_headers = {'User-Agent': 'Mozilla/5.0 (compatible, MSIE 11)',
-                          'Host': '%s:%d' % (tunnel_host, tunnel_port)}
-        self.conn.set_tunnel(tunnel_host, port=tunnel_port,
-                             headers=tunnel_headers)
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertEqual(self.conn._tunnel_host, tunnel_host)
-        self.assertEqual(self.conn._tunnel_port, tunnel_port)
-        self.assertEqual(self.conn._tunnel_headers, tunnel_headers)
-
-    def test_set_tunnel_host_port_headers_set_host_different(self):
-        tunnel_host = 'destination.com'
-        tunnel_port = 8888
-        tunnel_headers = {'User-Agent': 'Mozilla/5.0 (compatible, MSIE 11)',
-                          'Host': '%s:%d' % ('example.com', 4200)}
-        self.conn.set_tunnel(tunnel_host, port=tunnel_port,
-                             headers=tunnel_headers)
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
+        self.assertEqual(self.conn.sock.port, client.HTTP_PORT)
         self.assertEqual(self.conn._tunnel_host, tunnel_host)
         self.assertEqual(self.conn._tunnel_port, tunnel_port)
         self.assertEqual(self.conn._tunnel_headers, tunnel_headers)
@@ -2387,96 +2230,17 @@ class TunnelTests(TestCase):
                           'destination.com')
 
     def test_connect_with_tunnel(self):
-        d = {
-            b'host': b'destination.com',
-            b'port': client.HTTP_PORT,
-        }
-        self.conn.set_tunnel(d[b'host'].decode('ascii'))
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'Host: %(host)s:%(port)d\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'HEAD / HTTP/1.1\r\nHost: %(host)s\r\n' % d,
-                      self.conn.sock.data)
-
-    def test_connect_with_tunnel_with_default_port(self):
-        d = {
-            b'host': b'destination.com',
-            b'port': client.HTTP_PORT,
-        }
-        self.conn.set_tunnel(d[b'host'].decode('ascii'), port=d[b'port'])
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'Host: %(host)s:%(port)d\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'HEAD / HTTP/1.1\r\nHost: %(host)s\r\n' % d,
-                      self.conn.sock.data)
-
-    def test_connect_with_tunnel_with_nonstandard_port(self):
-        d = {
-            b'host': b'destination.com',
-            b'port': 8888,
-        }
-        self.conn.set_tunnel(d[b'host'].decode('ascii'), port=d[b'port'])
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'Host: %(host)s:%(port)d\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'HEAD / HTTP/1.1\r\nHost: %(host)s:%(port)d\r\n' % d,
-                      self.conn.sock.data)
-
-    # This request is not RFC-valid, but it's been possible with the library
-    # for years, so don't break it unexpectedly... This also tests
-    # case-insensitivity when injecting Host: headers if they're missing.
-    def test_connect_with_tunnel_with_different_host_header(self):
-        d = {
-            b'host': b'destination.com',
-            b'tunnel_host_header': b'example.com:9876',
-            b'port': client.HTTP_PORT,
-        }
-        self.conn.set_tunnel(
-            d[b'host'].decode('ascii'),
-            headers={'HOST': d[b'tunnel_host_header'].decode('ascii')})
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'HOST: %(tunnel_host_header)s\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'HEAD / HTTP/1.1\r\nHost: %(host)s\r\n' % d,
-                      self.conn.sock.data)
-
-    def test_connect_with_tunnel_different_host(self):
-        d = {
-            b'host': b'destination.com',
-            b'port': client.HTTP_PORT,
-        }
-        self.conn.set_tunnel(d[b'host'].decode('ascii'))
-        self.conn.request('HEAD', '/', '')
-        self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'Host: %(host)s:%(port)d\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'HEAD / HTTP/1.1\r\nHost: %(host)s\r\n' % d,
-                      self.conn.sock.data)
-
-    def test_connect_with_tunnel_idna(self):
-        dest = '\u03b4\u03c0\u03b8.gr'
-        dest_port = b'%s:%d' % (dest.encode('idna'), client.HTTP_PORT)
-        expected = b'CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n' % (
-            dest_port, dest_port)
-        self.conn.set_tunnel(dest)
+        self.conn.set_tunnel('destination.com')
         self.conn.request('HEAD', '/', '')
         self.assertEqual(self.conn.sock.host, self.host)
         self.assertEqual(self.conn.sock.port, client.HTTP_PORT)
-        self.assertIn(expected, self.conn.sock.data)
+        self.assertIn(b'CONNECT destination.com', self.conn.sock.data)
+        # issue22095
+        self.assertNotIn(b'Host: destination.com:None', self.conn.sock.data)
+        self.assertIn(b'Host: destination.com', self.conn.sock.data)
+
+        # This test should be removed when CONNECT gets the HTTP/1.1 blessing
+        self.assertNotIn(b'Host: proxy.com', self.conn.sock.data)
 
     def test_tunnel_connect_single_send_connection_setup(self):
         """Regresstion test for https://bugs.python.org/issue43332."""
@@ -2491,23 +2255,17 @@ class TunnelTests(TestCase):
                 msg=f'unexpected number of send calls: {mock_send.mock_calls}')
         proxy_setup_data_sent = mock_send.mock_calls[0][1][0]
         self.assertIn(b'CONNECT destination.com', proxy_setup_data_sent)
-        self.assertEndsWith(proxy_setup_data_sent, b'\r\n\r\n',
+        self.assertTrue(
+                proxy_setup_data_sent.endswith(b'\r\n\r\n'),
                 msg=f'unexpected proxy data sent {proxy_setup_data_sent!r}')
 
     def test_connect_put_request(self):
-        d = {
-            b'host': b'destination.com',
-            b'port': client.HTTP_PORT,
-        }
-        self.conn.set_tunnel(d[b'host'].decode('ascii'))
+        self.conn.set_tunnel('destination.com')
         self.conn.request('PUT', '/', '')
         self.assertEqual(self.conn.sock.host, self.host)
-        self.assertEqual(self.conn.sock.port, self.port)
-        self.assertIn(b'CONNECT %(host)s:%(port)d HTTP/1.1\r\n'
-                      b'Host: %(host)s:%(port)d\r\n\r\n' % d,
-                      self.conn.sock.data)
-        self.assertIn(b'PUT / HTTP/1.1\r\nHost: %(host)s\r\n' % d,
-                      self.conn.sock.data)
+        self.assertEqual(self.conn.sock.port, client.HTTP_PORT)
+        self.assertIn(b'CONNECT destination.com', self.conn.sock.data)
+        self.assertIn(b'Host: destination.com', self.conn.sock.data)
 
     def test_connect_put_request_ipv6(self):
         self.conn.set_tunnel('[1:2:3::4]', 1234)
@@ -2537,33 +2295,6 @@ class TunnelTests(TestCase):
             self.conn.request('PUT', '/', '')
         lines = output.getvalue().splitlines()
         self.assertIn('header: {}'.format(expected_header), lines)
-
-    def test_proxy_response_headers(self):
-        expected_header = ('X-Dummy', '1')
-        response_text = (
-            'HTTP/1.0 200 OK\r\n'
-            '{0}\r\n\r\n'.format(':'.join(expected_header))
-        )
-
-        self.conn._create_connection = self._create_connection(response_text)
-        self.conn.set_tunnel('destination.com')
-
-        self.conn.request('PUT', '/', '')
-        headers = self.conn.get_proxy_response_headers()
-        self.assertIn(expected_header, headers.items())
-
-    def test_no_proxy_response_headers(self):
-        expected_header = ('X-Dummy', '1')
-        response_text = (
-            'HTTP/1.0 200 OK\r\n'
-            '{0}\r\n\r\n'.format(':'.join(expected_header))
-        )
-
-        self.conn._create_connection = self._create_connection(response_text)
-
-        self.conn.request('PUT', '/', '')
-        headers = self.conn.get_proxy_response_headers()
-        self.assertIsNone(headers)
 
     def test_tunnel_leak(self):
         sock = None

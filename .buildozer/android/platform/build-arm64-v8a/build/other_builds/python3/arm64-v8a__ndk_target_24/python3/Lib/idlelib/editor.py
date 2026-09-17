@@ -29,10 +29,10 @@ from idlelib import search
 from idlelib.tree import wheel_event
 from idlelib.util import py_extensions
 from idlelib import window
-from idlelib.help import _get_dochome
 
 # The default tab setting for a Text widget, in average-width characters.
 TK_TABWIDTH_DEFAULT = 8
+_py_version = ' (%s)' % platform.python_version()
 darwin = sys.platform == 'darwin'
 
 def _sphinx_version():
@@ -76,7 +76,44 @@ class EditorWindow:
         from idlelib.runscript import ScriptBinding
 
         if EditorWindow.help_url is None:
-            EditorWindow.help_url = _get_dochome()
+            dochome =  os.path.join(sys.base_prefix, 'Doc', 'index.html')
+            if sys.platform.count('linux'):
+                # look for html docs in a couple of standard places
+                pyver = 'python-docs-' + '%s.%s.%s' % sys.version_info[:3]
+                if os.path.isdir('/var/www/html/python/'):  # "python2" rpm
+                    dochome = '/var/www/html/python/index.html'
+                else:
+                    basepath = '/usr/share/doc/'  # standard location
+                    dochome = os.path.join(basepath, pyver,
+                                           'Doc', 'index.html')
+            elif sys.platform[:3] == 'win':
+                import winreg  # Windows only, block only executed once.
+                docfile = ''
+                KEY = (rf"Software\Python\PythonCore\{sys.winver}"
+                        r"\Help\Main Python Documentation")
+                try:
+                    docfile = winreg.QueryValue(winreg.HKEY_CURRENT_USER, KEY)
+                except FileNotFoundError:
+                    try:
+                        docfile = winreg.QueryValue(winreg.HKEY_LOCAL_MACHINE,
+                                                    KEY)
+                    except FileNotFoundError:
+                        pass
+                if os.path.isfile(docfile):
+                    dochome = docfile
+            elif sys.platform == 'darwin':
+                # documentation may be stored inside a python framework
+                dochome = os.path.join(sys.base_prefix,
+                        'Resources/English.lproj/Documentation/index.html')
+            dochome = os.path.normpath(dochome)
+            if os.path.isfile(dochome):
+                EditorWindow.help_url = dochome
+                if sys.platform == 'darwin':
+                    # Safari requires real file:-URLs
+                    EditorWindow.help_url = 'file://' + EditorWindow.help_url
+            else:
+                EditorWindow.help_url = ("https://docs.python.org/%d.%d/"
+                                         % sys.version_info[:2])
         self.flist = flist
         root = root or flist.root
         self.root = root
@@ -877,7 +914,7 @@ class EditorWindow:
     def ApplyKeybindings(self):
         """Apply the virtual, configurable keybindings.
 
-        Also update hotkeys to current keyset.
+        Alse update hotkeys to current keyset.
         """
         # Called from configdialog.activate_config_changes.
         self.mainmenu.default_keydefs = keydefs = idleConf.GetCurrentKeySet()
@@ -1007,16 +1044,12 @@ class EditorWindow:
     def saved_change_hook(self):
         short = self.short_title()
         long = self.long_title()
-        _py_version = ' (%s)' % platform.python_version()
         if short and long and not macosx.isCocoaTk():
             # Don't use both values on macOS because
             # that doesn't match platform conventions.
             title = short + " - " + long + _py_version
         elif short:
-            if short == "IDLE Shell":
-                title = short + " " +  platform.python_version()
-            else:
-                title = short + _py_version
+            title = short
         elif long:
             title = long
         else:
@@ -1616,7 +1649,7 @@ class IndentSearcher:
             self.finished = 1
 
     def run(self):
-        """Return 2 lines containing block opener and indent.
+        """Return 2 lines containing block opener and and indent.
 
         Either the indent line or both may be None.
         """

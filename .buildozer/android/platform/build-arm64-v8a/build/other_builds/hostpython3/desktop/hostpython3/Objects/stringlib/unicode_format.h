@@ -2,7 +2,6 @@
     unicode_format.h -- implementation of str.format().
 */
 
-#include "pycore_complexobject.h" // _PyComplex_FormatAdvancedWriter()
 #include "pycore_floatobject.h"   // _PyFloat_FormatAdvancedWriter()
 
 /************************************************************************/
@@ -73,7 +72,7 @@ Py_LOCAL_INLINE(PyObject *)
 SubString_new_object_or_empty(SubString *str)
 {
     if (str->str == NULL) {
-        return Py_GetConstant(Py_CONSTANT_EMPTY_STR);
+        return PyUnicode_New(0, 0);
     }
     return SubString_new_object(str);
 }
@@ -474,7 +473,8 @@ get_field_object(SubString *input, PyObject *args, PyObject *kwargs,
             goto error;
 
         /* assign to obj */
-        Py_SETREF(obj, tmp);
+        Py_DECREF(obj);
+        obj = tmp;
     }
     /* end of iterator, this is the non-error case */
     if (ok == 1)
@@ -531,7 +531,7 @@ render_field(PyObject *fieldobj, SubString *format_spec, _PyUnicodeWriter *write
                                                      format_spec->start,
                                                      format_spec->end);
         else
-            format_spec_object = Py_GetConstant(Py_CONSTANT_EMPTY_STR);
+            format_spec_object = PyUnicode_New(0, 0);
         if (format_spec_object == NULL)
             goto done;
 
@@ -821,11 +821,12 @@ output_markup(SubString *field_name, SubString *format_spec,
 
     if (conversion != '\0') {
         tmp = do_conversion(fieldobj, conversion);
-        if (tmp == NULL)
+        if (tmp == NULL || PyUnicode_READY(tmp) == -1)
             goto done;
 
         /* do the assignment, transferring ownership: fieldobj = tmp */
-        Py_SETREF(fieldobj, tmp);
+        Py_DECREF(fieldobj);
+        fieldobj = tmp;
         tmp = NULL;
     }
 
@@ -833,7 +834,7 @@ output_markup(SubString *field_name, SubString *format_spec,
     if (format_spec_needs_expanding) {
         tmp = build_string(format_spec, args, kwargs, recursion_depth-1,
                            auto_number);
-        if (tmp == NULL)
+        if (tmp == NULL || PyUnicode_READY(tmp) == -1)
             goto done;
 
         /* note that in the case we're expanding the format string,
@@ -949,6 +950,10 @@ do_string_format(PyObject *self, PyObject *args, PyObject *kwargs)
     int recursion_depth = 2;
 
     AutoNumber auto_number;
+
+    if (PyUnicode_READY(self) == -1)
+        return NULL;
+
     AutoNumber_Init(&auto_number);
     SubString_init(&input, self, 0, PyUnicode_GET_LENGTH(self));
     return build_string(&input, args, kwargs, recursion_depth, &auto_number);
@@ -977,9 +982,8 @@ typedef struct {
 } formatteriterobject;
 
 static void
-formatteriter_dealloc(PyObject *op)
+formatteriter_dealloc(formatteriterobject *it)
 {
-    formatteriterobject *it = (formatteriterobject*)op;
     Py_XDECREF(it->str);
     PyObject_Free(it);
 }
@@ -993,9 +997,8 @@ formatteriter_dealloc(PyObject *op)
    conversion is either None, or the string after the '!'
 */
 static PyObject *
-formatteriter_next(PyObject *op)
+formatteriter_next(formatteriterobject *it)
 {
-    formatteriterobject *it = (formatteriterobject*)op;
     SubString literal;
     SubString field_name;
     SubString format_spec;
@@ -1039,7 +1042,8 @@ formatteriter_next(PyObject *op)
            otherwise create a one length string with the conversion
            character */
         if (conversion == '\0') {
-            conversion_str = Py_NewRef(Py_None);
+            conversion_str = Py_None;
+            Py_INCREF(conversion_str);
         }
         else
             conversion_str = PyUnicode_FromKindAndData(PyUnicode_4BYTE_KIND,
@@ -1068,7 +1072,7 @@ static PyTypeObject PyFormatterIter_Type = {
     sizeof(formatteriterobject),        /* tp_basicsize */
     0,                                  /* tp_itemsize */
     /* methods */
-    formatteriter_dealloc,              /* tp_dealloc */
+    (destructor)formatteriter_dealloc,  /* tp_dealloc */
     0,                                  /* tp_vectorcall_offset */
     0,                                  /* tp_getattr */
     0,                                  /* tp_setattr */
@@ -1090,7 +1094,7 @@ static PyTypeObject PyFormatterIter_Type = {
     0,                                  /* tp_richcompare */
     0,                                  /* tp_weaklistoffset */
     PyObject_SelfIter,                  /* tp_iter */
-    formatteriter_next,                 /* tp_iternext */
+    (iternextfunc)formatteriter_next,   /* tp_iternext */
     formatteriter_methods,              /* tp_methods */
     0,
 };
@@ -1100,7 +1104,7 @@ static PyTypeObject PyFormatterIter_Type = {
    describing the parsed elements.  It's a wrapper around
    stringlib/string_format.h's MarkupIterator */
 static PyObject *
-formatter_parser(PyObject *Py_UNUSED(module), PyObject *self)
+formatter_parser(PyObject *ignored, PyObject *self)
 {
     formatteriterobject *it;
 
@@ -1109,12 +1113,16 @@ formatter_parser(PyObject *Py_UNUSED(module), PyObject *self)
         return NULL;
     }
 
+    if (PyUnicode_READY(self) == -1)
+        return NULL;
+
     it = PyObject_New(formatteriterobject, &PyFormatterIter_Type);
     if (it == NULL)
         return NULL;
 
     /* take ownership, give the object to the iterator */
-    it->str = Py_NewRef(self);
+    Py_INCREF(self);
+    it->str = self;
 
     /* initialize the contained MarkupIterator */
     MarkupIterator_init(&it->it_markup, (PyObject*)self, 0, PyUnicode_GET_LENGTH(self));
@@ -1138,9 +1146,8 @@ typedef struct {
 } fieldnameiterobject;
 
 static void
-fieldnameiter_dealloc(PyObject *op)
+fieldnameiter_dealloc(fieldnameiterobject *it)
 {
-    fieldnameiterobject *it = (fieldnameiterobject*)op;
     Py_XDECREF(it->str);
     PyObject_Free(it);
 }
@@ -1152,9 +1159,8 @@ fieldnameiter_dealloc(PyObject *op)
    value is an integer or string
 */
 static PyObject *
-fieldnameiter_next(PyObject *op)
+fieldnameiter_next(fieldnameiterobject *it)
 {
-    fieldnameiterobject *it = (fieldnameiterobject*)op;
     int result;
     int is_attr;
     Py_ssize_t idx;
@@ -1202,7 +1208,7 @@ static PyTypeObject PyFieldNameIter_Type = {
     sizeof(fieldnameiterobject),        /* tp_basicsize */
     0,                                  /* tp_itemsize */
     /* methods */
-    fieldnameiter_dealloc,              /* tp_dealloc */
+    (destructor)fieldnameiter_dealloc,  /* tp_dealloc */
     0,                                  /* tp_vectorcall_offset */
     0,                                  /* tp_getattr */
     0,                                  /* tp_setattr */
@@ -1224,7 +1230,7 @@ static PyTypeObject PyFieldNameIter_Type = {
     0,                                  /* tp_richcompare */
     0,                                  /* tp_weaklistoffset */
     PyObject_SelfIter,                  /* tp_iter */
-    fieldnameiter_next,                 /* tp_iternext */
+    (iternextfunc)fieldnameiter_next,   /* tp_iternext */
     fieldnameiter_methods,              /* tp_methods */
     0};
 
@@ -1236,7 +1242,7 @@ static PyTypeObject PyFieldNameIter_Type = {
    field_name_split.  The iterator it returns is a
    FieldNameIterator */
 static PyObject *
-formatter_field_name_split(PyObject *Py_UNUSED(module), PyObject *self)
+formatter_field_name_split(PyObject *ignored, PyObject *self)
 {
     SubString first;
     Py_ssize_t first_idx;
@@ -1250,13 +1256,17 @@ formatter_field_name_split(PyObject *Py_UNUSED(module), PyObject *self)
         return NULL;
     }
 
+    if (PyUnicode_READY(self) == -1)
+        return NULL;
+
     it = PyObject_New(fieldnameiterobject, &PyFieldNameIter_Type);
     if (it == NULL)
         return NULL;
 
     /* take ownership, give the object to the iterator.  this is
        just to keep the field_name alive */
-    it->str = Py_NewRef(self);
+    Py_INCREF(self);
+    it->str = self;
 
     /* Pass in auto_number = NULL. We'll return an empty string for
        first_obj in that case. */

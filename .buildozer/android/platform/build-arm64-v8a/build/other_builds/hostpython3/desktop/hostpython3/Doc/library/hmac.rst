@@ -1,5 +1,5 @@
-:mod:`!hmac` --- Keyed-Hashing for Message Authentication
-=========================================================
+:mod:`hmac` --- Keyed-Hashing for Message Authentication
+========================================================
 
 .. module:: hmac
    :synopsis: Keyed-Hashing for Message Authentication (HMAC) implementation
@@ -12,9 +12,6 @@
 --------------
 
 This module implements the HMAC algorithm as described by :rfc:`2104`.
-The interface allows to use any hash function with a *fixed* digest size.
-In particular, extendable output functions such as SHAKE-128 or SHAKE-256
-cannot be used with HMAC.
 
 
 .. function:: new(key, msg=None, digestmod)
@@ -50,9 +47,7 @@ cannot be used with HMAC.
    .. versionadded:: 3.7
 
 
-.. class:: HMAC
-
-   An HMAC object has the following methods:
+An HMAC object has the following methods:
 
 .. method:: HMAC.update(msg)
 

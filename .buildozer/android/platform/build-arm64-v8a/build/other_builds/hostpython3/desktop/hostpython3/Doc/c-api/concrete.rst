@@ -109,20 +109,11 @@ Other Objects
    descriptor.rst
    slice.rst
    memoryview.rst
-   picklebuffer.rst
    weakref.rst
    capsule.rst
    frame.rst
    gen.rst
    coro.rst
    contextvars.rst
-   typehints.rst
-
-
-C API for extension modules
-===========================
-
-.. toctree::
-
-   curses.rst
    datetime.rst
+   typehints.rst

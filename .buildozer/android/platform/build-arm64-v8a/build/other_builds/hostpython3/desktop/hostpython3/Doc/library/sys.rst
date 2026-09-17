@@ -1,5 +1,5 @@
-:mod:`!sys` --- System-specific parameters and functions
-========================================================
+:mod:`sys` --- System-specific parameters and functions
+=======================================================
 
 .. module:: sys
    :synopsis: Access system-specific parameters and functions.
@@ -8,7 +8,7 @@
 
 This module provides access to some variables used or maintained by the
 interpreter and to functions that interact strongly with the interpreter. It is
-always available. Unless explicitly noted otherwise, all variables are read-only.
+always available.
 
 
 .. data:: abiflags
@@ -21,8 +21,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    .. versionchanged:: 3.8
       Default flags became an empty string (``m`` flag for pymalloc has been
       removed).
-
-   .. availability:: Unix.
 
 
 .. function:: addaudithook(hook)
@@ -130,26 +128,27 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
 .. data:: base_exec_prefix
 
-   Equivalent to :data:`exec_prefix`, but referring to the base Python installation.
-
-   When running under :ref:`sys-path-init-virtual-environments`,
-   :data:`exec_prefix` gets overwritten to the virtual environment prefix.
-   :data:`base_exec_prefix`, conversely, does not change, and always points to
-   the base Python installation.
-   Refer to :ref:`sys-path-init-virtual-environments` for more information.
+   Set during Python startup, before ``site.py`` is run, to the same value as
+   :data:`exec_prefix`. If not running in a
+   :ref:`virtual environment <venv-def>`, the values will stay the same; if
+   ``site.py`` finds that a virtual environment is in use, the values of
+   :data:`prefix` and :data:`exec_prefix` will be changed to point to the
+   virtual environment, whereas :data:`base_prefix` and
+   :data:`base_exec_prefix` will remain pointing to the base Python
+   installation (the one which the virtual environment was created from).
 
    .. versionadded:: 3.3
 
 
 .. data:: base_prefix
 
-   Equivalent to :data:`prefix`, but referring to the base Python installation.
-
-   When running under :ref:`virtual environment <venv-def>`,
-   :data:`prefix` gets overwritten to the virtual environment prefix.
-   :data:`base_prefix`, conversely, does not change, and always points to
-   the base Python installation.
-   Refer to :ref:`sys-path-init-virtual-environments` for more information.
+   Set during Python startup, before ``site.py`` is run, to the same value as
+   :data:`prefix`. If not running in a :ref:`virtual environment <venv-def>`, the values
+   will stay the same; if ``site.py`` finds that a virtual environment is in
+   use, the values of :data:`prefix` and :data:`exec_prefix` will be changed to
+   point to the virtual environment, whereas :data:`base_prefix` and
+   :data:`base_exec_prefix` will remain pointing to the base Python
+   installation (the one which the virtual environment was created from).
 
    .. versionadded:: 3.3
 
@@ -194,17 +193,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
    This function should be used for internal and specialized purposes only.
 
-   .. deprecated:: 3.13
-      Use the more general :func:`_clear_internal_caches` function instead.
-
-
-.. function:: _clear_internal_caches()
-
-   Clear all internal performance-related caches. Use this function *only* to
-   release unnecessary references and memory blocks when hunting for leaks.
-
-   .. versionadded:: 3.13
-
 
 .. function:: _current_frames()
 
@@ -235,10 +223,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    This function should be used for internal and specialized purposes only.
 
    .. audit-event:: sys._current_exceptions "" sys._current_exceptions
-
-   .. versionchanged:: 3.12
-      Each value in the dictionary is now a single exception instance, rather
-      than a 3-tuple as returned from ``sys.exc_info()``.
 
 .. function:: breakpointhook()
 
@@ -482,19 +466,11 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
    .. note::
 
-      If a :ref:`virtual environment <venv-def>` is in effect, this :data:`exec_prefix`
-      will point to the virtual environment. The value for the Python installation
-      will still be available, via :data:`base_exec_prefix`.
-      Refer to :ref:`sys-path-init-virtual-environments` for more information.
+      If a :ref:`virtual environment <venv-def>` is in effect, this
+      value will be changed in ``site.py`` to point to the virtual environment.
+      The value for the Python installation will still be available, via
+      :data:`base_exec_prefix`.
 
-   .. versionchanged:: 3.14
-
-      When running under a :ref:`virtual environment <venv-def>`,
-      :data:`prefix` and :data:`exec_prefix` are now set to the virtual
-      environment prefix by the :ref:`path initialization <sys-path-init>`,
-      instead of :mod:`site`. This means that :data:`prefix` and
-      :data:`exec_prefix` always point to the virtual environment, even when
-      :mod:`site` is disabled (:option:`-S`).
 
 .. data:: executable
 
@@ -535,8 +511,7 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 .. data:: flags
 
    The :term:`named tuple` *flags* exposes the status of command line
-   flags.  Flags should only be accessed only by name and not by index.  The
-   attributes are read only.
+   flags. The attributes are read only.
 
    .. list-table::
 
@@ -595,18 +570,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
       * - .. attribute:: flags.warn_default_encoding
         - :option:`-X warn_default_encoding <-X>`
 
-      * - .. attribute:: flags.gil
-        - :option:`-X gil <-X>` and :envvar:`PYTHON_GIL`
-
-      * - .. attribute:: flags.thread_inherit_context
-        - :option:`-X thread_inherit_context <-X>` and
-          :envvar:`PYTHON_THREAD_INHERIT_CONTEXT`
-
-      * - .. attribute:: flags.context_aware_warnings
-        - :option:`-X context_aware_warnings <-X>` and
-          :envvar:`PYTHON_CONTEXT_AWARE_WARNINGS`
-
-
    .. versionchanged:: 3.2
       Added ``quiet`` attribute for the new :option:`-q` flag.
 
@@ -632,15 +595,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
    .. versionchanged:: 3.11
       Added the ``int_max_str_digits`` attribute.
-
-   .. versionchanged:: 3.13
-      Added the ``gil`` attribute.
-
-   .. versionchanged:: 3.14
-      Added the ``thread_inherit_context`` attribute.
-
-   .. versionchanged:: 3.14
-      Added the ``context_aware_warnings`` attribute.
 
 
 .. data:: float_info
@@ -764,27 +718,18 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    regardless of their size.  This function is mainly useful for tracking
    and debugging memory leaks.  Because of the interpreter's internal
    caches, the result can vary from call to call; you may have to call
-   :func:`_clear_internal_caches` and :func:`gc.collect` to get more
+   :func:`_clear_type_cache()` and :func:`gc.collect()` to get more
    predictable results.
 
    If a Python build or implementation cannot reasonably compute this
-   information, :func:`getallocatedblocks` is allowed to return 0 instead.
+   information, :func:`getallocatedblocks()` is allowed to return 0 instead.
 
    .. versionadded:: 3.4
 
 
-.. function:: getunicodeinternedsize()
-
-   Return the number of unicode objects that have been interned.
-
-   .. versionadded:: 3.12
-
-
 .. function:: getandroidapilevel()
 
-   Return the build-time API level of Android as an integer. This represents the
-   minimum version of Android this build of Python can run on. For runtime
-   version information, see :func:`platform.android_ver`.
+   Return the build time API version of Android as an integer.
 
    .. availability:: Android.
 
@@ -793,8 +738,8 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
 .. function:: getdefaultencoding()
 
-   Return ``'utf-8'``. This is the name of the default string encoding, used
-   in methods like :meth:`str.encode`.
+   Return the name of the current default string encoding used by the Unicode
+   implementation.
 
 
 .. function:: getdlopenflags()
@@ -872,19 +817,8 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    an argument to :func:`getrefcount`.
 
    Note that the returned value may not actually reflect how many
-   references to the object are actually held.  For example, some
-   objects are :term:`immortal` and have a very high refcount that does not
-   reflect the actual number of references.  Consequently, do not rely
+   references to the object are actually held.  Consequently, do not rely
    on the returned value to be accurate, other than a value of 0 or 1.
-
-   .. impl-detail::
-
-      :term:`Immortal <immortal>` objects with a large reference count can be
-      identified via :func:`_is_immortal`.
-
-   .. versionchanged:: 3.12
-      Immortal objects have very large refcounts that do not match
-      the actual number of references to the object.
 
 .. function:: getrecursionlimit()
 
@@ -911,13 +845,13 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    additional garbage collector overhead if the object is managed by the garbage
    collector.
 
-   See `recursive sizeof recipe <https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/>`_
+   See `recursive sizeof recipe <https://code.activestate.com/recipes/577504/>`_
    for an example of using :func:`getsizeof` recursively to find the size of
    containers and all their contents.
 
 .. function:: getswitchinterval()
 
-   Return the interpreter's "thread switch interval" in seconds; see
+   Return the interpreter's "thread switch interval"; see
    :func:`setswitchinterval`.
 
    .. versionadded:: 3.2
@@ -936,53 +870,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
       This function should be used for internal and specialized purposes only.
       It is not guaranteed to exist in all implementations of Python.
-
-
-.. function:: _getframemodulename([depth])
-
-   Return the name of a module from the call stack.  If optional integer *depth*
-   is given, return the module that many calls below the top of the stack.  If
-   that is deeper than the call stack, or if the module is unidentifiable,
-   ``None`` is returned.  The default for *depth* is zero, returning the
-   module at the top of the call stack.
-
-   .. audit-event:: sys._getframemodulename depth sys._getframemodulename
-
-   .. impl-detail::
-
-      This function should be used for internal and specialized purposes only.
-      It is not guaranteed to exist in all implementations of Python.
-
-   .. versionadded:: 3.12
-
-
-.. function:: getobjects(limit[, type])
-
-   This function only exists if CPython was built using the
-   specialized configure option :option:`--with-trace-refs`.
-   It is intended only for debugging garbage-collection issues.
-
-   Return a list of up to *limit* dynamically allocated Python objects.
-   If *type* is given, only objects of that exact type (not subtypes)
-   are included.
-
-   Objects from the list are not safe to use.
-   Specifically, the result will include objects from all interpreters that
-   share their object allocator state (that is, ones created with
-   :c:member:`PyInterpreterConfig.use_main_obmalloc` set to 1
-   or using :c:func:`Py_NewInterpreter`, and the
-   :ref:`main interpreter <sub-interpreter-support>`).
-   Mixing objects from different interpreters may lead to crashes
-   or other unexpected behavior.
-
-   .. impl-detail::
-
-      This function should be used for specialized purposes only.
-      It is not guaranteed to exist in all implementations of Python.
-
-   .. versionchanged:: 3.14
-
-      The result may include objects from other interpreters.
 
 
 .. function:: getprofile()
@@ -1130,14 +1017,10 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
       The size of the seed key of the hash algorithm
 
-   .. attribute:: hash_info.cutoff
-
-      Cutoff for small string DJBX33A optimization in range ``[1, cutoff)``.
-
    .. versionadded:: 3.2
 
    .. versionchanged:: 3.4
-      Added *algorithm*, *hash_bits*, *seed_bits*, and *cutoff*.
+      Added *algorithm*, *hash_bits* and *seed_bits*
 
 
 .. data:: hexversion
@@ -1191,15 +1074,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    ``cache_tag`` is set to ``None``, it indicates that module caching should
    be disabled.
 
-   *supports_isolated_interpreters* is a boolean value, whether
-   this implementation supports multiple isolated interpreters.
-   It is ``True`` for CPython on most platforms.  Platforms with
-   this support implement the low-level :mod:`!_interpreters` module.
-
-   .. seealso::
-
-      :pep:`684`, :pep:`734`, and :mod:`concurrent.interpreters`.
-
    :data:`sys.implementation` may contain additional attributes specific to
    the Python implementation.  These non-standard attributes must start with
    an underscore, and are not described here.  Regardless of its contents,
@@ -1208,9 +1082,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    language versions, however.)  See :pep:`421` for more information.
 
    .. versionadded:: 3.3
-
-   .. versionchanged:: 3.14
-      Added ``supports_isolated_interpreters`` field.
 
    .. note::
 
@@ -1276,137 +1147,33 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    names used in Python programs are automatically interned, and the dictionaries
    used to hold module, class or instance attributes have interned keys.
 
-   Interned strings are not :term:`immortal`; you must keep a reference to the
-   return value of :func:`intern` around to benefit from it.
+   Interned strings are not immortal; you must keep a reference to the return
+   value of :func:`intern` around to benefit from it.
 
-
-.. function:: _is_gil_enabled()
-
-   Return :const:`True` if the :term:`GIL` is enabled and :const:`False` if
-   it is disabled.
-
-   .. versionadded:: 3.13
-
-   .. impl-detail::
-
-      It is not guaranteed to exist in all implementations of Python.
 
 .. function:: is_finalizing()
 
-   Return :const:`True` if the main Python interpreter is
-   :term:`shutting down <interpreter shutdown>`. Return :const:`False` otherwise.
-
-   See also the :exc:`PythonFinalizationError` exception.
+   Return :const:`True` if the Python interpreter is
+   :term:`shutting down <interpreter shutdown>`, :const:`False` otherwise.
 
    .. versionadded:: 3.5
-
-.. data:: _jit
-
-   Utilities for observing just-in-time compilation.
-
-   .. impl-detail::
-
-      JIT compilation is an *experimental implementation detail* of CPython.
-      ``sys._jit`` is not guaranteed to exist or behave the same way in all
-      Python implementations, versions, or build configurations.
-
-   .. versionadded:: 3.14
-
-   .. function:: _jit.is_available()
-
-      Return ``True`` if the current Python executable supports JIT compilation,
-      and ``False`` otherwise.  This can be controlled by building CPython with
-      the ``--experimental-jit`` option on Windows, and the
-      :option:`--enable-experimental-jit` option on all other platforms.
-
-   .. function:: _jit.is_enabled()
-
-      Return ``True`` if JIT compilation is enabled for the current Python
-      process (implies :func:`sys._jit.is_available`), and ``False`` otherwise.
-      If JIT compilation is available, this can be controlled by setting the
-      :envvar:`PYTHON_JIT` environment variable to ``0`` (disabled) or ``1``
-      (enabled) at interpreter startup.
-
-   .. function:: _jit.is_active()
-
-      Return ``True`` if the topmost Python frame is currently executing JIT
-      code (implies :func:`sys._jit.is_enabled`), and ``False`` otherwise.
-
-      .. note::
-
-         This function is intended for testing and debugging the JIT itself.
-         It should be avoided for any other purpose.
-
-      .. note::
-
-         Due to the nature of tracing JIT compilers, repeated calls to this
-         function may give surprising results. For example, branching on its
-         return value will likely lead to unexpected behavior (if doing so
-         causes JIT code to be entered or exited):
-
-         .. code-block:: pycon
-
-            >>> for warmup in range(BIG_NUMBER):
-            ...     # This line is "hot", and is eventually JIT-compiled:
-            ...     if sys._jit.is_active():
-            ...         # This line is "cold", and is run in the interpreter:
-            ...         assert sys._jit.is_active()
-            ...
-            Traceback (most recent call last):
-              File "<stdin>", line 5, in <module>
-                assert sys._jit.is_active()
-                       ~~~~~~~~~~~~~~~~~~^^
-            AssertionError
-
-.. data:: last_exc
-
-   This variable is not always defined; it is set to the exception instance
-   when an exception is not handled and the interpreter prints an error message
-   and a stack traceback.  Its intended use is to allow an interactive user to
-   import a debugger module and engage in post-mortem debugging without having
-   to re-execute the command that caused the error.  (Typical use is
-   ``import pdb; pdb.pm()`` to enter the post-mortem debugger; see :mod:`pdb`
-   module for more information.)
-
-   .. versionadded:: 3.12
-
-.. function:: _is_immortal(op)
-
-   Return :const:`True` if the given object is :term:`immortal`, :const:`False`
-   otherwise.
-
-   .. note::
-
-      Objects that are immortal (and thus return ``True`` upon being passed
-      to this function) are not guaranteed to be immortal in future versions,
-      and vice versa for mortal objects.
-
-   .. versionadded:: 3.14
-
-   .. impl-detail::
-
-      This function should be used for specialized purposes only.
-      It is not guaranteed to exist in all implementations of Python.
-
-.. function:: _is_interned(string)
-
-   Return :const:`True` if the given string is "interned", :const:`False`
-   otherwise.
-
-   .. versionadded:: 3.13
-
-   .. impl-detail::
-
-      It is not guaranteed to exist in all implementations of Python.
 
 
 .. data:: last_type
           last_value
           last_traceback
 
-   These three variables are deprecated; use :data:`sys.last_exc` instead.
-   They hold the legacy representation of ``sys.last_exc``, as returned
-   from :func:`exc_info` above.
+   These three variables are not always defined; they are set when an exception is
+   not handled and the interpreter prints an error message and a stack traceback.
+   Their intended use is to allow an interactive user to import a debugger module
+   and engage in post-mortem debugging without having to re-execute the command
+   that caused the error.  (Typical use is ``import pdb; pdb.pm()`` to enter the
+   post-mortem debugger; see :mod:`pdb` module for
+   more information.)
+
+   The meaning of the variables is the same as that of the return values from
+   :func:`exc_info` above.
+
 
 .. data:: maxsize
 
@@ -1434,8 +1201,7 @@ always available. Unless explicitly noted otherwise, all variables are read-only
     that implement Python's default import semantics. The
     :meth:`~importlib.abc.MetaPathFinder.find_spec` method is called with at
     least the absolute name of the module being imported. If the module to be
-    imported is contained in a package, then the parent package's
-    :attr:`~module.__path__`
+    imported is contained in a package, then the parent package's :attr:`__path__`
     attribute is passed in as a second argument. The method returns a
     :term:`module spec`, or ``None`` if the module cannot be found.
 
@@ -1452,13 +1218,10 @@ always available. Unless explicitly noted otherwise, all variables are read-only
     .. versionchanged:: 3.4
 
         :term:`Module specs <module spec>` were introduced in Python 3.4, by
-        :pep:`451`.
-
-    .. versionchanged:: 3.12
-
-        Removed the fallback that looked for a :meth:`!find_module` method
-        if a :data:`meta_path` entry didn't have a
-        :meth:`~importlib.abc.MetaPathFinder.find_spec` method.
+        :pep:`451`. Earlier versions of Python looked for a method called
+        :meth:`~importlib.abc.MetaPathFinder.find_module`.
+        This is still called as a fallback if a :data:`meta_path` entry doesn't
+        have a :meth:`~importlib.abc.MetaPathFinder.find_spec` method.
 
 .. data:: modules
 
@@ -1535,50 +1298,54 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
     Originally specified in :pep:`302`.
 
+    .. versionchanged:: 3.3
+       ``None`` is stored instead of :class:`imp.NullImporter` when no finder
+       is found.
+
 
 .. data:: platform
 
-   A string containing a platform identifier. Known values are:
+   This string contains a platform identifier that can be used to append
+   platform-specific components to :data:`sys.path`, for instance.
+
+   For Unix systems, except on Linux and AIX, this is the lowercased OS name as
+   returned by ``uname -s`` with the first part of the version as returned by
+   ``uname -r`` appended, e.g. ``'sunos5'`` or ``'freebsd8'``, *at the time
+   when Python was built*.  Unless you want to test for a specific system
+   version, it is therefore recommended to use the following idiom::
+
+      if sys.platform.startswith('freebsd'):
+          # FreeBSD-specific code here...
+      elif sys.platform.startswith('linux'):
+          # Linux-specific code here...
+      elif sys.platform.startswith('aix'):
+          # AIX-specific code here...
+
+   For other systems, the values are:
 
    ================ ===========================
    System           ``platform`` value
    ================ ===========================
    AIX              ``'aix'``
-   Android          ``'android'``
    Emscripten       ``'emscripten'``
-   FreeBSD          ``'freebsd'``
-   iOS              ``'ios'``
    Linux            ``'linux'``
-   macOS            ``'darwin'``
+   WASI             ``'wasi'``
    Windows          ``'win32'``
    Windows/Cygwin   ``'cygwin'``
-   WASI             ``'wasi'``
+   macOS            ``'darwin'``
    ================ ===========================
-
-   On Unix systems not listed in the table, the value is the lowercased OS name
-   as returned by ``uname -s``, with the first part of the version as returned by
-   ``uname -r`` appended, e.g. ``'sunos5'``, *at the time when Python was built*.
-   Unless you want to test for a specific system version, it is therefore
-   recommended to use the following idiom::
-
-      if sys.platform.startswith('sunos'):
-          # SunOS-specific code here...
 
    .. versionchanged:: 3.3
       On Linux, :data:`sys.platform` doesn't contain the major version anymore.
-      It is always ``'linux'``, instead of ``'linux2'`` or ``'linux3'``.
+      It is always ``'linux'``, instead of ``'linux2'`` or ``'linux3'``.  Since
+      older Python versions include the version number, it is recommended to
+      always use the ``startswith`` idiom presented above.
 
    .. versionchanged:: 3.8
       On AIX, :data:`sys.platform` doesn't contain the major version anymore.
-      It is always ``'aix'``, instead of ``'aix5'`` or ``'aix7'``.
-
-   .. versionchanged:: 3.13
-      On Android, :data:`sys.platform` now returns ``'android'`` rather than
-      ``'linux'``.
-
-   .. versionchanged:: 3.14
-      On FreeBSD, :data:`sys.platform` doesn't contain the major version anymore.
-      It is always ``'freebsd'``, instead of ``'freebsd13'`` or ``'freebsd14'``.
+      It is always ``'aix'``, instead of ``'aix5'`` or ``'aix7'``.  Since
+      older Python versions include the version number, it is recommended to
+      always use the ``startswith`` idiom presented above.
 
    .. seealso::
 
@@ -1619,21 +1386,10 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    argument to the :program:`configure` script.  See
    :ref:`installation_paths` for derived paths.
 
-   .. note::
-
-      If a :ref:`virtual environment <venv-def>` is in effect, this :data:`prefix`
-      will point to the virtual environment. The value for the Python installation
-      will still be available, via :data:`base_prefix`.
-      Refer to :ref:`sys-path-init-virtual-environments` for more information.
-
-   .. versionchanged:: 3.14
-
-      When running under a :ref:`virtual environment <venv-def>`,
-      :data:`prefix` and :data:`exec_prefix` are now set to the virtual
-      environment prefix by the :ref:`path initialization <sys-path-init>`,
-      instead of :mod:`site`. This means that :data:`prefix` and
-      :data:`exec_prefix` always point to the virtual environment, even when
-      :mod:`site` is disabled (:option:`-S`).
+   .. note:: If a :ref:`virtual environment <venv-def>` is in effect, this
+      value will be changed in ``site.py`` to point to the virtual
+      environment. The value for the Python installation will still be
+      available, via :data:`base_prefix`.
 
 
 .. data:: ps1
@@ -1768,7 +1524,7 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    :func:`settrace` for each thread being debugged or use :func:`threading.settrace`.
 
    Trace functions should have three arguments: *frame*, *event*, and
-   *arg*. *frame* is the :ref:`current stack frame <frame-objects>`. *event* is a string: ``'call'``,
+   *arg*. *frame* is the current stack frame.  *event* is a string: ``'call'``,
    ``'line'``, ``'return'``, ``'exception'`` or ``'opcode'``.  *arg* depends on
    the event type.
 
@@ -1885,11 +1641,11 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    contain a tuple of (filename, line number, function name) tuples
    describing the traceback where the coroutine object was created,
    with the most recent call first. When disabled, ``cr_origin`` will
-   be ``None``.
+   be None.
 
    To enable, pass a *depth* value greater than zero; this sets the
    number of frames whose information will be captured. To disable,
-   set *depth* to zero.
+   pass set *depth* to zero.
 
    This setting is thread-specific.
 
@@ -1898,78 +1654,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
    .. note::
       This function has been added on a provisional basis (see :pep:`411`
       for details.)  Use it only for debugging purposes.
-
-.. function:: activate_stack_trampoline(backend, /)
-
-   Activate the stack profiler trampoline *backend*.
-   The only supported backend is ``"perf"``.
-
-   Stack trampolines cannot be activated if the JIT is active.
-
-   .. availability:: Linux.
-
-   .. versionadded:: 3.12
-
-   .. seealso::
-
-      * :ref:`perf_profiling`
-      * https://perf.wiki.kernel.org
-
-.. function:: deactivate_stack_trampoline()
-
-   Deactivate the current stack profiler trampoline backend.
-
-   If no stack profiler is activated, this function has no effect.
-
-   .. availability:: Linux.
-
-   .. versionadded:: 3.12
-
-.. function:: is_stack_trampoline_active()
-
-   Return ``True`` if a stack profiler trampoline is active.
-
-   .. availability:: Linux.
-
-   .. versionadded:: 3.12
-
-
-.. function:: remote_exec(pid, script)
-
-   Executes *script*, a file containing Python code in the remote
-   process with the given *pid*.
-
-   This function returns immediately, and the code will be executed by the
-   target process's main thread at the next available opportunity, similarly
-   to how signals are handled. There is no interface to determine when the
-   code has been executed. The caller is responsible for making sure that
-   the file still exists whenever the remote process tries to read it and that
-   it hasn't been overwritten.
-
-   The remote process must be running a CPython interpreter of the same major
-   and minor version as the local process. If either the local or remote
-   interpreter is pre-release (alpha, beta, or release candidate) then the
-   local and remote interpreters must be the same exact version.
-
-   .. audit-event:: sys.remote_exec pid script_path
-
-      When the code is executed in the remote process, an
-      :ref:`auditing event <auditing>` ``sys.remote_exec`` is raised with
-      the *pid* and the path to the script file.
-      This event is raised in the process that called :func:`sys.remote_exec`.
-
-   .. audit-event:: cpython.remote_debugger_script script_path
-
-      When the script is executed in the remote process, an
-      :ref:`auditing event <auditing>`
-      ``cpython.remote_debugger_script`` is raised
-      with the path in the remote process.
-      This event is raised in the remote process, not the one
-      that called :func:`sys.remote_exec`.
-
-   .. availability:: Unix, Windows.
-   .. versionadded:: 3.14
-
 
 .. function:: _enablelegacywindowsfsencoding()
 
@@ -1985,16 +1669,8 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
    .. availability:: Windows.
 
-   .. note::
-      Changing the filesystem encoding after Python startup is risky because
-      the old fsencoding or paths encoded by the old fsencoding may be cached
-      somewhere. Use :envvar:`PYTHONLEGACYWINDOWSFSENCODING` instead.
-
    .. versionadded:: 3.6
       See :pep:`529` for more details.
-
-   .. deprecated-removed:: 3.13 3.16
-      Use :envvar:`PYTHONLEGACYWINDOWSFSENCODING` instead.
 
 .. data:: stdin
           stdout
@@ -2195,11 +1871,8 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
 .. data:: api_version
 
-   The C API version, equivalent to the C macro :c:macro:`PYTHON_API_VERSION`.
-   Defined for backwards compatibility.
-
-   Currently, this constant is not updated in new Python versions, and is not
-   useful for versioning. This may change in the future.
+   The C API version for this interpreter.  Programmers may find this useful when
+   debugging version conflicts between Python and extension modules.
 
 
 .. data:: version_info
@@ -2232,13 +1905,6 @@ always available. Unless explicitly noted otherwise, all variables are read-only
 
    .. availability:: Windows.
 
-
-.. data:: monitoring
-   :noindex:
-
-   Namespace containing functions and constants for register callbacks
-   and controlling monitoring events.
-   See  :mod:`sys.monitoring` for details.
 
 .. data:: _xoptions
 

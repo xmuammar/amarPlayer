@@ -2,11 +2,9 @@
 /* Support for dynamic loading of extension modules */
 
 #include "Python.h"
-#include "pycore_fileutils.h"     // struct _Py_stat_struct
-#include "pycore_import.h"        // _PyImport_GetDLOpenFlags()
-#include "pycore_importdl.h"
-#include "pycore_interp.h"        // _PyInterpreterState.dlopenflags
-#include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#include "pycore_interp.h"    // _PyInterpreterState.dlopenflags
+#include "pycore_pystate.h"   // _PyInterpreterState_GET()
+#include "importdl.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -77,7 +75,7 @@ _PyImport_FindSharedFuncptr(const char *prefix,
             return NULL;
     }
 
-    dlopenflags = _PyImport_GetDLOpenFlags(_PyInterpreterState_GET());
+    dlopenflags = _PyInterpreterState_GET()->dlopenflags;
 
     handle = dlopen(pathname, dlopenflags);
 

@@ -1,5 +1,5 @@
-:mod:`!smtplib` --- SMTP protocol client
-========================================
+:mod:`smtplib` --- SMTP protocol client
+=======================================
 
 .. module:: smtplib
    :synopsis: SMTP protocol client (requires sockets).
@@ -66,22 +66,23 @@ Protocol) and :rfc:`1869` (SMTP Service Extensions).
       Support for the :keyword:`with` statement was added.
 
    .. versionchanged:: 3.3
-      *source_address* argument was added.
+      source_address argument was added.
 
    .. versionadded:: 3.5
       The SMTPUTF8 extension (:rfc:`6531`) is now supported.
 
    .. versionchanged:: 3.9
       If the *timeout* parameter is set to be zero, it will raise a
-      :class:`ValueError` to prevent the creation of a non-blocking socket.
+      :class:`ValueError` to prevent the creation of a non-blocking socket
 
-.. class:: SMTP_SSL(host='', port=0, local_hostname=None, * [, timeout], \
-                    context=None, source_address=None)
+.. class:: SMTP_SSL(host='', port=0, local_hostname=None, keyfile=None, \
+                    certfile=None [, timeout], context=None, \
+                    source_address=None)
 
    An :class:`SMTP_SSL` instance behaves exactly the same as instances of
    :class:`SMTP`. :class:`SMTP_SSL` should be used for situations where SSL is
-   required from the beginning of the connection and using :meth:`~SMTP.starttls`
-   is not appropriate. If *host* is not specified, the local host is used. If
+   required from the beginning of the connection and using :meth:`starttls` is
+   not appropriate. If *host* is not specified, the local host is used. If
    *port* is zero, the standard SMTP-over-SSL port (465) is used.  The optional
    arguments *local_hostname*, *timeout* and *source_address* have the same
    meaning as they do in the :class:`SMTP` class.  *context*, also optional,
@@ -89,31 +90,39 @@ Protocol) and :rfc:`1869` (SMTP Service Extensions).
    aspects of the secure connection.  Please read :ref:`ssl-security` for
    best practices.
 
+   *keyfile* and *certfile* are a legacy alternative to *context*, and can
+   point to a PEM formatted private key and certificate chain file for the
+   SSL connection.
+
    .. versionchanged:: 3.3
       *context* was added.
 
    .. versionchanged:: 3.3
-      The *source_address* argument was added.
+      source_address argument was added.
 
    .. versionchanged:: 3.4
       The class now supports hostname check with
       :attr:`ssl.SSLContext.check_hostname` and *Server Name Indication* (see
       :const:`ssl.HAS_SNI`).
 
+   .. deprecated:: 3.6
+
+       *keyfile* and *certfile* are deprecated in favor of *context*.
+       Please use :meth:`ssl.SSLContext.load_cert_chain` instead, or let
+       :func:`ssl.create_default_context` select the system's trusted CA
+       certificates for you.
+
    .. versionchanged:: 3.9
       If the *timeout* parameter is set to be zero, it will raise a
       :class:`ValueError` to prevent the creation of a non-blocking socket
-
-   .. versionchanged:: 3.12
-      The deprecated *keyfile* and *certfile* parameters have been removed.
 
 .. class:: LMTP(host='', port=LMTP_PORT, local_hostname=None, \
                 source_address=None[, timeout])
 
    The LMTP protocol, which is very similar to ESMTP, is heavily based on the
    standard SMTP client. It's common to use Unix sockets for LMTP, so our
-   :meth:`~SMTP.connect` method must support that as well as a regular host:port
-   server. The optional arguments *local_hostname* and *source_address* have the
+   :meth:`connect` method must support that as well as a regular host:port
+   server. The optional arguments local_hostname and source_address have the
    same meaning as they do in the :class:`SMTP` class. To specify a Unix
    socket, you must use an absolute path for *host*, starting with a '/'.
 
@@ -147,15 +156,9 @@ A nice selection of exceptions is defined as well:
 .. exception:: SMTPResponseException
 
    Base class for all exceptions that include an SMTP error code. These exceptions
-   are generated in some instances when the SMTP server returns an error code.
-
-   .. attribute:: smtp_code
-
-      The error code.
-
-   .. attribute:: smtp_error
-
-      The error message.
+   are generated in some instances when the SMTP server returns an error code.  The
+   error code is stored in the :attr:`smtp_code` attribute of the error, and the
+   :attr:`smtp_error` attribute is set to the error message.
 
 
 .. exception:: SMTPSenderRefused
@@ -167,13 +170,9 @@ A nice selection of exceptions is defined as well:
 
 .. exception:: SMTPRecipientsRefused
 
-   All recipient addresses refused.
-
-   .. attribute:: recipients
-
-      A dictionary of exactly the same sort as returned
-      by :meth:`SMTP.sendmail` containing the errors for
-      each recipient.
+   All recipient addresses refused.  The errors for each recipient are accessible
+   through the attribute :attr:`recipients`, which is a dictionary of exactly the
+   same sort as :meth:`SMTP.sendmail` returns.
 
 
 .. exception:: SMTPDataError
@@ -222,6 +221,7 @@ SMTP Objects
 ------------
 
 An :class:`SMTP` instance has the following methods:
+
 
 .. method:: SMTP.set_debuglevel(level)
 
@@ -360,7 +360,7 @@ An :class:`SMTP` instance has the following methods:
    be used as argument to the ``AUTH`` command; the valid values are
    those listed in the ``auth`` element of :attr:`esmtp_features`.
 
-   *authobject* must be a callable object taking an optional single argument::
+   *authobject* must be a callable object taking an optional single argument:
 
      data = authobject(challenge=None)
 
@@ -393,7 +393,7 @@ An :class:`SMTP` instance has the following methods:
    .. versionadded:: 3.5
 
 
-.. method:: SMTP.starttls(*, context=None)
+.. method:: SMTP.starttls(keyfile=None, certfile=None, context=None)
 
    Put the SMTP connection in TLS (Transport Layer Security) mode.  All SMTP
    commands that follow will be encrypted.  You should then call :meth:`ehlo`
@@ -409,8 +409,12 @@ An :class:`SMTP` instance has the following methods:
    If there has been no previous ``EHLO`` or ``HELO`` command this session,
    this method tries ESMTP ``EHLO`` first.
 
-   .. versionchanged:: 3.12
-      The deprecated *keyfile* and *certfile* parameters have been removed.
+   .. deprecated:: 3.6
+
+       *keyfile* and *certfile* are deprecated in favor of *context*.
+       Please use :meth:`ssl.SSLContext.load_cert_chain` instead, or let
+       :func:`ssl.create_default_context` select the system's trusted CA
+       certificates for you.
 
    :exc:`SMTPHeloError`
       The server didn't reply properly to the ``HELO`` greeting.
@@ -426,7 +430,7 @@ An :class:`SMTP` instance has the following methods:
 
    .. versionchanged:: 3.4
       The method now supports hostname check with
-      :attr:`ssl.SSLContext.check_hostname` and *Server Name Indicator* (see
+      :attr:`SSLContext.check_hostname` and *Server Name Indicator* (see
       :const:`~ssl.HAS_SNI`).
 
    .. versionchanged:: 3.5
@@ -444,7 +448,7 @@ An :class:`SMTP` instance has the following methods:
    ESMTP options (such as ``DSN`` commands) that should be used with all ``RCPT``
    commands can be passed as *rcpt_options*.  (If you need to use different ESMTP
    options to different recipients you have to use the low-level methods such as
-   :meth:`!mail`, :meth:`!rcpt` and :meth:`!data` to send the message.)
+   :meth:`mail`, :meth:`rcpt` and :meth:`data` to send the message.)
 
    .. note::
 
@@ -476,7 +480,10 @@ An :class:`SMTP` instance has the following methods:
    This method may raise the following exceptions:
 
    :exc:`SMTPRecipientsRefused`
-      All recipients were refused.  Nobody got the mail.
+      All recipients were refused.  Nobody got the mail.  The :attr:`recipients`
+      attribute of the exception object is a dictionary with information about the
+      refused recipients (like the one returned when at least one recipient was
+      accepted).
 
    :exc:`SMTPHeloError`
       The server didn't reply properly to the ``HELO`` greeting.
@@ -530,7 +537,7 @@ An :class:`SMTP` instance has the following methods:
    :mailheader:`Bcc` or :mailheader:`Resent-Bcc` headers that may appear
    in *msg*.  If any of the addresses in *from_addr* and *to_addrs* contain
    non-ASCII characters and the server does not advertise ``SMTPUTF8`` support,
-   an :exc:`SMTPNotSupportedError` is raised.  Otherwise the ``Message`` is
+   an :exc:`SMTPNotSupported` error is raised.  Otherwise the ``Message`` is
    serialized with a clone of its :mod:`~email.policy` with the
    :attr:`~email.policy.EmailPolicy.utf8` attribute set to ``True``, and
    ``SMTPUTF8`` and ``BODY=8BITMIME`` are added to *mail_options*.
@@ -552,30 +559,6 @@ Low-level methods corresponding to the standard SMTP/ESMTP commands ``HELP``,
 Normally these do not need to be called directly, so they are not documented
 here.  For details, consult the module code.
 
-Additionally, an SMTP instance has the following attributes:
-
-
-.. attribute:: SMTP.helo_resp
-
-   The response to the ``HELO`` command, see :meth:`helo`.
-
-
-.. attribute:: SMTP.ehlo_resp
-
-   The response to the ``EHLO`` command, see :meth:`ehlo`.
-
-
-.. attribute:: SMTP.does_esmtp
-
-   A boolean value indicating whether the server supports ESMTP, see
-   :meth:`ehlo`.
-
-
-.. attribute:: SMTP.esmtp_features
-
-   A dictionary of the names of SMTP service extensions supported by the server,
-   see :meth:`ehlo`.
-
 
 .. _smtp-example:
 
@@ -586,33 +569,34 @@ This example prompts the user for addresses needed in the message envelope ('To'
 and 'From' addresses), and the message to be delivered.  Note that the headers
 to be included with the message must be included in the message as entered; this
 example doesn't do any processing of the :rfc:`822` headers.  In particular, the
-'To' and 'From' addresses must be included in the message headers explicitly::
+'To' and 'From' addresses must be included in the message headers explicitly. ::
 
    import smtplib
 
-   def prompt(title):
-       return input(title).strip()
+   def prompt(prompt):
+       return input(prompt).strip()
 
-   from_addr = prompt("From: ")
-   to_addrs  = prompt("To: ").split()
+   fromaddr = prompt("From: ")
+   toaddrs  = prompt("To: ").split()
    print("Enter message, end with ^D (Unix) or ^Z (Windows):")
 
    # Add the From: and To: headers at the start!
-   lines = [f"From: {from_addr}", f"To: {', '.join(to_addrs)}", ""]
+   msg = ("From: %s\r\nTo: %s\r\n\r\n"
+          % (fromaddr, ", ".join(toaddrs)))
    while True:
        try:
            line = input()
        except EOFError:
            break
-       else:
-           lines.append(line)
+       if not line:
+           break
+       msg = msg + line
 
-   msg = "\r\n".join(lines)
    print("Message length is", len(msg))
 
-   server = smtplib.SMTP("localhost")
+   server = smtplib.SMTP('localhost')
    server.set_debuglevel(1)
-   server.sendmail(from_addr, to_addrs, msg)
+   server.sendmail(fromaddr, toaddrs, msg)
    server.quit()
 
 .. note::

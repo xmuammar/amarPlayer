@@ -1,5 +1,5 @@
-:mod:`!tkinter` --- Python interface to Tcl/Tk
-==============================================
+:mod:`tkinter` --- Python interface to Tcl/Tk
+=============================================
 
 .. module:: tkinter
    :synopsis: Interface to Tcl/Tk for graphical user interfaces
@@ -36,8 +36,6 @@ details that are unchanged.
    Most documentation you will find online still uses the old API and
    can be woefully outdated.
 
-.. include:: ../includes/optional-module.rst
-
 .. seealso::
 
    * `TkDocs <https://tkdocs.com/>`_
@@ -60,7 +58,7 @@ details that are unchanged.
    * `Modern Tkinter for Busy Python Developers <https://tkdocs.com/book.html>`_
       By Mark Roseman. (ISBN 978-1999149567)
 
-   * `Python GUI programming with Tkinter <https://www.packtpub.com/en-us/product/python-gui-programming-with-tkinter-9781788835886>`_
+   * `Python GUI programming with Tkinter <https://www.packtpub.com/product/python-gui-programming-with-tkinter/9781788835886>`_
       By Alan D. Moore. (ISBN 978-1788835886)
 
    * `Programming Python <https://learning-python.com/about-pp4e.html>`_
@@ -257,6 +255,10 @@ Additional modules:
    (experimental) Drag-and-drop support for :mod:`tkinter`. This will
    become deprecated when it is replaced with the Tk DND.
 
+:mod:`tkinter.tix`
+   (deprecated) An older third-party Tcl/Tk package that adds several new
+   widgets. Better alternatives for most can be found in :mod:`tkinter.ttk`.
+
 :mod:`turtle`
    Turtle graphics in a Tk window.
 
@@ -394,7 +396,7 @@ by spaces. Without getting into too many details, notice the following:
 * Operations which are implemented as separate *commands* in Tcl (like
   ``grid`` or ``destroy``) are represented as *methods* on Tkinter widget
   objects. As you'll see shortly, at other times Tcl uses what appear to be
-  method calls on widget objects, which more closely mirror what is
+  method calls on widget objects, which more closely mirror what would is
   used in Tkinter.
 
 
@@ -841,7 +843,8 @@ geometry
    For example: ``fred["geometry"] = "200x100"``.
 
 justify
-   Legal values are the strings: ``"left"``, ``"center"``, and ``"right"``.
+   Legal values are the strings: ``"left"``, ``"center"``, ``"right"``, and
+   ``"fill"``.
 
 region
    This is a string with four space-delimited elements, each of which is a legal
@@ -979,15 +982,6 @@ of :class:`tkinter.Image`:
 
 Either type of image is created through either the ``file`` or the ``data``
 option (other options are available as well).
-
-.. versionchanged:: 3.13
-   Added the :class:`!PhotoImage` method :meth:`!copy_replace` to copy a region
-   from one image to other image, possibly with pixel zooming and/or
-   subsampling.
-   Add *from_coords* parameter to :class:`!PhotoImage` methods :meth:`!copy`,
-   :meth:`!zoom` and :meth:`!subsample`.
-   Add *zoom* and *subsample* parameters to :class:`!PhotoImage` method
-   :meth:`!copy`.
 
 The image object can then be used wherever an ``image`` option is supported by
 some widget (e.g. labels, buttons, menus). In these cases, Tk will not keep a

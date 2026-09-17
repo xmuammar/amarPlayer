@@ -1,5 +1,5 @@
-:mod:`!mailbox` --- Manipulate mailboxes in various formats
-===========================================================
+:mod:`mailbox` --- Manipulate mailboxes in various formats
+==========================================================
 
 .. module:: mailbox
    :synopsis: Manipulate mailboxes in various formats
@@ -364,9 +364,6 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
 
       The :attr:`!colon` attribute may also be set on a per-instance basis.
 
-   .. versionchanged:: 3.13
-      :class:`Maildir` now ignores files with a leading dot.
-
    :class:`!Maildir` instances have all of the methods of :class:`Mailbox` in
    addition to the following:
 
@@ -401,108 +398,6 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
       Delete temporary files from the mailbox that have not been accessed in the
       last 36 hours. The Maildir specification says that mail-reading programs
       should do this occasionally.
-
-
-   .. method:: get_flags(key)
-
-      Return as a string the flags that are set on the message
-      corresponding to *key*.
-      This is the same as ``get_message(key).get_flags()`` but much
-      faster, because it does not open the message file.
-      Use this method when iterating over the keys to determine which
-      messages are interesting to get.
-
-      If you do have a :class:`MaildirMessage` object, use
-      its :meth:`~MaildirMessage.get_flags` method instead, because
-      changes made by the message's :meth:`~MaildirMessage.set_flags`,
-      :meth:`~MaildirMessage.add_flag` and :meth:`~MaildirMessage.remove_flag`
-      methods are not reflected here until the mailbox's
-      :meth:`__setitem__` method is called.
-
-      .. versionadded:: 3.13
-
-
-   .. method:: set_flags(key, flags)
-
-      On the message corresponding to *key*, set the flags specified
-      by *flags* and unset all others.
-      Calling ``some_mailbox.set_flags(key, flags)`` is similar to ::
-
-         one_message = some_mailbox.get_message(key)
-         one_message.set_flags(flags)
-         some_mailbox[key] = one_message
-
-      but faster, because it does not open the message file.
-
-      If you do have a :class:`MaildirMessage` object, use
-      its :meth:`~MaildirMessage.set_flags` method instead, because
-      changes made with this mailbox method will not be visible to the
-      message object's method, :meth:`~MaildirMessage.get_flags`.
-
-      .. versionadded:: 3.13
-
-
-   .. method:: add_flag(key, flag)
-
-      On the message corresponding to *key*, set the flags specified
-      by *flag* without changing other flags. To add more than one
-      flag at a time, *flag* may be a string of more than one character.
-
-      Considerations for using this method versus the message object's
-      :meth:`~MaildirMessage.add_flag` method are similar to
-      those for :meth:`set_flags`; see the discussion there.
-
-      .. versionadded:: 3.13
-
-
-   .. method:: remove_flag(key, flag)
-
-      On the message corresponding to *key*, unset the flags specified
-      by *flag* without changing other flags. To remove more than one
-      flag at a time, *flag* may be a string of more than one character.
-
-      Considerations for using this method versus the message object's
-      :meth:`~MaildirMessage.remove_flag` method are similar to
-      those for :meth:`set_flags`; see the discussion there.
-
-      .. versionadded:: 3.13
-
-
-   .. method:: get_info(key)
-
-      Return a string containing the info for the message
-      corresponding to *key*.
-      This is the same as ``get_message(key).get_info()`` but much
-      faster, because it does not open the message file.
-      Use this method when iterating over the keys to determine which
-      messages are interesting to get.
-
-      If you do have a :class:`MaildirMessage` object, use
-      its :meth:`~MaildirMessage.get_info` method instead, because
-      changes made by the message's :meth:`~MaildirMessage.set_info` method
-      are not reflected here until the mailbox's :meth:`__setitem__` method
-      is called.
-
-      .. versionadded:: 3.13
-
-
-   .. method:: set_info(key, info)
-
-      Set the info of the message corresponding to *key* to *info*.
-      Calling ``some_mailbox.set_info(key, flags)`` is similar to ::
-
-         one_message = some_mailbox.get_message(key)
-         one_message.set_info(info)
-         some_mailbox[key] = one_message
-
-      but faster, because it does not open the message file.
-
-      If you do have a :class:`MaildirMessage` object, use
-      its :meth:`~MaildirMessage.set_info` method instead, because
-      changes made with this mailbox method will not be visible to the
-      message object's method, :meth:`~MaildirMessage.get_info`.
-
-      .. versionadded:: 3.13
 
    Some :class:`Mailbox` methods implemented by :class:`!Maildir` deserve special
    remarks:
@@ -587,27 +482,12 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
    remarks:
 
 
-   .. method:: get_bytes(key, from_=False)
-
-      Note: This method has an extra parameter (*from_*) compared with other classes.
-      The first line of an mbox file entry is the Unix "From " line.
-      If *from_* is False, the first line of the file is dropped.
-
-   .. method:: get_file(key, from_=False)
+   .. method:: get_file(key)
 
       Using the file after calling :meth:`~Mailbox.flush` or
       :meth:`~Mailbox.close` on the :class:`!mbox` instance may yield
       unpredictable results or raise an exception.
 
-      Note: This method has an extra parameter (*from_*) compared with other classes.
-      The first line of an mbox file entry is the Unix "From " line.
-      If *from_* is False, the first line of the file is dropped.
-
-   .. method:: get_string(key, from_=False)
-
-      Note: This method has an extra parameter (*from_*) compared with other classes.
-      The first line of an mbox file entry is the Unix "From " line.
-      If *from_* is False, the first line of the file is dropped.
 
    .. method:: lock()
                unlock()
@@ -658,10 +538,6 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
 
    :class:`!MH` instances have all of the methods of :class:`Mailbox` in addition
    to the following:
-
-   .. versionchanged:: 3.13
-
-      Supported folders that don't contain a :file:`.mh_sequences` file.
 
 
    .. method:: list_folders()
@@ -866,21 +742,11 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
    remarks:
 
 
-   .. method:: get_bytes(key, from_=False)
-
-      Note: This method has an extra parameter (*from_*) compared with other classes.
-      The first line of an mbox file entry is the Unix "From " line.
-      If *from_* is False, the first line of the file is dropped.
-
-   .. method:: get_file(key, from_=False)
+   .. method:: get_file(key)
 
       Using the file after calling :meth:`~Mailbox.flush` or
       :meth:`~Mailbox.close` on the :class:`!MMDF` instance may yield
       unpredictable results or raise an exception.
-
-      Note: This method has an extra parameter (*from_*) compared with other classes.
-      The first line of an mbox file entry is the Unix "From " line.
-      If *from_* is False, the first line of the file is dropped.
 
 
    .. method:: lock()
@@ -917,7 +783,7 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
    copied; furthermore, any format-specific information is converted insofar as
    possible if *message* is a :class:`!Message` instance. If *message* is a string,
    a byte string,
-   or a file, it should contain an :rfc:`5322`\ -compliant message, which is read
+   or a file, it should contain an :rfc:`2822`\ -compliant message, which is read
    and parsed.  Files should be open in binary mode, but text mode files
    are accepted for backward compatibility.
 
@@ -988,7 +854,7 @@ Supported mailbox formats are Maildir, mbox, MH, Babyl, and MMDF.
       .. note::
 
          A message is typically moved from :file:`new` to :file:`cur` after its
-         mailbox has been accessed, whether or not the message has been
+         mailbox has been accessed, whether or not the message is has been
          read. A message ``msg`` has been read if ``"S" in msg.get_flags()`` is
          ``True``.
 
@@ -1412,7 +1278,7 @@ When an :class:`!MHMessage` instance is created based upon a
 
    .. method:: get_visible()
 
-      Return a :class:`Message` instance whose headers are the message's
+      Return an :class:`Message` instance whose headers are the message's
       visible headers and whose body is empty.
 
 

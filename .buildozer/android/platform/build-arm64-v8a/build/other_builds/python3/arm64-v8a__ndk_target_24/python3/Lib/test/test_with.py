@@ -1,25 +1,13 @@
-"""Unit tests for the 'with/async with' statements specified in PEP 343/492."""
+"""Unit tests for the with statement specified in PEP 343."""
 
 
 __author__ = "Mike Bland"
 __email__ = "mbland at acm dot org"
 
-import re
 import sys
-import traceback
 import unittest
 from collections import deque
 from contextlib import _GeneratorContextManager, contextmanager, nullcontext
-
-
-def do_with(obj):
-    with obj:
-        pass
-
-
-async def do_async_with(obj):
-    async with obj:
-        pass
 
 
 class MockContextManager(_GeneratorContextManager):
@@ -91,11 +79,11 @@ class Nested(object):
             try:
                 if mgr.__exit__(*ex):
                     ex = (None, None, None)
-            except BaseException as e:
-                ex = (type(e), e, e.__traceback__)
+            except:
+                ex = sys.exc_info()
         self.entered = None
         if ex is not exc_info:
-            raise ex
+            raise ex[0](ex[1]).with_traceback(ex[2])
 
 
 class MockNested(Nested):
@@ -121,77 +109,34 @@ class FailureTestCase(unittest.TestCase):
             with foo: pass
         self.assertRaises(NameError, fooNotDeclared)
 
-    def testEnterAttributeError(self):
-        class LacksEnter:
-            def __exit__(self, type, value, traceback): ...
+    def testEnterAttributeError1(self):
+        class LacksEnter(object):
+            def __exit__(self, type, value, traceback):
+                pass
 
-        with self.assertRaisesRegex(TypeError, re.escape((
-            "object does not support the context manager protocol "
-            "(missed __enter__ method)"
-        ))):
-            do_with(LacksEnter())
+        def fooLacksEnter():
+            foo = LacksEnter()
+            with foo: pass
+        self.assertRaisesRegex(TypeError, 'the context manager', fooLacksEnter)
+
+    def testEnterAttributeError2(self):
+        class LacksEnterAndExit(object):
+            pass
+
+        def fooLacksEnterAndExit():
+            foo = LacksEnterAndExit()
+            with foo: pass
+        self.assertRaisesRegex(TypeError, 'the context manager', fooLacksEnterAndExit)
 
     def testExitAttributeError(self):
-        class LacksExit:
-            def __enter__(self): ...
+        class LacksExit(object):
+            def __enter__(self):
+                pass
 
-        msg = re.escape((
-            "object does not support the context manager protocol "
-            "(missed __exit__ method)"
-        ))
-        # a missing __exit__ is reported missing before a missing __enter__
-        with self.assertRaisesRegex(TypeError, msg):
-            do_with(object())
-        with self.assertRaisesRegex(TypeError, msg):
-            do_with(LacksExit())
-
-    def testWithForAsyncManager(self):
-        class AsyncManager:
-            async def __aenter__(self): ...
-            async def __aexit__(self, type, value, traceback): ...
-
-        with self.assertRaisesRegex(TypeError, re.escape((
-            "object does not support the context manager protocol "
-            "(missed __exit__ method) but it supports the asynchronous "
-            "context manager protocol. Did you mean to use 'async with'?"
-        ))):
-            do_with(AsyncManager())
-
-    def testAsyncEnterAttributeError(self):
-        class LacksAsyncEnter:
-            async def __aexit__(self, type, value, traceback): ...
-
-        with self.assertRaisesRegex(TypeError, re.escape((
-            "object does not support the asynchronous context manager protocol "
-            "(missed __aenter__ method)"
-        ))):
-            do_async_with(LacksAsyncEnter()).send(None)
-
-    def testAsyncExitAttributeError(self):
-        class LacksAsyncExit:
-            async def __aenter__(self): ...
-
-        msg = re.escape((
-            "object does not support the asynchronous context manager protocol "
-            "(missed __aexit__ method)"
-        ))
-        # a missing __aexit__ is reported missing before a missing __aenter__
-        with self.assertRaisesRegex(TypeError, msg):
-            do_async_with(object()).send(None)
-        with self.assertRaisesRegex(TypeError, msg):
-            do_async_with(LacksAsyncExit()).send(None)
-
-    def testAsyncWithForSyncManager(self):
-        class SyncManager:
-            def __enter__(self): ...
-            def __exit__(self, type, value, traceback): ...
-
-        with self.assertRaisesRegex(TypeError, re.escape((
-            "object does not support the asynchronous context manager protocol "
-            "(missed __aexit__ method) but it supports the context manager "
-            "protocol. Did you mean to use 'with'?"
-        ))):
-            do_async_with(SyncManager()).send(None)
+        def fooLacksExit():
+            foo = LacksExit()
+            with foo: pass
+        self.assertRaisesRegex(TypeError, 'the context manager.*__exit__', fooLacksExit)
 
     def assertRaisesSyntaxError(self, codestr):
         def shouldRaiseSyntaxError(s):
@@ -225,10 +170,7 @@ class FailureTestCase(unittest.TestCase):
         def shouldThrow():
             ct = EnterThrows()
             self.foo = None
-            # Ruff complains that we're redefining `self.foo` here,
-            # but the whole point of the test is to check that `self.foo`
-            # is *not* redefined (because `__enter__` raises)
-            with ct as self.foo:  # noqa: F811
+            with ct as self.foo:
                 pass
         self.assertRaises(RuntimeError, shouldThrow)
         self.assertEqual(self.foo, None)
@@ -243,7 +185,6 @@ class FailureTestCase(unittest.TestCase):
             with ExitThrows():
                 pass
         self.assertRaises(RuntimeError, shouldThrow)
-
 
 class ContextmanagerAssertionMixin(object):
 
@@ -310,6 +251,7 @@ class NonexceptionalTestCase(unittest.TestCase, ContextmanagerAssertionMixin):
         self.assertAfterWithGeneratorInvariantsNoError(foo)
 
     def testInlineGeneratorBoundToExistingVariable(self):
+        foo = None
         with mock_contextmanager_generator() as foo:
             self.assertInWithGeneratorInvariants(foo)
         self.assertAfterWithGeneratorInvariantsNoError(foo)
@@ -679,7 +621,7 @@ class AssignmentTargetTestCase(unittest.TestCase):
         class C: pass
         blah = C()
         with mock_contextmanager_generator() as blah.foo:
-            self.assertHasAttr(blah, "foo")
+            self.assertEqual(hasattr(blah, "foo"), True)
 
     def testMultipleComplexTargets(self):
         class C:
@@ -774,7 +716,7 @@ class NestedWith(unittest.TestCase):
         try:
             with self.Dummy() as a, self.InitRaises():
                 pass
-        except RuntimeError:
+        except:
             pass
         self.assertTrue(a.enter_called)
         self.assertTrue(a.exit_called)
@@ -806,49 +748,6 @@ class NestedWith(unittest.TestCase):
             self.assertEqual(2, a2)
             self.assertEqual(10, b1)
             self.assertEqual(20, b2)
-
-    def testExceptionLocation(self):
-        # The location of an exception raised from
-        # __init__, __enter__ or __exit__ of a context
-        # manager should be just the context manager expression,
-        # pinpointing the precise context manager in case there
-        # is more than one.
-
-        def init_raises():
-            try:
-                with self.Dummy(), self.InitRaises() as cm, self.Dummy() as d:
-                    pass
-            except Exception as e:
-                return e
-
-        def enter_raises():
-            try:
-                with self.EnterRaises(), self.Dummy() as d:
-                    pass
-            except Exception as e:
-                return e
-
-        def exit_raises():
-            try:
-                with self.ExitRaises(), self.Dummy() as d:
-                    pass
-            except Exception as e:
-                return e
-
-        for func, expected in [(init_raises, "self.InitRaises()"),
-                               (enter_raises, "self.EnterRaises()"),
-                               (exit_raises, "self.ExitRaises()"),
-                              ]:
-            with self.subTest(func):
-                exc = func()
-                f = traceback.extract_tb(exc.__traceback__)[0]
-                indent = 16
-                co = func.__code__
-                self.assertEqual(f.lineno, co.co_firstlineno + 2)
-                self.assertEqual(f.end_lineno, co.co_firstlineno + 2)
-                self.assertEqual(f.line[f.colno - indent : f.end_colno - indent],
-                                 expected)
-
 
 if __name__ == '__main__':
     unittest.main()

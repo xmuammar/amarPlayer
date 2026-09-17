@@ -1,6 +1,7 @@
 import ast
 import sys
 import unittest
+from test import support
 
 
 funcdef = """\
@@ -63,14 +64,6 @@ for a in []:  # type: int
 
 withstmt = """\
 with context() as a:  # type: int
-    pass
-"""
-
-parenthesized_withstmt = """\
-with (a as b):  # type: int
-    pass
-
-with (a, b):  # type: int
     pass
 """
 
@@ -268,8 +261,8 @@ class TypeCommentTests(unittest.TestCase):
         self.assertEqual(tree.body[1].type_comment, None)
 
     def test_asyncvar(self):
-        with self.assertRaises(SyntaxError):
-            self.classic_parse(asyncvar)
+        for tree in self.parse_all(asyncvar, maxver=6):
+            pass
 
     def test_asynccomp(self):
         for tree in self.parse_all(asynccomp, minver=6):
@@ -280,7 +273,7 @@ class TypeCommentTests(unittest.TestCase):
             pass
 
     def test_fstring(self):
-        for tree in self.parse_all(fstring):
+        for tree in self.parse_all(fstring, minver=6):
             pass
 
     def test_underscorednumber(self):
@@ -307,14 +300,6 @@ class TypeCommentTests(unittest.TestCase):
             self.assertEqual(tree.body[0].type_comment, "int")
         tree = self.classic_parse(withstmt)
         self.assertEqual(tree.body[0].type_comment, None)
-
-    def test_parenthesized_withstmt(self):
-        for tree in self.parse_all(parenthesized_withstmt):
-            self.assertEqual(tree.body[0].type_comment, "int")
-            self.assertEqual(tree.body[1].type_comment, "int")
-        tree = self.classic_parse(parenthesized_withstmt)
-        self.assertEqual(tree.body[0].type_comment, None)
-        self.assertEqual(tree.body[1].type_comment, None)
 
     def test_vardecl(self):
         for tree in self.parse_all(vardecl):
@@ -344,7 +329,7 @@ class TypeCommentTests(unittest.TestCase):
                 todo = set(t.name[1:])
                 self.assertEqual(len(t.args.args) + len(t.args.posonlyargs),
                                  len(todo) - bool(t.args.vararg) - bool(t.args.kwarg))
-                self.assertStartsWith(t.name, 'f')
+                self.assertTrue(t.name.startswith('f'), t.name)
                 for index, c in enumerate(t.name[1:]):
                     todo.remove(c)
                     if c == 'v':

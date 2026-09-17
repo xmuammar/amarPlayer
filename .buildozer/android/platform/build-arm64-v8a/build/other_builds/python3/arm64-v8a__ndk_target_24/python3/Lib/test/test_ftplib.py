@@ -18,13 +18,14 @@ except ImportError:
 
 from unittest import TestCase, skipUnless
 from test import support
-from test.support import requires_subprocess
 from test.support import threading_helper
 from test.support import socket_helper
 from test.support import warnings_helper
-from test.support import asynchat
-from test.support import asyncore
 from test.support.socket_helper import HOST, HOSTv6
+
+
+asynchat = warnings_helper.import_deprecated('asynchat')
+asyncore = warnings_helper.import_deprecated('asyncore')
 
 
 support.requires_working_socket(module=True)
@@ -81,7 +82,7 @@ class DummyDTPHandler(asynchat.async_chat):
         # (behaviour witnessed with test_data_connection)
         if not self.dtp_conn_closed:
             self.baseclass.push('226 transfer complete')
-            self.shutdown()
+            self.close()
             self.dtp_conn_closed = True
 
     def push(self, what):
@@ -94,9 +95,6 @@ class DummyDTPHandler(asynchat.async_chat):
 
     def handle_error(self):
         default_error_handler()
-
-    def shutdown(self):
-        self.close()
 
 
 class DummyFTPHandler(asynchat.async_chat):
@@ -230,7 +228,7 @@ class DummyFTPHandler(asynchat.async_chat):
 
     def cmd_quit(self, arg):
         self.push('221 quit ok')
-        self.shutdown()
+        self.close()
 
     def cmd_abor(self, arg):
         self.push('226 abor ok')
@@ -317,7 +315,7 @@ class DummyFTPServer(asyncore.dispatcher, threading.Thread):
         self.handler_instance = self.handler(conn, encoding=self.encoding)
 
     def handle_connect(self):
-        self.shutdown()
+        self.close()
     handle_read = handle_connect
 
     def writable(self):
@@ -429,12 +427,12 @@ if ssl is not None:
         def handle_error(self):
             default_error_handler()
 
-        def shutdown(self):
+        def close(self):
             if (isinstance(self.socket, ssl.SSLSocket) and
                     self.socket._sslobj is not None):
                 self._do_ssl_shutdown()
             else:
-                self.close()
+                super(SSLConnection, self).close()
 
 
     class DummyTLS_DTPHandler(SSLConnection, DummyDTPHandler):
@@ -904,7 +902,6 @@ class TestIPv6Environment(TestCase):
 
 
 @skipUnless(ssl, "SSL not available")
-@requires_subprocess()
 class TestTLS_FTPClassMixin(TestFTPClass):
     """Repeat TestFTPClass tests starting the TLS layer for both control
     and data connections first.
@@ -921,7 +918,6 @@ class TestTLS_FTPClassMixin(TestFTPClass):
 
 
 @skipUnless(ssl, "SSL not available")
-@requires_subprocess()
 class TestTLS_FTPClass(TestCase):
     """Specific TLS_FTP class tests."""
 
@@ -986,11 +982,11 @@ class TestTLS_FTPClass(TestCase):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        self.assertRaises(TypeError, ftplib.FTP_TLS, keyfile=CERTFILE,
+        self.assertRaises(ValueError, ftplib.FTP_TLS, keyfile=CERTFILE,
                           context=ctx)
-        self.assertRaises(TypeError, ftplib.FTP_TLS, certfile=CERTFILE,
+        self.assertRaises(ValueError, ftplib.FTP_TLS, certfile=CERTFILE,
                           context=ctx)
-        self.assertRaises(TypeError, ftplib.FTP_TLS, certfile=CERTFILE,
+        self.assertRaises(ValueError, ftplib.FTP_TLS, certfile=CERTFILE,
                           keyfile=CERTFILE, context=ctx)
 
         self.client = ftplib.FTP_TLS(context=ctx, timeout=TIMEOUT)

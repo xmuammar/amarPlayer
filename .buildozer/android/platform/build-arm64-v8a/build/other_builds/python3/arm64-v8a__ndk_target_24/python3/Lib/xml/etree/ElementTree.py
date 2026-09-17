@@ -189,6 +189,19 @@ class Element:
         """
         return self.__class__(tag, attrib)
 
+    def copy(self):
+        """Return copy of current element.
+
+        This creates a shallow copy. Subelements will be shared with the
+        original tree.
+
+        """
+        warnings.warn(
+            "elem.copy() is deprecated. Use copy.copy(elem) instead.",
+            DeprecationWarning
+            )
+        return self.__copy__()
+
     def __copy__(self):
         elem = self.makeelement(self.tag, self.attrib)
         elem.text = self.text
@@ -201,10 +214,9 @@ class Element:
 
     def __bool__(self):
         warnings.warn(
-            "Testing an element's truth value will always return True in "
-            "future versions.  "
+            "The behavior of this method will change in future versions.  "
             "Use specific 'len(elem)' or 'elem is not None' test instead.",
-            DeprecationWarning, stacklevel=2
+            FutureWarning, stacklevel=2
             )
         return len(self._children) != 0 # emulate old behaviour, for now
 
@@ -267,11 +279,7 @@ class Element:
 
         """
         # assert iselement(element)
-        try:
-            self._children.remove(subelement)
-        except ValueError:
-            # to align the error message with the C implementation
-            raise ValueError("Element.remove(x): element not found") from None
+        self._children.remove(subelement)
 
     def find(self, path, namespaces=None):
         """Find first matching element by tag name or path.
@@ -527,9 +535,7 @@ class ElementTree:
 
     """
     def __init__(self, element=None, file=None):
-        if element is not None and not iselement(element):
-            raise TypeError('expected an Element, not %s' %
-                            type(element).__name__)
+        # assert element is None or iselement(element)
         self._root = element # first node
         if file:
             self.parse(file)
@@ -545,9 +551,7 @@ class ElementTree:
         with the given element.  Use with care!
 
         """
-        if not iselement(element):
-            raise TypeError('expected an Element, not %s'
-                            % type(element).__name__)
+        # assert iselement(element)
         self._root = element
 
     def parse(self, source, parser=None):
@@ -576,7 +580,10 @@ class ElementTree:
                     # it with chunks.
                     self._root = parser._parse_whole(source)
                     return self._root
-            while data := source.read(65536):
+            while True:
+                data = source.read(65536)
+                if not data:
+                    break
                 parser.feed(data)
             self._root = parser.close()
             return self._root
@@ -713,8 +720,6 @@ class ElementTree:
                                     of start/end tags
 
         """
-        if self._root is None:
-            raise TypeError('ElementTree not initialized')
         if not method:
             method = "xml"
         elif method not in _serialize:
@@ -1258,17 +1263,10 @@ def iterparse(source, events=None, parser=None):
             if close_source:
                 source.close()
 
-    gen = iterator(source)
     class IterParseIterator(collections.abc.Iterator):
-        __next__ = gen.__next__
-        def close(self):
-            if close_source:
-                source.close()
-            gen.close()
+        __next__ = iterator(source).__next__
 
         def __del__(self):
-            # TODO: Emit a ResourceWarning if it was not explicitly closed.
-            # (When the close() method will be supported in all maintained Python versions.)
             if close_source:
                 source.close()
 

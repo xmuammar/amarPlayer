@@ -9,7 +9,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\PC\icons\python.ico">
+    <None Include="..\PC\pycon.ico">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

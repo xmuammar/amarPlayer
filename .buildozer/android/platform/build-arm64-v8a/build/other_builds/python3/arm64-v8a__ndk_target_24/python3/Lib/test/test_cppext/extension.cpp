@@ -8,8 +8,10 @@
 
 #include "Python.h"
 
-#ifndef MODULE_NAME
-#  error "MODULE_NAME macro must be defined"
+#if __cplusplus >= 201103
+#  define NAME _testcpp11ext
+#else
+#  define NAME _testcpp03ext
 #endif
 
 #define _STR(NAME) #NAME
@@ -62,7 +64,6 @@ test_api_casts(PyObject *Py_UNUSED(module), PyObject *Py_UNUSED(args))
     Py_ssize_t refcnt = Py_REFCNT(obj);
     assert(refcnt >= 1);
 
-#ifndef Py_LIMITED_API
     // gh-92138: For backward compatibility, functions of Python C API accepts
     // "const PyObject*". Check that using it does not emit C++ compiler
     // warnings.
@@ -75,7 +76,6 @@ test_api_casts(PyObject *Py_UNUSED(module), PyObject *Py_UNUSED(args))
     assert(PyTuple_GET_SIZE(const_obj) == 2);
     PyObject *one = PyTuple_GET_ITEM(const_obj, 0);
     assert(PyLong_AsLong(one) == 1);
-#endif
 
     // gh-92898: StrongRef doesn't inherit from PyObject but has an operator to
     // cast to PyObject*.
@@ -88,7 +88,7 @@ test_api_casts(PyObject *Py_UNUSED(module), PyObject *Py_UNUSED(args))
     // gh-93442: Pass 0 as NULL for PyObject*
     Py_XINCREF(0);
     Py_XDECREF(0);
-#if __cplusplus >= 201103
+#if _cplusplus >= 201103
     // Test nullptr passed as PyObject*
     Py_XINCREF(nullptr);
     Py_XDECREF(nullptr);
@@ -108,12 +108,6 @@ test_unicode(PyObject *Py_UNUSED(module), PyObject *Py_UNUSED(args))
     }
 
     assert(PyUnicode_Check(str));
-
-    assert(PyUnicode_GetLength(str) == 3);
-    assert(PyUnicode_ReadChar(str, 0) == 'a');
-    assert(PyUnicode_ReadChar(str, 1) == 'b');
-
-#ifndef Py_LIMITED_API
     assert(PyUnicode_GET_LENGTH(str) == 3);
 
     // gh-92800: test PyUnicode_READ()
@@ -129,7 +123,6 @@ test_unicode(PyObject *Py_UNUSED(module), PyObject *Py_UNUSED(args))
     assert(PyUnicode_READ(ukind, const_data, 2) == 'c');
 
     assert(PyUnicode_READ_CHAR(str, 1) == 'b');
-#endif
 
     Py_DECREF(str);
     Py_RETURN_NONE;
@@ -161,26 +154,13 @@ private:
 
 int VirtualPyObject::instance_count = 0;
 
-// Converting from function pointer to void* has undefined behavior, but
-// works on all known platforms, and CPython's module and type slots currently
-// need it.
-// (GCC doesn't have a narrower category for this than -Wpedantic.)
-_Py_COMP_DIAG_PUSH
-#if defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
-#endif
-
 PyType_Slot VirtualPyObject_Slots[] = {
     {Py_tp_free, (void*)VirtualPyObject::dealloc},
     {0, _Py_NULL},
 };
 
-_Py_COMP_DIAG_POP
-
 PyType_Spec VirtualPyObject_Spec = {
-    /* .name */ STR(MODULE_NAME) ".VirtualPyObject",
+    /* .name */ STR(NAME) ".VirtualPyObject",
     /* .basicsize */ sizeof(VirtualPyObject),
     /* .itemsize */ 0,
     /* .flags */ Py_TPFLAGS_DEFAULT,
@@ -247,33 +227,20 @@ _testcppext_exec(PyObject *module)
     if (!result) return -1;
     Py_DECREF(result);
 
-    // test Py_BUILD_ASSERT() and Py_BUILD_ASSERT_EXPR()
-    Py_BUILD_ASSERT(sizeof(int) == sizeof(unsigned int));
-    assert(Py_BUILD_ASSERT_EXPR(sizeof(int) == sizeof(unsigned int)) == 0);
-
     return 0;
 }
-
-// Need to ignore "-Wpedantic" warnings; see VirtualPyObject_Slots above
-_Py_COMP_DIAG_PUSH
-#if defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
-#endif
 
 static PyModuleDef_Slot _testcppext_slots[] = {
     {Py_mod_exec, reinterpret_cast<void*>(_testcppext_exec)},
     {0, _Py_NULL}
 };
 
-_Py_COMP_DIAG_POP
 
 PyDoc_STRVAR(_testcppext_doc, "C++ test extension.");
 
 static struct PyModuleDef _testcppext_module = {
     PyModuleDef_HEAD_INIT,  // m_base
-    STR(MODULE_NAME),  // m_name
+    STR(NAME),  // m_name
     _testcppext_doc,  // m_doc
     0,  // m_size
     _testcppext_methods,  // m_methods
@@ -287,7 +254,7 @@ static struct PyModuleDef _testcppext_module = {
 #define FUNC_NAME(NAME) _FUNC_NAME(NAME)
 
 PyMODINIT_FUNC
-FUNC_NAME(MODULE_NAME)(void)
+FUNC_NAME(NAME)(void)
 {
     return PyModuleDef_Init(&_testcppext_module);
 }

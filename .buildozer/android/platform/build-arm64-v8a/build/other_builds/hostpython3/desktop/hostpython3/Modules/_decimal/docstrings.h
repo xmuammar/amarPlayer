@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Python Software Foundation. All Rights Reserved.
+ * Copyright (c) 2001-2012 Python Software Foundation. All Rights Reserved.
  * Modified and extended by Stefan Krah.
  */
 
@@ -37,12 +37,15 @@ exiting the with-statement. If no context is specified, a copy of the current\n\
 default context is used.\n\
 \n");
 
+#ifdef EXTRA_FUNCTIONALITY
 PyDoc_STRVAR(doc_ieee_context,
 "IEEEContext($module, bits, /)\n--\n\n\
 Return a context object initialized to the proper values for one of the\n\
 IEEE interchange formats.  The argument must be a multiple of 32 and less\n\
-than IEEE_CONTEXT_MAX_BITS.\n\
+than IEEE_CONTEXT_MAX_BITS.  For the most common values, the constants\n\
+DECIMAL32, DECIMAL64 and DECIMAL128 are provided.\n\
 \n");
+#endif
 
 
 /******************************************************************************/
@@ -186,19 +189,6 @@ Decimal.from_float(0.1) is not the same as Decimal('0.1').\n\
 \n\
 \n");
 
-PyDoc_STRVAR(doc_from_number,
-"from_number($type, number, /)\n--\n\n\
-Class method that converts a real number to a decimal number, exactly.\n\
-\n\
-    >>> Decimal.from_number(314)              # int\n\
-    Decimal('314')\n\
-    >>> Decimal.from_number(0.1)              # float\n\
-    Decimal('0.1000000000000000055511151231257827021181583404541015625')\n\
-    >>> Decimal.from_number(Decimal('3.14'))  # another decimal instance\n\
-    Decimal('3.14')\n\
-\n\
-\n");
-
 PyDoc_STRVAR(doc_fma,
 "fma($self, /, other, third, context=None)\n--\n\n\
 Fused multiply-add.  Return self*other+third with no rounding of the\n\
@@ -292,26 +282,22 @@ an infinity then Decimal('Infinity') is returned.\n\
 
 PyDoc_STRVAR(doc_logical_and,
 "logical_and($self, /, other, context=None)\n--\n\n\
-Applies an 'and' operation between self and other's digits.\n\n\
-Both self and other must be logical numbers.\n\
+Return the digit-wise 'and' of the two (logical) operands.\n\
 \n");
 
 PyDoc_STRVAR(doc_logical_invert,
 "logical_invert($self, /, context=None)\n--\n\n\
-Invert all its digits.\n\n\
-The self must be logical number.\n\
+Return the digit-wise inversion of the (logical) operand.\n\
 \n");
 
 PyDoc_STRVAR(doc_logical_or,
 "logical_or($self, /, other, context=None)\n--\n\n\
-Applies an 'or' operation between self and other's digits.\n\n\
-Both self and other must be logical numbers. \n\
+Return the digit-wise 'or' of the two (logical) operands.\n\
 \n");
 
 PyDoc_STRVAR(doc_logical_xor,
 "logical_xor($self, /, other, context=None)\n--\n\n\
-Applies an 'xor' operation between self and other's digits.\n\n\
-Both self and other must be logical numbers.\n\
+Return the digit-wise 'exclusive or' of the two (logical) operands.\n\
 \n");
 
 PyDoc_STRVAR(doc_max,
@@ -716,90 +702,22 @@ Return the exponent of the magnitude of the operand's MSD.\n\
 
 PyDoc_STRVAR(doc_ctx_logical_and,
 "logical_and($self, x, y, /)\n--\n\n\
-Applies the logical operation 'and' between each operand's digits.\n\n\
-The operands must be both logical numbers.\n\n\
-    >>> ExtendedContext.logical_and(Decimal('0'), Decimal('0'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_and(Decimal('0'), Decimal('1'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_and(Decimal('1'), Decimal('0'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_and(Decimal('1'), Decimal('1'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_and(Decimal('1100'), Decimal('1010'))\n\
-    Decimal('1000')\n\
-    >>> ExtendedContext.logical_and(Decimal('1111'), Decimal('10'))\n\
-    Decimal('10')\n\
-    >>> ExtendedContext.logical_and(110, 1101)\n\
-    Decimal('100')\n\
-    >>> ExtendedContext.logical_and(Decimal(110), 1101)\n\
-    Decimal('100')\n\
-    >>> ExtendedContext.logical_and(110, Decimal(1101))\n\
-    Decimal('100')\n\
+Digit-wise and of x and y.\n\
 \n");
 
 PyDoc_STRVAR(doc_ctx_logical_invert,
 "logical_invert($self, x, /)\n--\n\n\
-Invert all the digits in the operand.\n\n\
-The operand must be a logical number.\n\n\
-    >>> ExtendedContext.logical_invert(Decimal('0'))\n\
-    Decimal('111111111')\n\
-    >>> ExtendedContext.logical_invert(Decimal('1'))\n\
-    Decimal('111111110')\n\
-    >>> ExtendedContext.logical_invert(Decimal('111111111'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_invert(Decimal('101010101'))\n\
-    Decimal('10101010')\n\
-    >>> ExtendedContext.logical_invert(1101)\n\
-    Decimal('111110010')\n\
+Invert all digits of x.\n\
 \n");
 
 PyDoc_STRVAR(doc_ctx_logical_or,
 "logical_or($self, x, y, /)\n--\n\n\
-Applies the logical operation 'or' between each operand's digits.\n\n\
-The operands must be both logical numbers.\n\n\
-    >>> ExtendedContext.logical_or(Decimal('0'), Decimal('0'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_or(Decimal('0'), Decimal('1'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_or(Decimal('1'), Decimal('0'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_or(Decimal('1'), Decimal('1'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_or(Decimal('1100'), Decimal('1010'))\n\
-    Decimal('1110')\n\
-    >>> ExtendedContext.logical_or(Decimal('1110'), Decimal('10'))\n\
-    Decimal('1110')\n\
-    >>> ExtendedContext.logical_or(110, 1101)\n\
-    Decimal('1111')\n\
-    >>> ExtendedContext.logical_or(Decimal(110), 1101)\n\
-    Decimal('1111')\n\
-    >>> ExtendedContext.logical_or(110, Decimal(1101))\n\
-    Decimal('1111')\n\
+Digit-wise or of x and y.\n\
 \n");
 
 PyDoc_STRVAR(doc_ctx_logical_xor,
 "logical_xor($self, x, y, /)\n--\n\n\
-Applies the logical operation 'xor' between each operand's digits.\n\n\
-The operands must be both logical numbers.\n\n\
-    >>> ExtendedContext.logical_xor(Decimal('0'), Decimal('0'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_xor(Decimal('0'), Decimal('1'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_xor(Decimal('1'), Decimal('0'))\n\
-    Decimal('1')\n\
-    >>> ExtendedContext.logical_xor(Decimal('1'), Decimal('1'))\n\
-    Decimal('0')\n\
-    >>> ExtendedContext.logical_xor(Decimal('1100'), Decimal('1010'))\n\
-    Decimal('110')\n\
-    >>> ExtendedContext.logical_xor(Decimal('1111'), Decimal('10'))\n\
-    Decimal('1101')\n\
-    >>> ExtendedContext.logical_xor(110, 1101)\n\
-    Decimal('1011')\n\
-    >>> ExtendedContext.logical_xor(Decimal(110), 1101)\n\
-    Decimal('1011')\n\
-    >>> ExtendedContext.logical_xor(110, Decimal(1101))\n\
-    Decimal('1011')\n\
+Digit-wise xor of x and y.\n\
 \n");
 
 PyDoc_STRVAR(doc_ctx_max,

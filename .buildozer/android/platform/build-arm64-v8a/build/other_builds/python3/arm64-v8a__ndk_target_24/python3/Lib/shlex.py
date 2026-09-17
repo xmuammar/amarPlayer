@@ -7,7 +7,11 @@
 # iterator interface by Gustavo Niemeyer, April 2003.
 # changes to tokenize more like Posix shells by Vinay Sajip, July 2016.
 
+import os
+import re
 import sys
+from collections import deque
+
 from io import StringIO
 
 __all__ = ["shlex", "split", "quote", "join"]
@@ -16,8 +20,6 @@ class shlex:
     "A lexical analyzer class for simple shell-like syntaxes."
     def __init__(self, instream=None, infile=None, posix=False,
                  punctuation_chars=False):
-        from collections import deque  # deferred import for performance
-
         if isinstance(instream, str):
             instream = StringIO(instream)
         if instream is not None:
@@ -276,7 +278,6 @@ class shlex:
 
     def sourcehook(self, newfile):
         "Hook called on a filename to be sourced."
-        import os.path
         if newfile[0] == '"':
             newfile = newfile[1:-1]
         # This implements cpp-like semantics for relative-path inclusion.
@@ -304,7 +305,9 @@ class shlex:
 def split(s, comments=False, posix=True):
     """Split the string *s* using shell-like syntax."""
     if s is None:
-        raise ValueError("s argument must not be None")
+        import warnings
+        warnings.warn("Passing None for 's' to shlex.split() is deprecated.",
+                      DeprecationWarning, stacklevel=2)
     lex = shlex(s, posix=posix)
     lex.whitespace_split = True
     if not comments:
@@ -317,20 +320,13 @@ def join(split_command):
     return ' '.join(quote(arg) for arg in split_command)
 
 
+_find_unsafe = re.compile(r'[^\w@%+=:,./-]', re.ASCII).search
+
 def quote(s):
     """Return a shell-escaped version of the string *s*."""
     if not s:
         return "''"
-
-    if not isinstance(s, str):
-        raise TypeError(f"expected string object, got {type(s).__name__!r}")
-
-    # Use bytes.translate() for performance
-    safe_chars = (b'%+,-./0123456789:=@'
-                  b'ABCDEFGHIJKLMNOPQRSTUVWXYZ_'
-                  b'abcdefghijklmnopqrstuvwxyz')
-    # No quoting is needed if `s` is an ASCII string consisting only of `safe_chars`
-    if s.isascii() and not s.encode().translate(None, delete=safe_chars):
+    if _find_unsafe(s) is None:
         return s
 
     # use single quotes, and put single quotes into double quotes
@@ -339,7 +335,10 @@ def quote(s):
 
 
 def _print_tokens(lexer):
-    while tt := lexer.get_token():
+    while 1:
+        tt = lexer.get_token()
+        if not tt:
+            break
         print("Token: " + repr(tt))
 
 if __name__ == '__main__':

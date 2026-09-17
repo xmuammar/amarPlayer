@@ -16,7 +16,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\PC\icons\launcher.ico">
+    <None Include="..\PC\launcher.ico">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

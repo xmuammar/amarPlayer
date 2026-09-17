@@ -1,9 +1,4 @@
-#ifndef Py_BUILD_CORE_BUILTIN
-#  define Py_BUILD_CORE_MODULE 1
-#endif
-
 #include "Python.h"
-#include "pycore_pylifecycle.h"   // _Py_gitidentifier()
 
 #ifndef DONT_HAVE_STDIO_H
 #include <stdio.h>
@@ -13,7 +8,7 @@
 #ifdef __DATE__
 #define DATE __DATE__
 #else
-#define DATE "Jan 01 1970"
+#define DATE "xx/xx/xx"
 #endif
 #endif
 
@@ -21,7 +16,7 @@
 #ifdef __TIME__
 #define TIME __TIME__
 #else
-#define TIME "00:00:00"
+#define TIME "xx:xx:xx"
 #endif
 #endif
 
@@ -36,18 +31,12 @@
 #define GITBRANCH ""
 #endif
 
-static int initialized = 0;
-static char buildinfo[50 + sizeof(GITVERSION) +
-                      ((sizeof(GITTAG) > sizeof(GITBRANCH)) ?
-                       sizeof(GITTAG) : sizeof(GITBRANCH))];
-
 const char *
 Py_GetBuildInfo(void)
 {
-    if (initialized) {
-        return buildinfo;
-    }
-    initialized = 1;
+    static char buildinfo[50 + sizeof(GITVERSION) +
+                          ((sizeof(GITTAG) > sizeof(GITBRANCH)) ?
+                           sizeof(GITTAG) : sizeof(GITBRANCH))];
     const char *revision = _Py_gitversion();
     const char *sep = *revision ? ":" : "";
     const char *gitid = _Py_gitidentifier();

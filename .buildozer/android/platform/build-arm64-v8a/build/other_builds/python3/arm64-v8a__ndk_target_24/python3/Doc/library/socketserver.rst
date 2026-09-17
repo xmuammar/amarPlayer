@@ -1,5 +1,5 @@
-:mod:`!socketserver` --- A framework for network servers
-========================================================
+:mod:`socketserver` --- A framework for network servers
+=======================================================
 
 .. module:: socketserver
    :synopsis: A framework for network servers.
@@ -126,12 +126,6 @@ server is the address family.
       waits until all non-daemon threads complete, except if
       :attr:`block_on_close` attribute is ``False``.
 
-   .. attribute:: max_children
-
-      Specify how many child processes will exist to handle requests at a time
-      for :class:`ForkingMixIn`.  If the limit is reached,
-      new requests will wait until one child process has finished.
-
    .. attribute:: daemon_threads
 
       For :class:`ThreadingMixIn` use daemonic threads by setting
@@ -151,16 +145,9 @@ server is the address family.
            ForkingUDPServer
            ThreadingTCPServer
            ThreadingUDPServer
-           ForkingUnixStreamServer
-           ForkingUnixDatagramServer
-           ThreadingUnixStreamServer
-           ThreadingUnixDatagramServer
 
    These classes are pre-defined using the mix-in classes.
 
-.. versionadded:: 3.12
-   The ``ForkingUnixStreamServer`` and ``ForkingUnixDatagramServer`` classes
-   were added.
 
 To implement a service, you must derive a class from :class:`BaseRequestHandler`
 and redefine its :meth:`~BaseRequestHandler.handle` method.
@@ -194,7 +181,8 @@ expensive or inappropriate for the service) is to maintain an explicit table of
 partially finished requests and to use :mod:`selectors` to decide which
 request to work on next (or whether to handle a new incoming request).  This is
 particularly important for stream services where each client can potentially be
-connected for a long time (if threads or subprocesses cannot be used).
+connected for a long time (if threads or subprocesses cannot be used).  See
+:mod:`asyncore` for another way to manage this.
 
 .. XXX should data and methods be intermingled, or separate?
    how should the distinction between class and instance variables be drawn?
@@ -266,11 +254,8 @@ Server Objects
 
    .. attribute:: address_family
 
-      The family of protocols to which the server's socket belongs.  Common
-      examples are :const:`socket.AF_INET`, :const:`socket.AF_INET6`, and
-      :const:`socket.AF_UNIX`.  Subclass the TCP or UDP server classes in this
-      module with class attribute ``address_family = AF_INET6`` set if you
-      want IPv6 server classes.
+      The family of protocols to which the server's socket belongs.
+      Common examples are :const:`socket.AF_INET` and :const:`socket.AF_UNIX`.
 
 
    .. attribute:: RequestHandlerClass
@@ -502,17 +487,11 @@ This is the server side::
 
        def handle(self):
            # self.request is the TCP socket connected to the client
-           pieces = [b'']
-           total = 0
-           while b'\n' not in pieces[-1] and total < 10_000:
-               pieces.append(self.request.recv(2000))
-               total += len(pieces[-1])
-           self.data = b''.join(pieces)
-           print(f"Received from {self.client_address[0]}:")
-           print(self.data.decode("utf-8"))
+           self.data = self.request.recv(1024).strip()
+           print("Received from {}:".format(self.client_address[0]))
+           print(self.data)
            # just send back the same data, but upper-cased
            self.request.sendall(self.data.upper())
-           # after we return, the socket will be closed.
 
    if __name__ == "__main__":
        HOST, PORT = "localhost", 9999
@@ -529,24 +508,20 @@ objects that simplify communication by providing the standard file interface)::
    class MyTCPHandler(socketserver.StreamRequestHandler):
 
        def handle(self):
-           # self.rfile is a file-like object created by the handler.
-           # We can now use e.g. readline() instead of raw recv() calls.
-           # We limit ourselves to 10000 bytes to avoid abuse by the sender.
-           self.data = self.rfile.readline(10000).rstrip()
-           print(f"{self.client_address[0]} wrote:")
-           print(self.data.decode("utf-8"))
+           # self.rfile is a file-like object created by the handler;
+           # we can now use e.g. readline() instead of raw recv() calls
+           self.data = self.rfile.readline().strip()
+           print("{} wrote:".format(self.client_address[0]))
+           print(self.data)
            # Likewise, self.wfile is a file-like object used to write back
            # to the client
            self.wfile.write(self.data.upper())
 
 The difference is that the ``readline()`` call in the second handler will call
 ``recv()`` multiple times until it encounters a newline character, while the
-first handler had to use a ``recv()`` loop to accumulate data until a
-newline itself.  If it had just used a single ``recv()`` without the loop it
-would just have returned what has been received so far from the client.
-TCP is stream based: data arrives in the order it was sent, but there is no
-correlation between client ``send()`` or ``sendall()`` calls and the number
-of ``recv()`` calls on the server required to receive it.
+single ``recv()`` call in the first handler will just return what has been
+received so far from the client's ``sendall()`` call (typically all of it, but
+this is not guaranteed by the TCP protocol).
 
 
 This is the client side::
@@ -561,14 +536,13 @@ This is the client side::
    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
        # Connect to server and send data
        sock.connect((HOST, PORT))
-       sock.sendall(bytes(data, "utf-8"))
-       sock.sendall(b"\n")
+       sock.sendall(bytes(data + "\n", "utf-8"))
 
        # Receive data from the server and shut down
        received = str(sock.recv(1024), "utf-8")
 
-   print("Sent:    ", data)
-   print("Received:", received)
+   print("Sent:     {}".format(data))
+   print("Received: {}".format(received))
 
 
 The output of the example should look something like this:
@@ -613,7 +587,7 @@ This is the server side::
        def handle(self):
            data = self.request[0].strip()
            socket = self.request[1]
-           print(f"{self.client_address[0]} wrote:")
+           print("{} wrote:".format(self.client_address[0]))
            print(data)
            socket.sendto(data.upper(), self.client_address)
 
@@ -638,8 +612,8 @@ This is the client side::
    sock.sendto(bytes(data + "\n", "utf-8"), (HOST, PORT))
    received = str(sock.recv(1024), "utf-8")
 
-   print("Sent:    ", data)
-   print("Received:", received)
+   print("Sent:     {}".format(data))
+   print("Received: {}".format(received))
 
 The output of the example should look exactly like for the TCP server example.
 

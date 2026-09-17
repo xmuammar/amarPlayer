@@ -23,13 +23,12 @@ complaint you get while you are still learning Python::
                   ^^^^^
    SyntaxError: invalid syntax
 
-The parser repeats the offending line and displays little arrows pointing
-at the place where the error was detected.  Note that this is not always the
-place that needs to be fixed.  In the example, the error is detected at the
-function :func:`print`, since a colon (``':'``) is missing just before it.
-
-The file name (``<stdin>`` in our example) and line number are printed so you
-know where to look in case the input came from a file.
+The parser repeats the offending line and displays little 'arrow's pointing
+at the token in the line where the error was detected.  The error may be
+caused by the absence of a token *before* the indicated token.  In the
+example, the error is detected at the function :func:`print`, since a colon
+(``':'``) is missing before it.  File name and line number are printed so you
+know where to look in case the input came from a script.
 
 
 .. _tut-exceptions:
@@ -46,20 +45,14 @@ programs, however, and result in error messages as shown here::
    >>> 10 * (1/0)
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
-       10 * (1/0)
-             ~^~
    ZeroDivisionError: division by zero
    >>> 4 + spam*3
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
-       4 + spam*3
-           ^^^^
    NameError: name 'spam' is not defined
    >>> '2' + 2
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
-       '2' + 2
-       ~~~~^~~
    TypeError: can only concatenate str (not "int") to str
 
 The last line of the error message indicates what happened. Exceptions come in
@@ -126,9 +119,9 @@ may name multiple exceptions as a parenthesized tuple, for example::
    ... except (RuntimeError, TypeError, NameError):
    ...     pass
 
-A class in an :keyword:`except` clause matches exceptions which are instances of the
-class itself or one of its derived classes (but not the other way around --- an
-*except clause* listing a derived class does not match instances of its base classes).
+A class in an :keyword:`except` clause is compatible with an exception if it is
+the same class or a base class thereof (but not the other way around --- an
+*except clause* listing a derived class is not compatible with a base class).
 For example, the following code will print B, C, D in that order::
 
    class B(Exception):
@@ -259,7 +252,6 @@ exception to occur. For example::
    >>> raise NameError('HiThere')
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
-       raise NameError('HiThere')
    NameError: HiThere
 
 The sole argument to :keyword:`raise` indicates the exception to be raised.
@@ -283,7 +275,6 @@ re-raise the exception::
    An exception flew by!
    Traceback (most recent call last):
      File "<stdin>", line 2, in <module>
-       raise NameError('HiThere')
    NameError: HiThere
 
 
@@ -303,15 +294,12 @@ message::
     ...
     Traceback (most recent call last):
       File "<stdin>", line 2, in <module>
-        open("database.sqlite")
-        ~~~~^^^^^^^^^^^^^^^^^^^
     FileNotFoundError: [Errno 2] No such file or directory: 'database.sqlite'
     <BLANKLINE>
     During handling of the above exception, another exception occurred:
     <BLANKLINE>
     Traceback (most recent call last):
       File "<stdin>", line 4, in <module>
-        raise RuntimeError("unable to handle error")
     RuntimeError: unable to handle error
 
 To indicate that an exception is a direct consequence of another, the
@@ -332,8 +320,6 @@ This can be useful when you are transforming exceptions. For example::
     ...
     Traceback (most recent call last):
       File "<stdin>", line 2, in <module>
-        func()
-        ~~~~^^
       File "<stdin>", line 2, in func
     ConnectionError
     <BLANKLINE>
@@ -341,7 +327,6 @@ This can be useful when you are transforming exceptions. For example::
     <BLANKLINE>
     Traceback (most recent call last):
       File "<stdin>", line 4, in <module>
-        raise RuntimeError('Failed to open database') from exc
     RuntimeError: Failed to open database
 
 It also allows disabling automatic exception chaining using the ``from None``
@@ -354,7 +339,6 @@ idiom::
     ...
     Traceback (most recent call last):
       File "<stdin>", line 4, in <module>
-        raise RuntimeError from None
     RuntimeError
 
 For more information about chaining mechanics, see :ref:`bltin-exceptions`.
@@ -397,7 +381,6 @@ example::
    Goodbye, world!
    Traceback (most recent call last):
      File "<stdin>", line 2, in <module>
-       raise KeyboardInterrupt
    KeyboardInterrupt
 
 If a :keyword:`finally` clause is present, the :keyword:`!finally`
@@ -418,9 +401,7 @@ points discuss more complex cases when an exception occurs:
 
 * If the :keyword:`!finally` clause executes a :keyword:`break`,
   :keyword:`continue` or :keyword:`return` statement, exceptions are not
-  re-raised. This can be confusing and is therefore discouraged. From
-  version 3.14 the compiler emits a :exc:`SyntaxWarning` for it
-  (see :pep:`765`).
+  re-raised.
 
 * If the :keyword:`!try` statement reaches a :keyword:`break`,
   :keyword:`continue` or :keyword:`return` statement, the
@@ -432,9 +413,7 @@ points discuss more complex cases when an exception occurs:
   statement, the returned value will be the one from the
   :keyword:`!finally` clause's :keyword:`!return` statement, not the
   value from the :keyword:`!try` clause's :keyword:`!return`
-  statement. This can be confusing and is therefore discouraged. From
-  version 3.14 the compiler emits a :exc:`SyntaxWarning` for it
-  (see :pep:`765`).
+  statement.
 
 For example::
 
@@ -469,11 +448,7 @@ A more complicated example::
    executing finally clause
    Traceback (most recent call last):
      File "<stdin>", line 1, in <module>
-       divide("2", "1")
-       ~~~~~~^^^^^^^^^^
      File "<stdin>", line 3, in divide
-       result = x / y
-                ~~^~~
    TypeError: unsupported operand type(s) for /: 'str' and 'str'
 
 As you can see, the :keyword:`finally` clause is executed in any event.  The
@@ -536,11 +511,8 @@ caught like any other exception. ::
    >>> f()
      + Exception Group Traceback (most recent call last):
      |   File "<stdin>", line 1, in <module>
-     |     f()
-     |     ~^^
      |   File "<stdin>", line 3, in f
-     |     raise ExceptionGroup('there were problems', excs)
-     | ExceptionGroup: there were problems (2 sub-exceptions)
+     | ExceptionGroup: there were problems
      +-+---------------- 1 ----------------
        | OSError: error 1
        +---------------- 2 ----------------
@@ -588,15 +560,10 @@ other clauses and eventually to be reraised. ::
    There were SystemErrors
      + Exception Group Traceback (most recent call last):
      |   File "<stdin>", line 2, in <module>
-     |     f()
-     |     ~^^
      |   File "<stdin>", line 2, in f
-     |     raise ExceptionGroup(
-     |     ...<12 lines>...
-     |     )
-     | ExceptionGroup: group1 (1 sub-exception)
+     | ExceptionGroup: group1
      +-+---------------- 1 ----------------
-       | ExceptionGroup: group2 (1 sub-exception)
+       | ExceptionGroup: group2
        +-+---------------- 1 ----------------
          | RecursionError: 4
          +------------------------------------
@@ -640,7 +607,6 @@ includes all notes, in the order they were added, after the exception. ::
    ...
    Traceback (most recent call last):
      File "<stdin>", line 2, in <module>
-       raise TypeError('bad type')
    TypeError: bad type
    Add some information
    Add some more information
@@ -664,33 +630,23 @@ exception in the group has a note indicating when this error has occurred. ::
    >>> raise ExceptionGroup('We have some problems', excs)
      + Exception Group Traceback (most recent call last):
      |   File "<stdin>", line 1, in <module>
-     |     raise ExceptionGroup('We have some problems', excs)
      | ExceptionGroup: We have some problems (3 sub-exceptions)
      +-+---------------- 1 ----------------
        | Traceback (most recent call last):
        |   File "<stdin>", line 3, in <module>
-       |     f()
-       |     ~^^
        |   File "<stdin>", line 2, in f
-       |     raise OSError('operation failed')
        | OSError: operation failed
        | Happened in Iteration 1
        +---------------- 2 ----------------
        | Traceback (most recent call last):
        |   File "<stdin>", line 3, in <module>
-       |     f()
-       |     ~^^
        |   File "<stdin>", line 2, in f
-       |     raise OSError('operation failed')
        | OSError: operation failed
        | Happened in Iteration 2
        +---------------- 3 ----------------
        | Traceback (most recent call last):
        |   File "<stdin>", line 3, in <module>
-       |     f()
-       |     ~^^
        |   File "<stdin>", line 2, in f
-       |     raise OSError('operation failed')
        | OSError: operation failed
        | Happened in Iteration 3
        +------------------------------------

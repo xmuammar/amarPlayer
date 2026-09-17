@@ -2,8 +2,6 @@
 preserve
 [clinic start generated code]*/
 
-#include "pycore_modsupport.h"    // _PyArg_CheckPositional()
-
 PyDoc_STRVAR(_symtable_symtable__doc__,
 "symtable($module, source, filename, startstr, /)\n"
 "--\n"
@@ -22,7 +20,7 @@ _symtable_symtable(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
 {
     PyObject *return_value = NULL;
     PyObject *source;
-    PyObject *filename = NULL;
+    PyObject *filename;
     const char *startstr;
 
     if (!_PyArg_CheckPositional("symtable", nargs, 3, 3)) {
@@ -48,9 +46,6 @@ _symtable_symtable(PyObject *module, PyObject *const *args, Py_ssize_t nargs)
     return_value = _symtable_symtable_impl(module, source, filename, startstr);
 
 exit:
-    /* Cleanup for filename */
-    Py_XDECREF(filename);
-
     return return_value;
 }
-/*[clinic end generated code: output=7a8545d9a1efe837 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=3f7ccf535d750238 input=a9049054013a1b77]*/

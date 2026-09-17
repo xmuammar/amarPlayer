@@ -143,7 +143,7 @@ class Grep_itTest(unittest.TestCase):
         self.assertIn(pat, lines[0])
         self.assertIn('py: 1:', lines[1])  # line number 1
         self.assertIn('2', lines[3])  # hits found 2
-        self.assertStartsWith(lines[4], '(Hint:')
+        self.assertTrue(lines[4].startswith('(Hint:'))
 
 
 class Default_commandTest(unittest.TestCase):

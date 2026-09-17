@@ -10,17 +10,15 @@ import sys
 import time
 import token
 import traceback
+from typing import Tuple
 
-from pegen.grammar import Grammar
-from pegen.parser import Parser
-from pegen.parser_generator import ParserGenerator
-from pegen.tokenizer import Tokenizer
+from pegen.build import Grammar, Parser, ParserGenerator, Tokenizer
 from pegen.validator import validate_grammar
 
 
 def generate_c_code(
     args: argparse.Namespace,
-) -> tuple[Grammar, Parser, Tokenizer, ParserGenerator]:
+) -> Tuple[Grammar, Parser, Tokenizer, ParserGenerator]:
     from pegen.build import build_c_parser_and_generator
 
     verbose = args.verbose
@@ -49,7 +47,7 @@ def generate_c_code(
 
 def generate_python_code(
     args: argparse.Namespace,
-) -> tuple[Grammar, Parser, Tokenizer, ParserGenerator]:
+) -> Tuple[Grammar, Parser, Tokenizer, ParserGenerator]:
     from pegen.build import build_python_parser_and_generator
 
     verbose = args.verbose
@@ -106,10 +104,7 @@ c_parser.add_argument(
     help="Suppress code emission for rule actions",
 )
 
-python_parser = subparsers.add_parser(
-    "python",
-    help="Generate Python code, needs grammar definition with Python actions",
-)
+python_parser = subparsers.add_parser("python", help="Generate Python code")
 python_parser.set_defaults(func=generate_python_code)
 python_parser.add_argument("grammar_filename", help="Grammar description")
 python_parser.add_argument(
@@ -187,7 +182,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    if sys.version_info < (3, 8):  # noqa: UP036
+    if sys.version_info < (3, 8):
         print("ERROR: using pegen requires at least Python 3.8!", file=sys.stderr)
         sys.exit(1)
     main()

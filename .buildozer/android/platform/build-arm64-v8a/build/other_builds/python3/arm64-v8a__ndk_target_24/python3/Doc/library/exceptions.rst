@@ -204,16 +204,10 @@ The following exceptions are the exceptions that are usually raised.
    assignment fails.  (When an object does not support attribute references or
    attribute assignments at all, :exc:`TypeError` is raised.)
 
-   The optional *name* and *obj* keyword-only arguments
-   set the corresponding attributes:
-
-   .. attribute:: name
-
-      The name of the attribute that was attempted to be accessed.
-
-   .. attribute:: obj
-
-      The object that was accessed for the named attribute.
+   The :attr:`name` and :attr:`obj` attributes can be set using keyword-only
+   arguments to the constructor. When set they represent the name of the attribute
+   that was attempted to be accessed and the object that was accessed for said
+   attribute, respectively.
 
    .. versionchanged:: 3.10
       Added the :attr:`name` and :attr:`obj` attributes.
@@ -221,7 +215,7 @@ The following exceptions are the exceptions that are usually raised.
 .. exception:: EOFError
 
    Raised when the :func:`input` function hits an end-of-file condition (EOF)
-   without reading any data. (Note: the :meth:`!io.IOBase.read` and
+   without reading any data. (N.B.: the :meth:`io.IOBase.read` and
    :meth:`io.IOBase.readline` methods return an empty string when they hit EOF.)
 
 
@@ -318,11 +312,9 @@ The following exceptions are the exceptions that are usually raised.
    unqualified names.  The associated value is an error message that includes the
    name that could not be found.
 
-   The optional *name* keyword-only argument sets the attribute:
-
-   .. attribute:: name
-
-      The name of the variable that was attempted to be accessed.
+   The :attr:`name` attribute can be set using a keyword-only argument to the
+   constructor. When set it represent the name of the variable that was attempted
+   to be accessed.
 
    .. versionchanged:: 3.10
       Added the :attr:`name` attribute.
@@ -341,13 +333,11 @@ The following exceptions are the exceptions that are usually raised.
       meant to be supported at all -- in that case either leave the operator /
       method undefined or, if a subclass, set it to :data:`None`.
 
-   .. caution::
+   .. note::
 
-      :exc:`!NotImplementedError` and :data:`!NotImplemented` are not
-      interchangeable. This exception should only be used as described
-      above; see :data:`NotImplemented` for details on correct usage of
-      the built-in constant.
-
+      ``NotImplementedError`` and :data:`NotImplemented` are not interchangeable,
+      even though they have similar names and purposes.  See
+      :data:`!NotImplemented` for details on when to use it.
 
 .. exception:: OSError([arg])
                OSError(errno, strerror[, filename[, winerror[, filename2]]])
@@ -390,7 +380,7 @@ The following exceptions are the exceptions that are usually raised.
 
       The corresponding error message, as provided by
       the operating system.  It is formatted by the C
-      functions :c:func:`!perror` under POSIX, and :c:func:`!FormatMessage`
+      functions :c:func:`perror` under POSIX, and :c:func:`FormatMessage`
       under Windows.
 
    .. attribute:: filename
@@ -406,7 +396,7 @@ The following exceptions are the exceptions that are usually raised.
    .. versionchanged:: 3.3
       :exc:`EnvironmentError`, :exc:`IOError`, :exc:`WindowsError`,
       :exc:`socket.error`, :exc:`select.error` and
-      :exc:`!mmap.error` have been merged into :exc:`OSError`, and the
+      :exc:`mmap.error` have been merged into :exc:`OSError`, and the
       constructor may return a subclass.
 
    .. versionchanged:: 3.4
@@ -422,31 +412,9 @@ The following exceptions are the exceptions that are usually raised.
    represented.  This cannot occur for integers (which would rather raise
    :exc:`MemoryError` than give up).  However, for historical reasons,
    OverflowError is sometimes raised for integers that are outside a required
-   range.   Because of the lack of standardization of floating-point exception
-   handling in C, most floating-point operations are not checked.
+   range.   Because of the lack of standardization of floating point exception
+   handling in C, most floating point operations are not checked.
 
-
-.. exception:: PythonFinalizationError
-
-   This exception is derived from :exc:`RuntimeError`.  It is raised when
-   an operation is blocked during interpreter shutdown also known as
-   :term:`Python finalization <interpreter shutdown>`.
-
-   Examples of operations which can be blocked with a
-   :exc:`PythonFinalizationError` during the Python finalization:
-
-   * Creating a new Python thread.
-   * :meth:`Joining <threading.Thread.join>` a running daemon thread.
-   * :func:`os.fork`.
-
-   See also the :func:`sys.is_finalizing` function.
-
-   .. versionadded:: 3.13
-      Previously, a plain :exc:`RuntimeError` was raised.
-
-   .. versionchanged:: 3.14
-
-      :meth:`threading.Thread.join` can now raise this exception.
 
 .. exception:: RecursionError
 
@@ -576,13 +544,9 @@ The following exceptions are the exceptions that are usually raised.
 
    Raised when the interpreter finds an internal error, but the situation does not
    look so serious to cause it to abandon all hope. The associated value is a
-   string indicating what went wrong (in low-level terms). In :term:`CPython`,
-   this could be raised by incorrectly using Python's C API, such as returning
-   a ``NULL`` value without an exception set.
+   string indicating what went wrong (in low-level terms).
 
-   If you're confident that this exception wasn't your fault, or the fault of
-   a package you're using, you should report this to the author or maintainer
-   of your Python interpreter.
+   You should report this to the author or maintainer of your Python interpreter.
    Be sure to report the version of the Python interpreter (``sys.version``; it is
    also printed at the start of an interactive Python session), the exact error
    message (the exception's associated value) and if possible the source of the
@@ -598,7 +562,7 @@ The following exceptions are the exceptions that are usually raised.
    handled, the Python interpreter exits; no stack traceback is printed.  The
    constructor accepts the same optional argument passed to :func:`sys.exit`.
    If the value is an integer, it specifies the system exit status (passed to
-   C's :c:func:`!exit` function); if it is ``None``, the exit status is zero; if
+   C's :c:func:`exit` function); if it is ``None``, the exit status is zero; if
    it has another type (such as a string), the object's value is printed and
    the exit status is one.
 
@@ -662,15 +626,9 @@ The following exceptions are the exceptions that are usually raised.
 
        The first index of invalid data in :attr:`object`.
 
-       This value should not be negative as it is interpreted as an
-       absolute offset but this constraint is not enforced at runtime.
-
    .. attribute:: end
 
        The index after the last invalid data in :attr:`object`.
-
-       This value should not be negative as it is interpreted as an
-       absolute offset but this constraint is not enforced at runtime.
 
 
 .. exception:: UnicodeEncodeError
@@ -890,9 +848,6 @@ The following exceptions are used as warning categories; see the
 
    Base class for warnings about dubious syntax.
 
-   This warning is typically emitted when compiling Python source code, and usually won't be reported
-   when running already compiled code.
-
 
 .. exception:: RuntimeWarning
 
@@ -985,11 +940,10 @@ their subgroups based on the types of the contained exceptions.
       Returns an exception group that contains only the exceptions from the
       current group that match *condition*, or ``None`` if the result is empty.
 
-      The condition can be an exception type or tuple of exception types, in which
-      case each exception is checked for a match using the same check that is used
-      in an ``except`` clause.  The condition can also be a callable (other than
-      a type object) that accepts an exception as its single argument and returns
-      true for the exceptions that should be in the subgroup.
+      The condition can be either a function that accepts an exception and returns
+      true for those that should be in the subgroup, or it can be an exception type
+      or a tuple of exception types, which is used to check for a match using the
+      same check that is used in an ``except`` clause.
 
       The nesting structure of the current exception is preserved in the result,
       as are the values of its :attr:`message`,
@@ -1002,9 +956,6 @@ their subgroups based on the types of the contained exceptions.
       including the top-level and any nested exception groups. If the condition is
       true for such an exception group, it is included in the result in full.
 
-      .. versionadded:: 3.13
-         ``condition`` can be any callable which is not a type object.
-
    .. method:: split(condition)
 
       Like :meth:`subgroup`, but returns the pair ``(match, rest)`` where ``match``
@@ -1016,8 +967,7 @@ their subgroups based on the types of the contained exceptions.
       Returns an exception group with the same :attr:`message`, but which
       wraps the exceptions in ``excs``.
 
-      This method is used by :meth:`subgroup` and :meth:`split`, which
-      are used in various contexts to break up an exception group. A
+      This method is used by :meth:`subgroup` and :meth:`split`. A
       subclass needs to override it in order to make :meth:`subgroup`
       and :meth:`split` return instances of the subclass rather
       than :exc:`ExceptionGroup`.
@@ -1059,7 +1009,7 @@ their subgroups based on the types of the contained exceptions.
    subclasses that need a different constructor signature need to
    override that rather than :meth:`~object.__init__`. For example, the following
    defines an exception group subclass which accepts an exit_code and
-   constructs the group's message from it. ::
+   and constructs the group's message from it. ::
 
       class Errors(ExceptionGroup):
          def __new__(cls, errors, exit_code):

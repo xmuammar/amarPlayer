@@ -1,0 +1,28 @@
+{
+    "schema_version": 3,
+    "name": "Gui",
+    "repository": "qtbase",
+    "version": "6.11.2",
+    "plugin_types": ["accessiblebridge", "platforms", "platforms/darwin", "xcbglintegrations", "platformthemes", "platforminputcontexts", "generic", "iconengines", "imageformats", "egldeviceintegrations", "wayland-graphics-integration-client", "wayland-decoration-client", "wayland-shell-integration"],
+    "qpa": {
+        "platforms": ["android"],
+        "default_platform": "android"
+    },
+    "platforms": [
+        {
+            "name": "Android",
+            "version": "1",
+            "compiler_id": "Clang",
+            "compiler_version": "18.0.3",
+            "targets": [
+                {
+                    "api_version": "android-36",
+                    "ndk_version": "27.2.12479018",
+                    "android_platform": "android-28",
+                    "architecture": "arm64",
+                    "abi": "arm64-little_endian-lp64"
+                }
+            ]
+        }
+    ]
+}

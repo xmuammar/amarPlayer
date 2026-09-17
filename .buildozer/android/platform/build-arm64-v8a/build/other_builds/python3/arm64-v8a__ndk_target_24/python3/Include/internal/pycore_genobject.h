@@ -8,34 +8,40 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-#include "pycore_interpframe_structs.h" // _PyGenObject
+extern PyObject *_PyGen_yf(PyGenObject *);
+extern PyObject *_PyCoro_GetAwaitableIter(PyObject *o);
+extern PyObject *_PyAsyncGenValueWrapperNew(PyObject *);
 
-#include <stddef.h>               // offsetof()
+/* runtime lifecycle */
+
+extern void _PyAsyncGen_Fini(PyInterpreterState *);
 
 
-static inline
-PyGenObject *_PyGen_GetGeneratorFromFrame(_PyInterpreterFrame *frame)
-{
-    assert(frame->owner == FRAME_OWNED_BY_GENERATOR);
-    size_t offset_in_gen = offsetof(PyGenObject, gi_iframe);
-    return (PyGenObject *)(((char *)frame) - offset_in_gen);
-}
+/* other API */
 
-PyAPI_FUNC(PyObject *)_PyGen_yf(PyGenObject *);
-extern void _PyGen_Finalize(PyObject *self);
+#ifndef WITH_FREELISTS
+// without freelists
+#  define _PyAsyncGen_MAXFREELIST 0
+#endif
 
-// Export for '_asyncio' shared extension
-PyAPI_FUNC(int) _PyGen_SetStopIterationValue(PyObject *);
+#ifndef _PyAsyncGen_MAXFREELIST
+#  define _PyAsyncGen_MAXFREELIST 80
+#endif
 
-// Export for '_asyncio' shared extension
-PyAPI_FUNC(int) _PyGen_FetchStopIterationValue(PyObject **);
+struct _Py_async_gen_state {
+#if _PyAsyncGen_MAXFREELIST > 0
+    /* Freelists boost performance 6-10%; they also reduce memory
+       fragmentation, as _PyAsyncGenWrappedValue and PyAsyncGenASend
+       are short-living objects that are instantiated for every
+       __anext__() call. */
+    struct _PyAsyncGenWrappedValue* value_freelist[_PyAsyncGen_MAXFREELIST];
+    int value_numfree;
 
-PyAPI_FUNC(PyObject *)_PyCoro_GetAwaitableIter(PyObject *o);
-extern PyObject *_PyAsyncGenValueWrapperNew(PyThreadState *state, PyObject *);
+    struct PyAsyncGenASend* asend_freelist[_PyAsyncGen_MAXFREELIST];
+    int asend_numfree;
+#endif
+};
 
-extern PyTypeObject _PyCoroWrapper_Type;
-extern PyTypeObject _PyAsyncGenWrappedValue_Type;
-extern PyTypeObject _PyAsyncGenAThrow_Type;
 
 #ifdef __cplusplus
 }
