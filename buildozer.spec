@@ -4,7 +4,7 @@ package.name = amarPlayer
 package.domain = org.amarPlayer
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,qml,js
-source.exclude_dirs = .git,.buildozer,bin,build,release,debian,packaging,installer,android-wheels,__pycache__
+source.exclude_dirs = .git,.buildozer,bin,build,release,debian,packaging,installer,android-wheels,__pycache__,tests,download
 version = 0.1
 requirements = python3==3.11.9,hostpython3==3.11.9,shiboken6,PySide6
 orientation = portrait
@@ -14,6 +14,8 @@ fullscreen = 0
 android.archs = arm64-v8a
 android.api = 36
 android.minapi = 24
+android.entrypoint = org.amarplayer.amarplayer.AmarPlayerActivity
+android.add_src = deployment/android
 android.allow_backup = True
 ios.kivy_ios_url = https://github.com/kivy/kivy-ios
 ios.kivy_ios_branch = master

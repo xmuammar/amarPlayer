@@ -171,9 +171,10 @@ Perbaikan Android yang sudah diterapkan:
 * File lokal Android disalin ke cache aplikasi sebelum diputar agar kompatibel dengan scoped storage.
 * Playlist disimpan di `AppDataLocation/amarPlayer/amarPlayer_playlist.json`.
 * Android menyediakan tombol `Scan` tunggal; pemindaian dibatasi ke folder `mp3`, `Music`, dan `Download` yang diizinkan aplikasi.
-* Izin `READ_MEDIA_AUDIO`, `READ_MEDIA_VIDEO`, dan `READ_EXTERNAL_STORAGE` diminta di manifest.
+* Izin `READ_MEDIA_AUDIO` (Android 13+) atau `READ_EXTERNAL_STORAGE` diminta otomatis melalui Activity native `AmarPlayerActivity` saat startup pertama tanpa modul Kivy `android.permissions`.
+* Teks lagu yang terpilih pada playlist berlatar kontras tinggi dengan warna teks putih agar mudah terbaca.
 * Layout player berubah vertikal pada layar sempit dan tinggi baris playlist dibuat tetap agar teks tidak bertumpuk.
-* Playlist memakai pixel scrolling dan kinetic touch scrolling agar swipe terasa halus.
+* Playlist memakai pixel scrolling dan kinetic scrolling agar swipe terasa halus. Geser untuk scroll tidak memutar lagu; tap yang selesai tanpa drag pada item yang sama baru memulai playback.
 * Volume internal tidak ditampilkan; keluaran aplikasi menggunakan level penuh dan volume diatur dengan tombol speaker HP.
 
 Format yang dipindai dan diputar pada Android dibatasi ke MP3 agar hasil scan dan playback konsisten.
@@ -1373,7 +1374,7 @@ The old blank-screen issue and the startup failure caused by missing FFmpeg SSL 
 
 The current APK is `download/amarPlayer-android-arm64-debug.apk` (115.62 MiB / approximately 121 MB). Its minimal Qt bundle includes the SSL and crypto stubs required by FFmpeg.
 
-Media permissions had already been granted on the test device. Permission prompts on a fresh installation remain unverified; logs still report the missing `android.permissions` module. Android supports MP3 only and scans accessible `mp3`, `Music`, and `Download` folders. System volume buttons control the output volume.
+Runtime audio permissions are handled automatically by the native `AmarPlayerActivity` without relying on Kivy's missing `android.permissions` module, verified on fresh installations on both Android 16 and Android 15 devices. Android supports MP3 only and scans accessible `mp3`, `Music`, and `Download` folders. System volume buttons control the output volume. Playlist swipes and taps that stop kinetic scrolling do not start playback; a deliberate tap on one item plays it, and selected playlist items use high-contrast white text.
 
 ---
 

@@ -8,6 +8,8 @@ import os
 import json
 import random
 
+from playlist_widget import TapPlaylist
+
 from PySide6.QtCore import Qt, QTimer, QSize, QStandardPaths, QFile, QFileInfo, QUrl
 from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
@@ -31,7 +33,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QSizePolicy,
     QAbstractItemView,
-    QScroller,
     QProgressBar,
 )
 
@@ -972,7 +973,7 @@ class AmarPlayer(QMainWindow):
         # PLAYLIST
         # ====================================================
 
-        self.playlist = QListWidget()
+        self.playlist = TapPlaylist()
 
         self.playlist.setIconSize(
             QSize(
@@ -993,10 +994,6 @@ class AmarPlayer(QMainWindow):
         )
         self.playlist.setUniformItemSizes(True)
         self.playlist.setAutoScroll(False)
-        QScroller.grabGesture(
-            self.playlist.viewport(),
-            QScroller.TouchGesture
-        )
 
         self.playlist.setMinimumHeight(
             180
@@ -1007,8 +1004,8 @@ class AmarPlayer(QMainWindow):
             QSizePolicy.Expanding
         )
 
-        # Satu tap pada lagu langsung memilih dan memulai pemutaran.
-        self.playlist.itemClicked.connect(
+        # Hanya tap yang selesai tanpa drag yang memulai pemutaran.
+        self.playlist.itemTapped.connect(
             self.play_item
         )
 
@@ -1462,6 +1459,9 @@ class AmarPlayer(QMainWindow):
 
             QListWidget {
                 background: #15151a;
+                color: #eeeeee;
+                selection-color: #ffffff;
+                selection-background-color: #30303a;
                 border: 1px solid #292932;
                 border-radius: 13px;
                 padding: 4px;
@@ -1475,10 +1475,17 @@ class AmarPlayer(QMainWindow):
 
             QListWidget::item:selected {
                 background: #30303a;
+                color: #ffffff;
             }
 
             QListWidget::item:hover {
                 background: #24242d;
+            }
+
+            QListWidget::item:selected:!active,
+            QListWidget::item:selected:hover {
+                background: #30303a;
+                color: #ffffff;
             }
 
             QListWidget QScrollBar:vertical {

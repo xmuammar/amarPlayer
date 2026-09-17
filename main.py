@@ -1,14 +1,6 @@
 import runpy
 
-try:
-    from android.permissions import Permission, request_permissions
-
-    request_permissions([
-        Permission.READ_MEDIA_AUDIO,
-        Permission.READ_MEDIA_VIDEO,
-        Permission.READ_EXTERNAL_STORAGE,
-    ])
-except Exception as error:
-    print("Android permission request skipped:", error, flush=True)
+# Runtime audio permission is requested by the native AmarPlayerActivity.
+# The Qt bootstrap does not bundle Kivy's android.permissions module.
 
 runpy.run_module("amarPlayer_android", run_name="__main__")

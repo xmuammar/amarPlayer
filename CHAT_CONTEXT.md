@@ -967,3 +967,56 @@ Tidak ada perubahan Fedora tanpa izin.
 - Buildozer kembali gagal pada daemon AAPT2; build dilanjutkan melalui `muvm` menggunakan AAPT2 lokal dan sukses (`status 0`). APK: `bin/amarPlayer-scroll-volume-debug.apk`.
 - APK berhasil dipasang ke HP melalui `adb install -r`; proses `org.amarplayer.amarplayer` hidup setelah launch.
 - Tidak menjalankan clean, penghapusan cache/build, reset Git, sudo, atau perubahan Fedora.
+
+## Pembaruan Codex — 17 September 2026, 05:30 WIB
+
+- Pengguna melaporkan aplikasi tidak berjalan. Startup direproduksi pada HP 2510DRA23E melalui ADB.
+- Log membuktikan QtLoader gagal sebelum Python/UI: `libavformat.so` membutuhkan `libQt6FFmpegStub-ssl_arm64-v8a.so` yang tidak disertakan APK optimized. Log diagnosis: `/tmp/amarplayer-startup.log`.
+- Recipe PySide6 diperbaiki agar menyertakan stub SSL dan crypto; library wajib yang hilang kini menggagalkan build secara eksplisit.
+- Dua library dari wheel PySide6 yang sama ditambahkan ke distribution amarPlayerLite dan cache libs_collections-nya. Build incremental Gradle melalui muvm menghasilkan `bin/amarPlayer-lite-sslfix-debug.apk` (121236754 byte). APK lama tetap tersedia.
+- Semua 31 library native dalam APK diperiksa dengan readelf: tidak ada dependensi non-sistem yang hilang. Sintaks recipe lulus pemeriksaan AST.
+- Instalasi belum berhasil: ADB nirkabel terputus setelah build (`no devices/emulators found`), endpoint lama 192.168.100.199:38789 menolak koneksi dan discovery mDNS kosong. Meminta pengguna mengaktifkan debugging nirkabel dan memberikan endpoint terbaru. Startup APK perbaikan BELUM diuji pada HP.
+- Berikutnya: `adb connect IP:PORT`, `adb install -r bin/amarPlayer-lite-sslfix-debug.apk`, buka activity dan periksa log/PID/UI. Jangan menganggap proses hidup saja membuktikan UI berhasil; kegagalan QtLoader sebelumnya menutup activity meskipun proses sempat tetap hidup.
+
+## Pembaruan Codex — 17 September 2026, 05:34 WIB
+
+- Koneksi ADB kembali tersedia pada 192.168.100.199:42977. `adb install -r bin/amarPlayer-lite-sslfix-debug.apk` berhasil tanpa menghapus data.
+- Cold startup berhasil; log menunjukkan plugin FFmpeg berhasil dimuat, Python terinisialisasi, window.show() selesai dan app.exec() dimulai. PID 14394 tetap hidup.
+- UI hierarchy memverifikasi tampilan amarPlayer, tombol Scan, kontrol player dan playlist 10 lagu. Ini mengoreksi klaim validasi optimized sebelumnya yang hanya memeriksa PID.
+- Satu tap pada lagu MP3 di playlist memulai playback: tombol menjadi pause, waktu 00:01 dengan durasi 73:49, AAudio/AudioTrack berhasil start dan memilih speaker perangkat. Suara tidak diverifikasi dengan pendengaran. Lagu dijeda setelah uji.
+- Log: /tmp/amarplayer-sslfix-runtime.log dan /tmp/amarplayer-sslfix-playback.log. UI: /tmp/amarplayer-sslfix-ui.xml dan /tmp/amarplayer-sslfix-playing.xml.
+- Masalah startup library FFmpeg terselesaikan. Peringatan terpisah `Android permission request skipped: No module named 'android'` masih ada; perangkat ini sudah memiliki izin media dari instalasi sebelumnya, sehingga alur izin instalasi baru belum tervalidasi.
+
+
+## Pembaruan Codex — 17 September 2026, pengujian ADB siang
+
+- ADB ditemukan melalui mDNS pada `192.168.100.200:45023`, model 2510DRA23E.
+- `bin/amarPlayer-scroll-tap-fix-debug.apk` berhasil dipasang dengan install -r tanpa menghapus data.
+- Startup pertama sempat membutuhkan sekitar 33 detik; startup berikutnya menampilkan UI sekitar satu detik setelah inisialisasi Python.
+- Izin READ_MEDIA_AUDIO ternyata belum diberikan; diaktifkan melalui ADB untuk pengujian. Permintaan izin otomatis masih gagal karena modul android tidak tersedia.
+- Dengan izin aktif, swipe pada item tidak memutar lagu; satu tap memutar musik.mp3, waktu mencapai 00:07 dan durasi 69:06. Playback dijeda setelah uji; suara tidak diverifikasi dengan pendengaran.
+- Playlist hanya berisi satu lagu, sehingga kinetic scrolling daftar panjang belum teruji pada HP ini. Enam tes widget lokal sebelumnya lulus.
+- Instrumentasi diagnostik sementara pada main.pyc dan playlist_widget.pyc sudah dikembalikan ke kode produksi; kesetaraan kode playlist dengan APK diperiksa. Diagnostik faulthandler sempat gagal karena stderr Android tidak mendukung fileno; perubahan itu sudah dipulihkan.
+- Bukti UI: /tmp/amarplayer-swipe-granted.xml dan /tmp/amarplayer-tap-granted.xml. Log: /tmp/amarplayer-scroll-final-playback.log.
+
+
+## Pengujian dua perangkat — 17 September 2026
+
+- Android 16 (2510DRA23E) dan Android 15 (23073RPBFG) diuji menggunakan APK scroll-tap-fix. Startup, Scan (11/16 lagu), swipe biasa, tap untuk playback, dan pause bekerja setelah izin audio aktif.
+- Instalasi baru Android 15 mengonfirmasi dialog izin otomatis gagal karena modul android tidak tersedia; izin diberikan melalui ADB untuk tes. Teks item terpilih kurang kontras pada kedua perangkat.
+- Kedua perangkat ditinggalkan dalam keadaan pause. Laporan lengkap: ADB_TEST_REPORT.md.
+
+
+## Pembaruan — 17 September 2026, 15:38 WIB
+
+- Temuan pada pengujian dua perangkat telah diselesaikan:
+  1. Izin audio native: Diimplementasikan melalui `AmarPlayerActivity` Java subclass dari `PythonActivity` (`deployment/android/org/amarplayer/amarplayer/AmarPlayerActivity.java`). Menangani dialog runtime `READ_MEDIA_AUDIO` (Android 13+) / `READ_EXTERNAL_STORAGE` secara native tanpa memerlukan modul Kivy `android.permissions`. Kode Python di `main.py` disederhanakan dan delegasikan ke Activity native.
+  2. Kontras teks playlist: Diperbaiki pada `amarPlayer_android.py` dengan warna teks putih (`#ffffff`) saat item dipilih (`QListWidget::item:selected`), mengatasi masalah keterbacaan judul lagu pada latar belakang gelap.
+  3. Gestur scroll vs tap: `TapPlaylist` pada `playlist_widget.py` diverifikasi membedakan swipe scroll dengan tap playback secara konsisten. 6 unit test di `tests/test_playlist_widget.py` lulus.
+- APK baru `bin/amarPlayer-permission-contrast-debug.apk` dibangun via Gradle di dalam `muvm` dengan status 0.
+- APK disalin ke folder rilis Git LFS: `download/amarPlayer-android-arm64-debug.apk` beserta pembaruan `download/SHA256SUMS`.
+- Pengujian ADB nirkabel dilakukan pada kedua perangkat:
+  - 2510DRA23E (Android 16): dialog izin native, rationale saat ditolak, link pengaturan, dan playback normal tervalidasi. Teks terpilih kontras tinggi.
+  - 23073RPBFG (Android 15): instalasi `install -r` sukses, cold start normal, 15 lagu playlist dimuat, single tap memicu playback audio AAudio/AudioTrack, teks terpilih kontras tinggi (`/tmp/amarplayer-device2-playing.png`), dan kembali dipause.
+- Seluruh safety rules dipatuhi: tidak ada clean, tidak ada penghapusan folder cache/build, tidak ada git reset, dan `amarPlayer.py` desktop tidak dimodifikasi.
+
