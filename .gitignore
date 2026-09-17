@@ -9,3 +9,7 @@ release/
 
 # Buildozer / Android build cache
 .buildozer/
+
+# Generated Python bytecode
+__pycache__/
+*.py[cod]
