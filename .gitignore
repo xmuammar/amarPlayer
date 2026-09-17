@@ -6,3 +6,6 @@ release/
 *.apk
 
 !download/*.apk
+
+# Buildozer / Android build cache
+.buildozer/
